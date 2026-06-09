@@ -1,0 +1,5 @@
+# Supabase CLI config (minimal). Regenerate the full file with `supabase init` if needed.
+# Workflow: `supabase link --project-ref drfvxecwgwvissuweaah` then `supabase db push`
+# applies the files in supabase/migrations/. Migrations are applied via CLI/CI (or the
+# Supabase MCP) — never at app runtime.
+project_id = "drfvxecwgwvissuweaah"
