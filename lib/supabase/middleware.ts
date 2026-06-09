@@ -33,7 +33,13 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Supabase unreachable or token error: don't 500 every matched route — the
+    // session just isn't refreshed this request. (Sentry captures the throw via
+    // instrumentation.) No redirect logic here (Story 1.3).
+  }
 
   return supabaseResponse;
 }

@@ -29,7 +29,11 @@ export function ThemeToggle() {
     theme === "light" || theme === "dark" ? theme : "system";
   const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
   const Icon = ICONS[current];
-  const label = `Theme: ${current}. Switch to ${next}.`;
+  // Until mounted, the resolved theme is unknown — render a stable, theme-agnostic
+  // label so SSR and the first client render match (no hydration mismatch).
+  const label = mounted
+    ? `Theme: ${current}. Switch to ${next}.`
+    : "Toggle theme";
 
   return (
     <Button
@@ -39,6 +43,7 @@ export function ThemeToggle() {
       className="size-11 glass rounded-full"
       aria-label={label}
       title={label}
+      suppressHydrationWarning
       onClick={() => setTheme(next)}
     >
       {mounted ? (

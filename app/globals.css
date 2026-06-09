@@ -114,6 +114,9 @@
   /* Glass surfaces */
   --card: rgba(255, 255, 255, 0.05);
   --card-foreground: #e6eaf3;
+  /* Deliberate deviation from the glass token: popovers/menus float over
+     arbitrary content and don't receive the glass backdrop-blur, so they use a
+     near-opaque elevated navy for legibility (vs the 5% card glass). */
   --popover: rgba(20, 27, 45, 0.92);
   --popover-foreground: #e6eaf3;
   --glass-highlight: rgba(255, 255, 255, 0.06);
@@ -184,5 +187,31 @@
   }
   .dark body {
     background-image: linear-gradient(180deg, #0a0f1f 0%, #070b16 100%);
+  }
+}
+
+/* Glass legibility fallback where backdrop-filter is unsupported (the very
+   translucent --card would otherwise be near-invisible). */
+@supports not (
+    (backdrop-filter: blur(1px)) or
+    (-webkit-backdrop-filter: blur(1px))
+  ) {
+  .glass {
+    background-color: rgba(248, 250, 253, 0.95);
+  }
+  .dark .glass {
+    background-color: rgba(16, 20, 30, 0.95);
+  }
+}
+
+/* Honor reduced-motion globally (DESIGN.md motion rule / WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
