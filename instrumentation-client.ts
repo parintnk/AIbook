@@ -19,6 +19,7 @@ if (dsn) {
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration(),
+      Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
     ],
   });
 }
