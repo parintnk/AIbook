@@ -17,7 +17,9 @@ export function Providers({ children }: { children: ReactNode }) {
     if (!POSTHOG_KEY) return;
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_HOST,
-      capture_pageview: true,
+      // Modern preset: enables history-based pageview capture so App Router
+      // soft navigations are tracked (not just full page loads).
+      defaults: "2025-05-24",
     });
   }, []);
 
