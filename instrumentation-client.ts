@@ -10,6 +10,7 @@ if (dsn) {
     tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.1,
     tracePropagationTargets: [
       "localhost",
+      /^\//,
       /^https:\/\/a-ibook[\w-]*\.vercel\.app/,
     ],
     replaysSessionSampleRate: 0.1,
