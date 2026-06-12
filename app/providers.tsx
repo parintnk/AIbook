@@ -4,6 +4,8 @@ import { ThemeProvider } from "next-themes";
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { type ReactNode, useEffect } from "react";
+import { AuthProvider } from "@/components/auth/auth-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST =
@@ -39,7 +41,10 @@ export function Providers({ children }: { children: ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <AnalyticsProvider>{children}</AnalyticsProvider>
+      <AuthProvider>
+        <AnalyticsProvider>{children}</AnalyticsProvider>
+        <Toaster />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

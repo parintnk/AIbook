@@ -1,10 +1,12 @@
+import { AuthStatus } from "@/components/auth/auth-status";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
     <main className="relative flex min-h-svh flex-col items-center justify-center px-6 text-center">
-      <div className="fixed top-4 right-4 z-10">
+      <div className="fixed top-4 right-4 z-10 flex items-center gap-2">
+        <AuthStatus />
         <ThemeToggle />
       </div>
 
