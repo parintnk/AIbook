@@ -12,17 +12,34 @@ import {
   signUpSchema,
 } from "@/lib/validation/auth";
 
-// Don't leak which field was wrong (email-enumeration / credential probing).
+// Don't leak which field/account was wrong (email-enumeration / credential
+// probing) — sign-in AND sign-up both return a non-distinguishing message.
 const GENERIC_CREDENTIALS_ERROR =
   "Incorrect email or password. Please try again.";
+const GENERIC_SIGNUP_ERROR = "Could not create your account. Please try again.";
 
-/** Absolute origin for building OAuth/email redirect URLs (server-side). */
+// OAuth providers the app actually supports — `provider` arrives from untrusted
+// FormData, so it is allow-listed before reaching Supabase.
+const SUPPORTED_OAUTH_PROVIDERS = ["google", "apple"] as const;
+type SupportedProvider = (typeof SUPPORTED_OAUTH_PROVIDERS)[number];
+
+function isSupportedProvider(value: string): value is SupportedProvider {
+  return (SUPPORTED_OAUTH_PROVIDERS as readonly string[]).includes(value);
+}
+
+/**
+ * Absolute origin for building OAuth/email redirect URLs (server-side). Prefers
+ * the request's `origin`/`host`; falls back to `NEXT_PUBLIC_SITE_URL` for
+ * header-less contexts so the redirect target is never a relative URL (Supabase
+ * requires an absolute one).
+ */
 async function getOrigin(): Promise<string> {
   const h = await headers();
   const origin = h.get("origin");
   if (origin) return origin;
   const host = h.get("host");
-  return host ? `https://${host}` : "";
+  if (host) return `https://${host}`;
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "";
 }
 
 export async function signInWithEmail(
@@ -61,9 +78,13 @@ export async function signUpWithEmail(
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
     },
   });
-  if (error) return { error: error.message };
+  // Generic message — Supabase's raw error (e.g. "User already registered")
+  // would enable email enumeration.
+  if (error) return { error: GENERIC_SIGNUP_ERROR };
 
   // Email-confirmation ON → no session yet; prompt the user to check inbox.
+  // (For an already-registered email Supabase also returns no session and no
+  // error, so the confirmation copy links back to sign-in.)
   if (!data.session) return { needsEmailConfirmation: true };
 
   revalidatePath("/", "layout");
@@ -91,17 +112,13 @@ export async function signInWithOAuth(
 
 /**
  * Form-action wrapper for the provider buttons (works without client JS).
- * Reads provider + next from the submitted FormData.
+ * Reads provider + next from the submitted FormData; `provider` is allow-listed.
  */
 export async function oauthSignInAction(formData: FormData): Promise<void> {
-  const provider = String(formData.get("provider") ?? "") as Provider;
+  const provider = String(formData.get("provider") ?? "");
+  if (!isSupportedProvider(provider)) {
+    redirect("/sign-in?error=oauth");
+  }
   const next = formData.get("next");
   await signInWithOAuth(provider, typeof next === "string" ? next : undefined);
-}
-
-export async function signOut(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/");
 }

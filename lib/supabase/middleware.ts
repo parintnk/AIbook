@@ -60,10 +60,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user && isProtected(request.nextUrl.pathname)) {
+    // Preserve the full intended destination (path + query) so the user lands
+    // back where they meant to after signing in.
+    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/sign-in";
     redirectUrl.search = "";
-    redirectUrl.searchParams.set("next", request.nextUrl.pathname);
+    redirectUrl.searchParams.set("next", nextPath);
     return NextResponse.redirect(redirectUrl);
   }
 

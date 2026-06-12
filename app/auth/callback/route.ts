@@ -15,6 +15,15 @@ export async function GET(request: Request): Promise<NextResponse> {
   const code = searchParams.get("code");
   const next = sanitizeNext(searchParams.get("next"));
 
+  // Provider returned an error (user cancelled consent, access_denied, …) —
+  // surface its code rather than collapsing to the generic exchange failure.
+  const providerError = searchParams.get("error");
+  if (providerError) {
+    return NextResponse.redirect(
+      `${origin}/sign-in?error=${encodeURIComponent(providerError)}`,
+    );
+  }
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);

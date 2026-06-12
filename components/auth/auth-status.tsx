@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/components/auth/auth-provider";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -43,9 +44,13 @@ export function AuthStatus() {
   async function handleSignOut() {
     setSigningOut(true);
     try {
-      await createClient().auth.signOut();
+      const { error } = await createClient().auth.signOut();
+      if (error) throw error;
       router.refresh();
       router.push("/");
+    } catch {
+      // Surface the failure instead of leaving the user stuck appearing signed-in.
+      toast.error("Could not sign out. Please try again.");
     } finally {
       setSigningOut(false);
     }

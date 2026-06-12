@@ -7,7 +7,6 @@ vi.mock("@/app/(auth)/actions", () => ({
   signInWithEmail: vi.fn(),
   signUpWithEmail: vi.fn(),
   oauthSignInAction: vi.fn(),
-  signOut: vi.fn(),
 }));
 
 import { AuthForm } from "./auth-form";

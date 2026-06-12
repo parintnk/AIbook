@@ -19,14 +19,15 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
+  const params = await searchParams;
+  const next = sanitizeNext(params.next);
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/");
+  if (user) redirect(next);
 
-  const params = await searchParams;
-  const next = sanitizeNext(params.next);
   const initialError = params.error
     ? "Sign-in failed. Please try again."
     : undefined;
@@ -41,7 +42,7 @@ export default async function SignInPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
-          <OAuthButtons next={params.next} />
+          <OAuthButtons next={next} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
             or

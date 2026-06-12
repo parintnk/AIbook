@@ -1,6 +1,7 @@
 "use client";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { signInWithEmail, signUpWithEmail } from "@/app/(auth)/actions";
@@ -60,9 +61,20 @@ export function AuthForm({
   }
 
   if (emailSent) {
+    // Reached for both a genuine new sign-up and an already-registered email
+    // (Supabase returns no session + no error for both), so always offer a way
+    // back to sign-in.
     return (
       <output className="block text-sm text-muted-foreground">
-        Almost there — check your inbox to confirm your email, then sign in.
+        Almost there — check your inbox to confirm your email. Already have an
+        account?{" "}
+        <Link
+          href="/sign-in"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Sign in
+        </Link>
+        .
       </output>
     );
   }
