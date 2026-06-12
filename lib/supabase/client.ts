@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { Database } from "./database.types";
 
 /**
  * Supabase client for Client Components (browser runtime).
@@ -15,5 +16,5 @@ export function createClient() {
       "Supabase browser client: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY must be set.",
     );
   }
-  return createBrowserClient(url, key);
+  return createBrowserClient<Database>(url, key);
 }

@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Your account — idea" };
 
@@ -22,6 +25,12 @@ export default async function AccountPage() {
         <p className="mt-2 text-muted-foreground">
           Signed in as <span className="text-foreground">{user.email}</span>.
         </p>
+        <Link
+          href="/settings/profile"
+          className={cn(buttonVariants({ variant: "outline" }), "mt-4")}
+        >
+          Edit profile
+        </Link>
       </div>
     </main>
   );
