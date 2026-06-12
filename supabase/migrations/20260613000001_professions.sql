@@ -119,7 +119,14 @@ do $$
 declare
   founder_id uuid;
 begin
-  select id into founder_id from auth.users where email = 'parin.tnk@gmail.com' limit 1;
+  -- Resolve from profiles (the FK target) joined to auth.users by email, so a
+  -- missing profiles row skips the seed instead of raising a FK violation that
+  -- would abort the whole migration.
+  select p.id into founder_id
+  from public.profiles p
+  join auth.users u on u.id = p.id
+  where u.email = 'parin.tnk@gmail.com'
+  limit 1;
   if founder_id is not null then
     insert into public.profession_members (profile_id, profession_id, role)
     select founder_id, p.id, 'moderator'::public.profession_role

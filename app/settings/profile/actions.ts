@@ -45,6 +45,11 @@ export async function updateProfileAction(
         fieldError: { field: "handle", message: "That handle is taken." },
       };
     }
+    if (result.error === "invalid_profession") {
+      return {
+        error: "That profession is no longer available — pick another.",
+      };
+    }
     return { error: "Could not save your profile. Please try again." };
   }
 

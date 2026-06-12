@@ -43,7 +43,12 @@ export type ServiceResult =
   | { ok: true }
   | {
       ok: false;
-      error: "handle_taken" | "not_authenticated" | "not_found" | "db_error";
+      error:
+        | "handle_taken"
+        | "not_authenticated"
+        | "not_found"
+        | "invalid_profession"
+        | "db_error";
     };
 
 /**
@@ -129,6 +134,9 @@ export async function updateProfile(
   if (error) {
     // 23505 = unique_violation (handle already taken).
     if (error.code === "23505") return { ok: false, error: "handle_taken" };
+    // 23503 = foreign_key_violation (primary_profession_id isn't a real profession).
+    if (error.code === "23503")
+      return { ok: false, error: "invalid_profession" };
     return { ok: false, error: "db_error" };
   }
   if (!data) return { ok: false, error: "not_found" };

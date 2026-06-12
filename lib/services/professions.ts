@@ -51,6 +51,11 @@ export async function isProfessionModerator(
     uid: user.id,
     prof_id: professionId,
   });
-  if (error) return false;
+  if (error) {
+    // Fail closed, but surface the failure so a transient error isn't silently
+    // indistinguishable from a real "not a moderator" denial (load-bearing in 7.3).
+    console.error("is_profession_moderator RPC failed:", error.message);
+    return false;
+  }
   return data === true;
 }

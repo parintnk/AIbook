@@ -33,12 +33,21 @@ begin
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'RLS FAIL: non-moderator updated % rows (expected 0)', n; end if;
 
-  -- Moderator → UPDATE allowed (1 row).
+  -- Moderator → UPDATE of a granted column (description) allowed (1 row).
   perform set_config('request.jwt.claims', json_build_object('sub', founder::text, 'role', 'authenticated')::text, true);
   update public.professions set description = description where id = gd;
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'RLS FAIL: moderator updated % rows (expected 1)', n; end if;
 
+  -- Column lock → even a moderator may NOT change member_count.
+  begin
+    update public.professions set member_count = 999 where id = gd;
+    reset role;
+    raise exception 'COLUMN-LOCK FAIL: moderator changed member_count';
+  exception when insufficient_privilege then
+    null;  -- expected: permission denied for column member_count
+  end;
+
   reset role;
-  raise notice 'RLS OK: helper correct; member denied; moderator allowed';
+  raise notice 'RLS OK: helper correct; member denied; moderator allowed; member_count locked';
 end $$;
