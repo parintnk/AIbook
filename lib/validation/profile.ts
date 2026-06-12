@@ -10,9 +10,19 @@ export const handleSchema = z
     "3–30 characters: lowercase letters, numbers, and underscores only",
   );
 
-// Empty string (field left blank) or a valid URL — converted to null in the
-// action before it reaches the DB (those columns are nullable).
-const urlOrEmpty = z.union([z.literal(""), z.url("Enter a valid URL")]);
+// Empty string (field left blank) or a valid http(s) URL — converted to null in
+// the action before it reaches the DB (those columns are nullable). The scheme
+// is restricted so `javascript:`/`data:` URLs can't be stored and rendered into
+// a public <a href>/<img src> (stored-XSS guard).
+const urlOrEmpty = z.union([
+  z.literal(""),
+  z
+    .url("Enter a valid URL")
+    .refine(
+      (u) => /^https?:\/\//i.test(u),
+      "URL must start with http:// or https://",
+    ),
+]);
 
 export const aiStackItemSchema = z.object({
   tool_name: z.string().trim().min(1, "Required").max(40, "Max 40 characters"),
@@ -29,7 +39,23 @@ export const profileFormSchema = z.object({
   avatar_url: urlOrEmpty,
   hire_me_url: urlOrEmpty,
   hire_me_visible: z.boolean(),
-  ai_stack: z.array(aiStackItemSchema).max(30, "Up to 30 tools"),
+  ai_stack: z
+    .array(aiStackItemSchema)
+    .max(30, "Up to 30 tools")
+    .superRefine((items, ctx) => {
+      const seen = new Set<string>();
+      items.forEach((it, i) => {
+        const key = it.tool_name.trim().toLowerCase();
+        if (seen.has(key)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Duplicate tool",
+            path: [i, "tool_name"],
+          });
+        }
+        seen.add(key);
+      });
+    }),
 });
 
 export type AiStackItemValues = z.infer<typeof aiStackItemSchema>;

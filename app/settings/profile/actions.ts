@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  getMyProfile,
   isHandleAvailable,
   replaceAiStack,
   updateProfile,
 } from "@/lib/services/profiles";
-import { createClient } from "@/lib/supabase/server";
 import {
   type ProfileFormState,
   profileFormSchema,
@@ -19,14 +19,12 @@ export async function updateProfileAction(
   if (!parsed.success) return { error: "Please fix the highlighted fields." };
   const v = parsed.data;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be signed in." };
+  const me = await getMyProfile();
+  if (!me) return { error: "You must be signed in." };
+  const oldHandle = me.handle;
 
   // Friendly pre-check; the DB unique constraint is the real guard (handled below).
-  if (!(await isHandleAvailable(v.handle, user.id))) {
+  if (!(await isHandleAvailable(v.handle, me.id))) {
     return {
       fieldError: { field: "handle", message: "That handle is taken." },
     };
@@ -51,7 +49,7 @@ export async function updateProfileAction(
 
   // sort_order follows the visible top-to-bottom order.
   const stack = v.ai_stack.map((it, i) => ({ ...it, sort_order: i }));
-  const stackResult = await replaceAiStack(user.id, stack);
+  const stackResult = await replaceAiStack(stack);
   if (!stackResult.ok) {
     return {
       error: "Profile saved, but the AI Stack couldn't update. Try again.",
@@ -60,5 +58,7 @@ export async function updateProfileAction(
 
   revalidatePath("/settings/profile");
   revalidatePath(`/u/${v.handle}`);
+  // Handle changed → the old public URL must drop its stale cache too.
+  if (oldHandle !== v.handle) revalidatePath(`/u/${oldHandle}`);
   return { success: true };
 }

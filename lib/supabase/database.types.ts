@@ -123,6 +123,7 @@ export type Database = {
     };
     Functions: {
       generate_unique_handle: { Args: { seed: string }; Returns: string };
+      replace_ai_stack: { Args: { items: Json }; Returns: undefined };
     };
     Enums: {
       [_ in never]: never;

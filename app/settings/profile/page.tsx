@@ -2,13 +2,21 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { getMyProfile } from "@/lib/services/profiles";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Edit profile — idea" };
 
 export default async function ProfileSettingsPage() {
+  // Distinguish "not signed in" from "signed in but no profile row" so the
+  // latter doesn't bounce to /sign-in forever (middleware would let them back).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in?next=/settings/profile");
+
   const profile = await getMyProfile();
-  // Middleware already gates /settings; this also covers the no-profile edge.
-  if (!profile) redirect("/sign-in?next=/settings/profile");
+  if (!profile) redirect("/"); // authed but profile-less (rare) — no edit target
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">

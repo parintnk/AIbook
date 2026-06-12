@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 function initials(name: string | null, handle: string): string {
@@ -8,9 +11,10 @@ function initials(name: string | null, handle: string): string {
 }
 
 /**
- * Circular avatar: the user's image when present, otherwise a gradient
- * initials tile (DESIGN.md circular gradient avatar). Plain <img> — external
- * provider/storage URLs avoid next/image remote-pattern config for now.
+ * Circular avatar: the user's image when present, otherwise a gradient initials
+ * tile (DESIGN.md). Falls back to the initials tile if the image fails to load
+ * (avatar_url is free-text user input, so a broken/non-image URL is possible).
+ * Plain <img> — arbitrary provider/storage hosts avoid next/image remote config.
  */
 export function ProfileAvatar({
   avatarUrl,
@@ -23,12 +27,15 @@ export function ProfileAvatar({
   handle: string;
   className?: string;
 }) {
-  if (avatarUrl) {
+  const [errored, setErrored] = useState(false);
+
+  if (avatarUrl && !errored) {
     return (
       <img
         src={avatarUrl}
         alt={displayName ?? handle}
         referrerPolicy="no-referrer"
+        onError={() => setErrored(true)}
         className={cn("rounded-full object-cover", className)}
       />
     );

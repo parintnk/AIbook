@@ -88,4 +88,31 @@ describe("profileFormSchema", () => {
       profileFormSchema.safeParse({ ...base, bio: "x".repeat(281) }).success,
     ).toBe(false);
   });
+
+  it("rejects non-http(s) URL schemes (stored-XSS guard)", () => {
+    expect(
+      profileFormSchema.safeParse({
+        ...base,
+        hire_me_url: "javascript:alert(1)",
+      }).success,
+    ).toBe(false);
+    expect(
+      profileFormSchema.safeParse({
+        ...base,
+        avatar_url: "data:text/html,<script>1</script>",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects duplicate AI Stack tools (case-insensitive)", () => {
+    expect(
+      profileFormSchema.safeParse({
+        ...base,
+        ai_stack: [
+          { tool_name: "Claude", skill_level: 3, sort_order: 0 },
+          { tool_name: "claude", skill_level: 4, sort_order: 1 },
+        ],
+      }).success,
+    ).toBe(false);
+  });
 });
