@@ -37,6 +37,7 @@ export async function updateProfileAction(
     avatar_url: v.avatar_url || null,
     hire_me_url: v.hire_me_url || null,
     hire_me_visible: v.hire_me_visible,
+    primary_profession_id: v.primary_profession_id || null,
   });
   if (!result.ok) {
     if (result.error === "handle_taken") {

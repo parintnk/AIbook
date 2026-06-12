@@ -51,6 +51,11 @@ export default async function PublicProfilePage({ params }: Params) {
               @{profile.handle}
             </span>
           </div>
+          {profile.primary_profession ? (
+            <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
+              {profile.primary_profession.name}
+            </span>
+          ) : null}
           {profile.bio ? (
             <p className="text-pretty text-muted-foreground">{profile.bio}</p>
           ) : null}

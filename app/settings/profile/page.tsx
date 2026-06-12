@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { listProfessions } from "@/lib/services/professions";
 import { getMyProfile } from "@/lib/services/profiles";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,6 +18,8 @@ export default async function ProfileSettingsPage() {
 
   const profile = await getMyProfile();
   if (!profile) redirect("/"); // authed but profile-less (rare) — no edit target
+
+  const professions = await listProfessions();
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
@@ -38,7 +41,10 @@ export default async function ProfileSettingsPage() {
       </div>
 
       <div className="mt-8">
-        <ProfileForm profile={profile} />
+        <ProfileForm
+          profile={profile}
+          professions={professions.map((p) => ({ id: p.id, name: p.name }))}
+        />
       </div>
     </main>
   );

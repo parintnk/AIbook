@@ -32,6 +32,10 @@ export const aiStackItemSchema = z.object({
   sort_order: z.number().int().min(0),
 });
 
+// Empty string ("— none —") or a profession UUID. The DB FK is the real guard
+// that it references a real profession; this just checks shape.
+const professionIdOrEmpty = z.union([z.literal(""), z.uuid()]);
+
 export const profileFormSchema = z.object({
   handle: handleSchema,
   display_name: z.string().max(60, "Max 60 characters"),
@@ -39,6 +43,7 @@ export const profileFormSchema = z.object({
   avatar_url: urlOrEmpty,
   hire_me_url: urlOrEmpty,
   hire_me_visible: z.boolean(),
+  primary_profession_id: professionIdOrEmpty,
   ai_stack: z
     .array(aiStackItemSchema)
     .max(30, "Up to 30 tools")

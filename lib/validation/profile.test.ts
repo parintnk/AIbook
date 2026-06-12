@@ -64,8 +64,23 @@ describe("profileFormSchema", () => {
     avatar_url: "",
     hire_me_url: "",
     hire_me_visible: false,
+    primary_profession_id: "",
     ai_stack: [],
   };
+
+  it("accepts an empty or UUID primary_profession_id, rejects other strings", () => {
+    expect(profileFormSchema.safeParse(base).success).toBe(true);
+    expect(
+      profileFormSchema.safeParse({
+        ...base,
+        primary_profession_id: "11111111-1111-4111-8111-111111111111",
+      }).success,
+    ).toBe(true);
+    expect(
+      profileFormSchema.safeParse({ ...base, primary_profession_id: "nope" })
+        .success,
+    ).toBe(false);
+  });
 
   it("accepts a valid profile with empty optional URLs", () => {
     expect(profileFormSchema.safeParse(base).success).toBe(true);

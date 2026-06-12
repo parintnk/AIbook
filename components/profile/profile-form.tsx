@@ -27,7 +27,15 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   );
 }
 
-export function ProfileForm({ profile }: { profile: ProfileWithStack }) {
+export type ProfessionOption = { id: string; name: string };
+
+export function ProfileForm({
+  profile,
+  professions,
+}: {
+  profile: ProfileWithStack;
+  professions: ProfessionOption[];
+}) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,6 +56,7 @@ export function ProfileForm({ profile }: { profile: ProfileWithStack }) {
       avatar_url: profile.avatar_url ?? "",
       hire_me_url: profile.hire_me_url ?? "",
       hire_me_visible: profile.hire_me_visible,
+      primary_profession_id: profile.primary_profession_id ?? "",
       ai_stack: profile.ai_stack_items.map((it) => ({
         tool_name: it.tool_name,
         skill_level: it.skill_level,
@@ -150,6 +159,22 @@ export function ProfileForm({ profile }: { profile: ProfileWithStack }) {
             id="avatar_url-error"
             message={errors.avatar_url?.message}
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="primary_profession_id">Primary profession</Label>
+          <select
+            id="primary_profession_id"
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            {...register("primary_profession_id")}
+          >
+            <option value="">— none —</option>
+            {professions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 

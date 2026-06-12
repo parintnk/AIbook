@@ -24,21 +24,31 @@ const profile: ProfileWithStack = {
   created_at: "2026-06-12T00:00:00Z",
   updated_at: "2026-06-12T00:00:00Z",
   ai_stack_items: [],
+  primary_profession: null,
 };
 
+const professions = [
+  { id: "p1", name: "Graphic Designer" },
+  { id: "p2", name: "Marketer" },
+];
+
 describe("ProfileForm", () => {
-  it("renders identity fields seeded from the profile", () => {
-    render(<ProfileForm profile={profile} />);
+  it("renders identity fields + the profession picker", () => {
+    render(<ProfileForm profile={profile} professions={professions} />);
     expect(screen.getByLabelText("Handle")).toHaveValue("tester");
     expect(screen.getByLabelText("Display name")).toHaveValue("Tester");
     expect(screen.getByLabelText("Bio")).toBeInTheDocument();
+    expect(screen.getByLabelText("Primary profession")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Graphic Designer" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /save profile/i }),
     ).toBeInTheDocument();
   });
 
   it("adds an AI Stack row when 'Add tool' is clicked", () => {
-    render(<ProfileForm profile={profile} />);
+    render(<ProfileForm profile={profile} professions={professions} />);
     expect(screen.queryByPlaceholderText("e.g. Midjourney")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /add tool/i }));
     expect(screen.getByPlaceholderText("e.g. Midjourney")).toBeInTheDocument();

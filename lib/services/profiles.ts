@@ -11,7 +11,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export type Profile = Tables<"profiles">;
 export type AiStackItem = Tables<"ai_stack_items">;
-export type ProfileWithStack = Profile & { ai_stack_items: AiStackItem[] };
+export type PrimaryProfession = { slug: string; name: string } | null;
+export type ProfileWithStack = Profile & {
+  ai_stack_items: AiStackItem[];
+  primary_profession: PrimaryProfession;
+};
 
 export type UpdateProfileInput = {
   handle: string;
@@ -20,7 +24,14 @@ export type UpdateProfileInput = {
   avatar_url: string | null;
   hire_me_url: string | null;
   hire_me_visible: boolean;
+  primary_profession_id: string | null;
 };
+
+// Disambiguate the profiles→professions relationship (there are two: the direct
+// primary_profession FK and the many-to-many via profession_members) by naming
+// the FK constraint explicitly.
+const PROFILE_SELECT =
+  "*, ai_stack_items(*), primary_profession:professions!profiles_primary_profession_fk(slug, name)";
 
 export type AiStackInput = {
   tool_name: string;
@@ -45,7 +56,7 @@ export const getProfileByHandle = cache(
     const supabase = await createClient();
     const { data } = await supabase
       .from("profiles")
-      .select("*, ai_stack_items(*)")
+      .select(PROFILE_SELECT)
       .eq("handle", handle.toLowerCase())
       .order("sort_order", {
         referencedTable: "ai_stack_items",
@@ -65,7 +76,7 @@ export async function getMyProfile(): Promise<ProfileWithStack | null> {
   if (!user) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("*, ai_stack_items(*)")
+    .select(PROFILE_SELECT)
     .eq("id", user.id)
     .order("sort_order", { referencedTable: "ai_stack_items", ascending: true })
     .maybeSingle();
@@ -104,6 +115,7 @@ export async function updateProfile(
     avatar_url: input.avatar_url,
     hire_me_url: input.hire_me_url,
     hire_me_visible: input.hire_me_visible,
+    primary_profession_id: input.primary_profession_id,
   };
   // `.select()` so we can tell a real update from a no-op: a Postgres UPDATE
   // matching zero rows is NOT an error, so without this a profile-less user

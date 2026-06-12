@@ -49,6 +49,72 @@ export type Database = {
           },
         ];
       };
+      profession_members: {
+        Row: {
+          joined_at: string;
+          profession_id: string;
+          profile_id: string;
+          role: Database["public"]["Enums"]["profession_role"];
+        };
+        Insert: {
+          joined_at?: string;
+          profession_id: string;
+          profile_id: string;
+          role?: Database["public"]["Enums"]["profession_role"];
+        };
+        Update: {
+          joined_at?: string;
+          profession_id?: string;
+          profile_id?: string;
+          role?: Database["public"]["Enums"]["profession_role"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profession_members_profession_id_fkey";
+            columns: ["profession_id"];
+            isOneToOne: false;
+            referencedRelation: "professions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profession_members_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      professions: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          member_count: number;
+          name: string;
+          rules: Json;
+          slug: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          member_count?: number;
+          name: string;
+          rules?: Json;
+          slug: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          member_count?: number;
+          name?: string;
+          rules?: Json;
+          slug?: string;
+        };
+        Relationships: [];
+      };
       profile_badges: {
         Row: {
           awarded_at: string;
@@ -115,7 +181,15 @@ export type Database = {
           primary_profession_id?: string | null;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_primary_profession_fk";
+            columns: ["primary_profession_id"];
+            isOneToOne: false;
+            referencedRelation: "professions";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
@@ -123,10 +197,14 @@ export type Database = {
     };
     Functions: {
       generate_unique_handle: { Args: { seed: string }; Returns: string };
+      is_profession_moderator: {
+        Args: { prof_id: string; uid: string };
+        Returns: boolean;
+      };
       replace_ai_stack: { Args: { items: Json }; Returns: undefined };
     };
     Enums: {
-      [_ in never]: never;
+      profession_role: "member" | "verified_pro" | "moderator";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -256,6 +334,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      profession_role: ["member", "verified_pro", "moderator"],
+    },
   },
 } as const;
