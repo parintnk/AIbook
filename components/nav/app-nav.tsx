@@ -24,7 +24,7 @@ export function AppNav() {
       <nav className="flex items-center gap-[18px] px-6 py-[13px]">
         <BrandLogo />
 
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-1 lg:flex">
           {PRIMARY_NAV_LINKS.map((link) => {
             const active = isActivePath(pathname, link.href);
             return (
@@ -35,7 +35,7 @@ export function AppNav() {
                   className={cn(
                     "rounded-[10px] px-[13px] py-2 text-sm transition-colors",
                     active
-                      ? "bg-accent font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(109,94,240,0.18)]"
+                      ? "bg-accent font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(109,94,240,0.18)] dark:shadow-[inset_0_0_0_1px_rgba(139,124,255,0.35)]"
                       : "font-medium text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
@@ -47,7 +47,7 @@ export function AppNav() {
         </ul>
 
         {/* desktop inline search — ≤340px, right-aligned [Source: explore-light .search] */}
-        <SearchTrigger className="ml-auto hidden w-[clamp(180px,28vw,340px)] items-center gap-[9px] rounded-full border border-input bg-card px-[17px] py-2.5 text-left text-[13.5px] text-muted-foreground shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-foreground/10 md:flex">
+        <SearchTrigger className="ml-auto hidden w-[clamp(180px,28vw,340px)] items-center gap-[9px] rounded-full border border-input bg-card px-[17px] py-2.5 text-left text-[13.5px] text-muted-foreground shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-foreground/10 lg:flex">
           <Search className="size-4 shrink-0" aria-hidden />
           <span className="truncate">Search workflows, tools, people…</span>
         </SearchTrigger>
@@ -55,7 +55,7 @@ export function AppNav() {
         {/* mobile search icon */}
         <SearchTrigger
           ariaLabel="Search"
-          className="ml-auto flex size-10 items-center justify-center rounded-xl border border-input bg-card text-muted-foreground md:ml-0 md:hidden"
+          className="ml-auto flex size-11 items-center justify-center rounded-xl border border-input bg-card text-muted-foreground lg:ml-0 lg:hidden"
         >
           <Search className="size-5" aria-hidden />
         </SearchTrigger>

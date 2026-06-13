@@ -79,8 +79,8 @@ export function AvatarMenu() {
         <ProfileAvatar
           avatarUrl={avatarUrl}
           displayName={displayName}
-          handle={email}
-          className="size-9 ring-2 ring-white/90"
+          handle={email.split("@")[0] ?? "you"}
+          className="size-9 ring-2 ring-white/90 dark:ring-white/15"
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

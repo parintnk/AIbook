@@ -7,6 +7,9 @@ import { getMyProfile } from "@/lib/services/profiles";
  */
 export default async function MePage() {
   const profile = await getMyProfile();
-  if (!profile) redirect("/sign-in?next=/me");
-  redirect(`/u/${profile.handle}`);
+  if (profile) redirect(`/u/${profile.handle}`);
+  // Middleware gates /me to authenticated users, so a missing profile here means
+  // "signed in but the signup trigger skipped the insert" — send them to create
+  // one. Never redirect to /sign-in: it bounces an authed user back to /me (loop).
+  redirect("/settings/profile");
 }

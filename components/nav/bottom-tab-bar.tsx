@@ -16,7 +16,7 @@ import { isActivePath } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 const TAB_CLASS =
-  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.7rem] outline-none focus-visible:bg-muted/50";
+  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[0.7rem] outline-none focus-visible:bg-accent/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50";
 
 function TabLink({
   href,
@@ -55,7 +55,7 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="glass fixed inset-x-0 bottom-0 z-40 flex h-16 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="glass fixed inset-x-0 bottom-0 z-40 flex h-16 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <TabLink
         href="/"

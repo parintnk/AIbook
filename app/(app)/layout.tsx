@@ -11,8 +11,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <AppNav />
-      {/* pb leaves room for the fixed mobile bottom tab bar */}
-      <main className="flex-1 pb-20 md:pb-0">{children}</main>
+      {/* pb clears the fixed bottom tab bar (h-16 + safe-area) below lg */}
+      <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+        {children}
+      </main>
       <BottomTabBar />
     </div>
   );

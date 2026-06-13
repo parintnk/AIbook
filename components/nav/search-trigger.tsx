@@ -57,6 +57,8 @@ export function SearchTrigger({
               <Search className="size-5 text-muted-foreground" aria-hidden />
               <input
                 type="search"
+                readOnly
+                aria-describedby="search-soon-hint"
                 placeholder="Search workflows, tools, people…"
                 className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
               />
@@ -81,7 +83,10 @@ export function SearchTrigger({
               ))}
             </div>
 
-            <p className="mt-5 px-1 text-xs text-muted-foreground">
+            <p
+              id="search-soon-hint"
+              className="mt-5 px-1 text-xs text-muted-foreground"
+            >
               Semantic search — matched by goal, ranked by what actually worked
               — arrives in a later release.
             </p>
