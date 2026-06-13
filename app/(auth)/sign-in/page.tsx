@@ -36,7 +36,9 @@ export default async function SignInPage({
     <main className="flex min-h-svh items-center justify-center px-6 py-12">
       <Card className="glass w-full max-w-md rounded-card">
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Welcome back</CardTitle>
+          <CardTitle className="font-heading text-2xl font-extrabold">
+            Welcome back
+          </CardTitle>
           <CardDescription>
             Sign in to create and engage with workflows.
           </CardDescription>

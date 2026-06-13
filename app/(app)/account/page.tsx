@@ -21,7 +21,7 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto flex min-h-svh max-w-2xl flex-col justify-center px-6 py-16">
       <div className="glass rounded-card p-8">
-        <h1 className="font-heading text-2xl font-semibold">Your account</h1>
+        <h1 className="font-heading text-2xl font-extrabold">Your account</h1>
         <p className="mt-2 text-muted-foreground">
           Signed in as <span className="text-foreground">{user.email}</span>.
         </p>

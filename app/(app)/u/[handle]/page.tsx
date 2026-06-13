@@ -44,7 +44,7 @@ export default async function PublicProfilePage({ params }: Params) {
         />
         <div className="flex flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight">
               {profile.display_name ?? `@${profile.handle}`}
             </h1>
             <span className="font-mono text-sm text-muted-foreground">

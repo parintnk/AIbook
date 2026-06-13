@@ -22,12 +22,12 @@ export default async function ProfileSettingsPage() {
   const professions = await listProfessions();
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
+    <div>
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Edit profile
-          </h1>
+          <h2 className="font-heading text-xl font-bold tracking-tight">
+            Profile
+          </h2>
           <p className="mt-1 text-muted-foreground">
             This is how you appear across idea.
           </p>
@@ -46,6 +46,6 @@ export default async function ProfileSettingsPage() {
           professions={professions.map((p) => ({ id: p.id, name: p.name }))}
         />
       </div>
-    </main>
+    </div>
   );
 }

@@ -6,7 +6,14 @@ import type { Database } from "./database.types";
  * Route prefixes that require an authenticated user. Browse routes stay PUBLIC
  * (RLS posture) — only account-scoped and authoring routes are gated here.
  */
-const PROTECTED_PREFIXES = ["/account", "/settings", "/workflows/new"];
+const PROTECTED_PREFIXES = [
+  "/account",
+  "/settings",
+  "/workflows/new",
+  "/forked",
+  "/boards",
+  "/me",
+];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(

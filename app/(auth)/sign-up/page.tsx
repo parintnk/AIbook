@@ -36,7 +36,7 @@ export default async function SignUpPage({
     <main className="flex min-h-svh items-center justify-center px-6 py-12">
       <Card className="glass w-full max-w-md rounded-card">
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">
+          <CardTitle className="font-heading text-2xl font-extrabold">
             Create your account
           </CardTitle>
           <CardDescription>

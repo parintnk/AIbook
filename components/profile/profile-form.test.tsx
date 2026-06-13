@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // The form imports a server action (next/headers chain) and useRouter — mock both.
-vi.mock("@/app/settings/profile/actions", () => ({
+vi.mock("@/app/(app)/settings/profile/actions", () => ({
   updateProfileAction: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
