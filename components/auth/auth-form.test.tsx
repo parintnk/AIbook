@@ -45,14 +45,41 @@ describe("AuthForm (sign-in)", () => {
   });
 });
 
+describe("AuthForm (sign-up)", () => {
+  it("requires the confirm password to match before submit", async () => {
+    render(<AuthForm mode="sign-up" />);
+    const submit = screen.getByRole("button", { name: /create account/i });
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "user@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password", { exact: true }), {
+      target: { value: "Longenough1" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
+      target: { value: "different" },
+    });
+
+    expect(
+      await screen.findByText(/passwords don't match/i),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(submit).toBeDisabled());
+
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
+      target: { value: "Longenough1" },
+    });
+    await waitFor(() => expect(submit).toBeEnabled());
+  });
+});
+
 describe("OAuthButtons", () => {
-  it("renders Google and Apple provider buttons", () => {
+  it("renders the Google provider button (Apple removed)", () => {
     render(<OAuthButtons />);
     expect(
       screen.getByRole("button", { name: /continue with google/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /continue with apple/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /continue with apple/i }),
+    ).toBeNull();
   });
 });

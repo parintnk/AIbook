@@ -26,14 +26,28 @@ describe("signInSchema", () => {
 describe("signUpSchema", () => {
   it("requires a password of at least 8 characters", () => {
     expect(
-      signUpSchema.safeParse({ email: "user@example.com", password: "short" })
-        .success,
+      signUpSchema.safeParse({
+        email: "user@example.com",
+        password: "short",
+        confirmPassword: "short",
+      }).success,
     ).toBe(false);
     expect(
       signUpSchema.safeParse({
         email: "user@example.com",
-        password: "longenough",
+        password: "Longenough1",
+        confirmPassword: "Longenough1",
       }).success,
     ).toBe(true);
+  });
+
+  it("rejects a mismatched confirm password", () => {
+    expect(
+      signUpSchema.safeParse({
+        email: "user@example.com",
+        password: "Longenough1",
+        confirmPassword: "different",
+      }).success,
+    ).toBe(false);
   });
 });

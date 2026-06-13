@@ -21,10 +21,14 @@ test("clicking Explore navigates to its stub", async ({ page }) => {
 
 test("auth pages render without the app nav", async ({ page }) => {
   await page.goto("/sign-in");
-  await expect(page.getByRole("link", { name: "idea — home" })).toHaveCount(0);
+  // A brand lockup linking home is expected pre-auth; what must be absent is the
+  // app nav — its primary links and the mobile bottom tab bar.
   await expect(
     page.getByRole("link", { name: "Explore", exact: true }),
   ).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(
+    0,
+  );
 });
 
 test("phone viewport shows the bottom tab bar and hides desktop links", async ({

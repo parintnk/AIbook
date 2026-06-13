@@ -20,7 +20,7 @@ const GENERIC_SIGNUP_ERROR = "Could not create your account. Please try again.";
 
 // OAuth providers the app actually supports — `provider` arrives from untrusted
 // FormData, so it is allow-listed before reaching Supabase.
-const SUPPORTED_OAUTH_PROVIDERS = ["google", "apple"] as const;
+const SUPPORTED_OAUTH_PROVIDERS = ["google"] as const;
 type SupportedProvider = (typeof SUPPORTED_OAUTH_PROVIDERS)[number];
 
 function isSupportedProvider(value: string): value is SupportedProvider {
@@ -45,12 +45,16 @@ async function getOrigin(): Promise<string> {
 export async function signInWithEmail(
   values: { email: string; password: string },
   next?: string,
+  captchaToken?: string,
 ): Promise<AuthFormState> {
   const parsed = signInSchema.safeParse(values);
   if (!parsed.success) return { error: GENERIC_CREDENTIALS_ERROR };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({
+    ...parsed.data,
+    options: { captchaToken },
+  });
   if (error) return { error: GENERIC_CREDENTIALS_ERROR };
 
   revalidatePath("/", "layout");
@@ -58,13 +62,14 @@ export async function signInWithEmail(
 }
 
 export async function signUpWithEmail(
-  values: { email: string; password: string },
+  values: { email: string; password: string; confirmPassword: string },
   next?: string,
+  captchaToken?: string,
 ): Promise<AuthFormState> {
   const parsed = signUpSchema.safeParse(values);
   if (!parsed.success) {
     return {
-      error: "Enter a valid email and a password of at least 8 characters.",
+      error: "Enter a valid email and a password that meets the requirements.",
     };
   }
 
@@ -76,6 +81,7 @@ export async function signUpWithEmail(
     password: parsed.data.password,
     options: {
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+      captchaToken,
     },
   });
   // Generic message — Supabase's raw error (e.g. "User already registered")
