@@ -4,6 +4,7 @@ import { Bell } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -21,8 +22,10 @@ export function NotificationsBell() {
       >
         <Bell className="size-5" aria-hidden />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+      <DropdownMenuContent align="end" sideOffset={10} className="w-72">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        </DropdownMenuGroup>
         <p className="px-2 py-6 text-center text-sm text-muted-foreground">
           No notifications yet.
         </p>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const authState = vi.fn();
@@ -35,5 +35,20 @@ describe("AvatarMenu", () => {
       screen.getByRole("button", { name: /account menu/i }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /sign in/i })).toBeNull();
+  });
+
+  it("opens the account menu without crashing (group/label structure)", async () => {
+    authState.mockReturnValue({
+      user: { email: "x@y.com", user_metadata: {} },
+      loading: false,
+    });
+    render(<AvatarMenu />);
+    fireEvent.click(screen.getByRole("button", { name: /account menu/i }));
+    // Regression guard: base-ui GroupLabel throws unless wrapped in a
+    // Group/RadioGroup, so opening the menu must render the labelled sections.
+    expect(await screen.findByText("My profile")).toBeInTheDocument();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByText("Theme")).toBeInTheDocument();
+    expect(screen.getByText("Sign out")).toBeInTheDocument();
   });
 });

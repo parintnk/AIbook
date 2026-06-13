@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -44,8 +45,8 @@ export function AvatarMenu() {
       <Link
         href="/sign-in"
         className={cn(
-          buttonVariants({ variant: "ghost", size: "sm" }),
-          "glass rounded-full",
+          buttonVariants(),
+          "h-10 rounded-full px-5 shadow-sm shadow-primary/25 hover:-translate-y-px hover:shadow-md hover:shadow-primary/30",
         )}
       >
         Sign in
@@ -83,23 +84,24 @@ export function AvatarMenu() {
           className="size-9 ring-2 ring-white/90 dark:ring-white/15"
         />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+      <DropdownMenuContent align="end" sideOffset={10} className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+          <DropdownMenuItem render={<Link href="/me" />}>
+            <User className="size-4" aria-hidden /> My profile
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/settings" />}>
+            <Settings className="size-4" aria-hidden /> Settings
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/me" />}>
-          <User className="size-4" aria-hidden /> My profile
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/settings" />}>
-          <Settings className="size-4" aria-hidden /> Settings
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Theme
-        </DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={mounted ? (theme ?? "system") : "system"}
           onValueChange={setTheme}
         >
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+            Theme
+          </DropdownMenuLabel>
           <DropdownMenuRadioItem value="system">
             <Monitor className="size-4" aria-hidden /> System
           </DropdownMenuRadioItem>
