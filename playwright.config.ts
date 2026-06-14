@@ -24,6 +24,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Cap workers so the single Next dev server isn't swamped compiling the heavy
+  // React Flow editor route on-demand under parallel load (Story 2.3).
+  workers: process.env.CI ? 1 : 2,
+  // The canvas route is heavy to compile on first hit — give specs headroom.
+  timeout: 45_000,
   reporter: "list",
   use: { baseURL, trace: "on-first-retry" },
   projects: [

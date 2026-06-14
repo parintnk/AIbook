@@ -48,9 +48,12 @@ function nodeToValues(node: WorkflowNode): WorkflowNodeValues {
 export function WorkflowSteps({
   workflowId,
   nodes,
+  hideHeader = false,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
+  /** When the editor surface already renders the "Steps" heading (Story 2.3). */
+  hideHeader?: boolean;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -75,24 +78,36 @@ export function WorkflowSteps({
   }
 
   return (
-    <section className="mt-10">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="font-heading text-lg font-bold tracking-tight">
-            Steps
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The recipe — one card per tool + prompt.
-          </p>
+    <section className={hideHeader ? "" : "mt-10"}>
+      {hideHeader ? (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            onClick={() => setEditing({ mode: "new" })}
+            className="shrink-0"
+          >
+            + Add step
+          </Button>
         </div>
-        <Button
-          type="button"
-          onClick={() => setEditing({ mode: "new" })}
-          className="shrink-0"
-        >
-          + Add step
-        </Button>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-heading text-lg font-bold tracking-tight">
+              Steps
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              The recipe — one card per tool + prompt.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => setEditing({ mode: "new" })}
+            className="shrink-0"
+          >
+            + Add step
+          </Button>
+        </div>
+      )}
 
       {nodes.length === 0 ? (
         <div className="glass mt-6 flex flex-col items-center gap-3 rounded-card py-12 text-center">

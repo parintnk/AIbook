@@ -54,7 +54,8 @@ export function NodeForm({
   workflowId: string;
   nodeId?: string;
   defaultValues?: WorkflowNodeValues;
-  onDone?: () => void;
+  /** Called on success. On create, receives the new node's id (for the canvas). */
+  onDone?: (newNodeId?: string) => void;
 }) {
   const isEdit = Boolean(nodeId);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export function NodeForm({
         return;
       }
       toast.success(isEdit ? "Step updated." : "Step added.");
-      onDone?.();
+      onDone?.(result?.nodeId);
     });
   }
 
@@ -259,7 +260,7 @@ export function NodeForm({
             type="button"
             variant="ghost"
             disabled={isPending}
-            onClick={onDone}
+            onClick={() => onDone?.()}
           >
             Cancel
           </Button>

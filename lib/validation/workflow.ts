@@ -39,8 +39,30 @@ export const workflowNodeSchema = z.object({
 
 export type WorkflowNodeValues = z.infer<typeof workflowNodeSchema>;
 
-/** State returned by the workflow draft actions (mirrors the profile form). */
+/** React Flow graph payloads (Story 2.3). The DB FKs + RPCs are the real guards;
+ * these just check shape before the action calls the service. */
+export const edgeEndpointsSchema = z.object({
+  source: z.uuid(),
+  target: z.uuid(),
+});
+
+export const nodePositionsSchema = z
+  .array(
+    z.object({
+      id: z.uuid(),
+      // .finite() rejects NaN/±Infinity so a malformed payload can't poison pos.
+      pos_x: z.number().finite(),
+      pos_y: z.number().finite(),
+    }),
+  )
+  .max(1000);
+
+export const nodeIdsSchema = z.array(z.uuid()).max(1000);
+
+/** State returned by the workflow draft actions (mirrors the profile form).
+ * `nodeId` is set by createNodeAction so the canvas can chain/splice the new node. */
 export type WorkflowFormState = {
   error?: string;
   success?: boolean;
+  nodeId?: string;
 };

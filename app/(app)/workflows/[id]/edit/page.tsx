@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
+import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-surface";
 import { WorkflowForm } from "@/components/workflows/workflow-form";
-import { WorkflowSteps } from "@/components/workflows/workflow-steps";
 import { listProfessions } from "@/lib/services/professions";
+import { listEdges } from "@/lib/services/workflow-edges";
 import { listDraftNodes } from "@/lib/services/workflow-nodes";
 import { getMyDraft } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
@@ -25,9 +26,10 @@ export default async function EditWorkflowPage({
   const draft = await getMyDraft(id);
   if (!draft) notFound();
 
-  const [professions, nodes] = await Promise.all([
+  const [professions, nodes, edges] = await Promise.all([
     listProfessions(),
     listDraftNodes(id),
+    listEdges(id),
   ]);
 
   return (
@@ -49,7 +51,11 @@ export default async function EditWorkflowPage({
           }}
         />
       </div>
-      <WorkflowSteps workflowId={draft.id} nodes={nodes} />
+      <WorkflowEditorSurface
+        workflowId={draft.id}
+        nodes={nodes}
+        edges={edges}
+      />
     </div>
   );
 }

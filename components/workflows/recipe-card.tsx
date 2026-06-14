@@ -143,7 +143,8 @@ export function RecipeCard({
       </button>
 
       {detailsOpen ? (
-        <div className="flex flex-col gap-3 px-4 pb-4">
+        // `nodrag` so links/text inside don't start a React Flow node drag (Story 2.3).
+        <div className="nodrag flex flex-col gap-3 px-4 pb-4">
           <Detail label="Prompt">
             <p className="whitespace-pre-wrap rounded-lg border border-accent-foreground/25 bg-accent/40 p-2.5 font-mono text-[12px] leading-relaxed">
               {node.prompt}
@@ -193,7 +194,8 @@ export function RecipeCard({
       ) : null}
 
       {isEditor && selected ? (
-        <div className="flex items-center gap-2 border-t border-border/60 px-4 py-2.5">
+        // `nodrag` so the action buttons click instead of dragging the node (2.3).
+        <div className="nodrag flex items-center gap-2 border-t border-border/60 px-4 py-2.5">
           <Button type="button" size="sm" onClick={onEdit}>
             Edit
           </Button>

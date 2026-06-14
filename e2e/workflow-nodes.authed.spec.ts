@@ -27,6 +27,10 @@ test("add, edit, and delete a recipe-card node", async ({ page }) => {
     .click();
   await expect(page).toHaveURL(/\/workflows\/.+\/edit/);
 
+  // Story 2.3 made the canvas the desktop default — this spec exercises the
+  // linear step-list, so switch to it explicitly.
+  await page.getByRole("button", { name: "List" }).click();
+
   // Add a step (the form opens in a Sheet).
   await page.getByRole("button", { name: "+ Add step" }).first().click();
   await page.getByLabel("Step title").fill(stepTitle);

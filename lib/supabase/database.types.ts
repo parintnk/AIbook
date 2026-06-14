@@ -191,6 +191,52 @@ export type Database = {
           },
         ];
       };
+      workflow_edges: {
+        Row: {
+          created_at: string;
+          id: string;
+          source_node_id: string;
+          target_node_id: string;
+          workflow_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          source_node_id: string;
+          target_node_id: string;
+          workflow_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          source_node_id?: string;
+          target_node_id?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workflow_edges_source_node_id_fkey";
+            columns: ["source_node_id"];
+            isOneToOne: false;
+            referencedRelation: "workflow_nodes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workflow_edges_target_node_id_fkey";
+            columns: ["target_node_id"];
+            isOneToOne: false;
+            referencedRelation: "workflow_nodes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workflow_edges_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workflow_nodes: {
         Row: {
           created_at: string;
@@ -337,12 +383,38 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      append_workflow_node: {
+        Args: {
+          p_est_cost: string;
+          p_est_time: string;
+          p_note_lang: string;
+          p_notes: string;
+          p_pos_x?: number;
+          p_pos_y?: number;
+          p_prompt: string;
+          p_purpose: string;
+          p_step_title: string;
+          p_tool_name: string;
+          p_tool_url: string;
+          p_tool_version: string;
+          p_workflow_id: string;
+        };
+        Returns: string;
+      };
       generate_unique_handle: { Args: { seed: string }; Returns: string };
       is_profession_moderator: {
         Args: { prof_id: string; uid: string };
         Returns: boolean;
       };
+      reorder_workflow_nodes: {
+        Args: { p_node_ids: string[]; p_workflow_id: string };
+        Returns: undefined;
+      };
       replace_ai_stack: { Args: { items: Json }; Returns: undefined };
+      update_node_positions: {
+        Args: { p_positions: Json; p_workflow_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       profession_role: "member" | "verified_pro" | "moderator";
