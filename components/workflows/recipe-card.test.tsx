@@ -24,19 +24,21 @@ const node: WorkflowNode = {
 };
 
 describe("RecipeCard", () => {
-  it("renders the step number and tool chip, collapsed by default", () => {
+  it("renders the step number, tool chip, and a prompt preview, collapsed by default", () => {
     render(<RecipeCard node={node} mode="viewer" />);
     expect(screen.getByText("1")).toBeInTheDocument(); // idx 0 → step 1
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
     expect(screen.getByText(/Define brand direction/)).toBeInTheDocument();
-    expect(screen.queryByText(node.prompt)).not.toBeInTheDocument();
+    expect(screen.getByText(node.prompt)).toBeInTheDocument(); // collapsed preview
+    // Details (purpose, etc.) stay hidden until expanded.
+    expect(screen.queryByText(node.purpose)).not.toBeInTheDocument();
   });
 
-  it("expands to reveal the prompt on click (viewer)", () => {
+  it("expands to reveal the full details on click (viewer)", () => {
     render(<RecipeCard node={node} mode="viewer" />);
     fireEvent.click(screen.getByRole("button"));
-    expect(screen.getByText(node.prompt)).toBeInTheDocument();
     expect(screen.getByText(node.purpose)).toBeInTheDocument();
+    expect(screen.getByText(node.prompt)).toBeInTheDocument();
   });
 
   it("selects on click in editor mode", () => {

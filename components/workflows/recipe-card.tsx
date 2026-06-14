@@ -133,25 +133,13 @@ export function RecipeCard({
           {node.tool_name}
         </span>
 
-        {/* Output thumbnail slot — empty stub; Story 2.4 fills it. */}
-        <span className="mt-2.5 flex h-14 items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/70 bg-foreground/[0.02] text-[11px] text-muted-foreground/70">
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-            <circle cx="9" cy="9" r="2" />
-            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-          </svg>
-          Sample output
-        </span>
+        {/* Collapsed content: a prompt preview — the card's substance until
+            Story 2.4 adds the sample-output thumbnail. Hidden once details open. */}
+        {!detailsOpen ? (
+          <span className="mt-2.5 line-clamp-2 rounded-lg border border-border/60 bg-foreground/[0.02] px-2.5 py-2 font-mono text-[11.5px] leading-relaxed text-muted-foreground">
+            {node.prompt}
+          </span>
+        ) : null}
       </button>
 
       {detailsOpen ? (
