@@ -191,6 +191,74 @@ export type Database = {
           },
         ];
       };
+      workflow_nodes: {
+        Row: {
+          created_at: string;
+          est_cost: string | null;
+          est_time: string | null;
+          id: string;
+          idx: number;
+          note_lang: string | null;
+          notes: string | null;
+          pos_x: number;
+          pos_y: number;
+          prompt: string;
+          purpose: string;
+          step_title: string | null;
+          tool_name: string;
+          tool_url: string | null;
+          tool_version: string | null;
+          updated_at: string;
+          workflow_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          est_cost?: string | null;
+          est_time?: string | null;
+          id?: string;
+          idx: number;
+          note_lang?: string | null;
+          notes?: string | null;
+          pos_x?: number;
+          pos_y?: number;
+          prompt: string;
+          purpose: string;
+          step_title?: string | null;
+          tool_name: string;
+          tool_url?: string | null;
+          tool_version?: string | null;
+          updated_at?: string;
+          workflow_id: string;
+        };
+        Update: {
+          created_at?: string;
+          est_cost?: string | null;
+          est_time?: string | null;
+          id?: string;
+          idx?: number;
+          note_lang?: string | null;
+          notes?: string | null;
+          pos_x?: number;
+          pos_y?: number;
+          prompt?: string;
+          purpose?: string;
+          step_title?: string | null;
+          tool_name?: string;
+          tool_url?: string | null;
+          tool_version?: string | null;
+          updated_at?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workflow_nodes_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workflows: {
         Row: {
           author_id: string;

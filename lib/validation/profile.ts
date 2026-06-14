@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { urlOrEmpty } from "./url";
 
 /** Handle: 3–30 chars, lowercase letters / digits / underscore. */
 export const HANDLE_RE = /^[a-z0-9_]{3,30}$/;
@@ -9,20 +10,6 @@ export const handleSchema = z
     HANDLE_RE,
     "3–30 characters: lowercase letters, numbers, and underscores only",
   );
-
-// Empty string (field left blank) or a valid http(s) URL — converted to null in
-// the action before it reaches the DB (those columns are nullable). The scheme
-// is restricted so `javascript:`/`data:` URLs can't be stored and rendered into
-// a public <a href>/<img src> (stored-XSS guard).
-const urlOrEmpty = z.union([
-  z.literal(""),
-  z
-    .url("Enter a valid URL")
-    .refine(
-      (u) => /^https?:\/\//i.test(u),
-      "URL must start with http:// or https://",
-    ),
-]);
 
 export const aiStackItemSchema = z.object({
   tool_name: z.string().trim().min(1, "Required").max(40, "Max 40 characters"),
