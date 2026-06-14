@@ -1,6 +1,14 @@
 "use client";
 
-import { LogOut, Monitor, Moon, Settings, Sun, User } from "lucide-react";
+import {
+  LogOut,
+  Monitor,
+  Moon,
+  Settings,
+  Sun,
+  User,
+  Workflow,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -89,6 +97,9 @@ export function AvatarMenu() {
           <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
           <DropdownMenuItem render={<Link href="/me" />}>
             <User className="size-4" aria-hidden /> My profile
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/workflows" />}>
+            <Workflow className="size-4" aria-hidden /> My workflows
           </DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/settings" />}>
             <Settings className="size-4" aria-hidden /> Settings

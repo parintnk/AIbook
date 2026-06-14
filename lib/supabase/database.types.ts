@@ -191,6 +191,79 @@ export type Database = {
           },
         ];
       };
+      workflows: {
+        Row: {
+          author_id: string;
+          created_at: string;
+          fork_count: number;
+          id: string;
+          last_verified_at: string | null;
+          parent_id: string | null;
+          profession_id: string;
+          published_at: string | null;
+          status: Database["public"]["Enums"]["workflow_status"];
+          summary: string | null;
+          title: string;
+          tried_count: number;
+          updated_at: string;
+          worked_score: number;
+        };
+        Insert: {
+          author_id: string;
+          created_at?: string;
+          fork_count?: number;
+          id?: string;
+          last_verified_at?: string | null;
+          parent_id?: string | null;
+          profession_id: string;
+          published_at?: string | null;
+          status?: Database["public"]["Enums"]["workflow_status"];
+          summary?: string | null;
+          title: string;
+          tried_count?: number;
+          updated_at?: string;
+          worked_score?: number;
+        };
+        Update: {
+          author_id?: string;
+          created_at?: string;
+          fork_count?: number;
+          id?: string;
+          last_verified_at?: string | null;
+          parent_id?: string | null;
+          profession_id?: string;
+          published_at?: string | null;
+          status?: Database["public"]["Enums"]["workflow_status"];
+          summary?: string | null;
+          title?: string;
+          tried_count?: number;
+          updated_at?: string;
+          worked_score?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workflows_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workflows_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workflows_profession_id_fkey";
+            columns: ["profession_id"];
+            isOneToOne: false;
+            referencedRelation: "professions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -205,6 +278,7 @@ export type Database = {
     };
     Enums: {
       profession_role: "member" | "verified_pro" | "moderator";
+      workflow_status: "draft" | "published";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -336,6 +410,7 @@ export const Constants = {
   public: {
     Enums: {
       profession_role: ["member", "verified_pro", "moderator"],
+      workflow_status: ["draft", "published"],
     },
   },
 } as const;
