@@ -5,10 +5,10 @@ test("unknown handle returns 404", async ({ page }) => {
   expect(res?.status()).toBe(404);
 });
 
+// `parintnk` is seeded by supabase/seed.sql for the local e2e stack.
 test("an existing public profile renders read-only (anonymous)", async ({
   page,
 }) => {
-  // `parintnk` was backfilled from the seeded auth user (migration 1.4).
   await page.goto("/u/parintnk");
   await expect(page.getByText("@parintnk")).toBeVisible();
   await expect(

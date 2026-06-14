@@ -2,7 +2,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Allow an isolated build dir via env (e2e runs its own dev server in
+  // parallel on a separate port so it can't clash with a local `pnpm dev`).
+  distDir: process.env.NEXT_DIST_DIR || ".next",
 };
 
 export default withSentryConfig(nextConfig, {

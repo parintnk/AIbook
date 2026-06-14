@@ -3,3 +3,26 @@
 # applies the files in supabase/migrations/. Migrations are applied via CLI/CI (or the
 # Supabase MCP) — never at app runtime.
 project_id = "drfvxecwgwvissuweaah"
+
+# Local-only: analytics (logflare) + studio aren't needed for e2e and pulling
+# their images trips Docker registry rate limits. Disable them so `supabase
+# start` brings up only the core stack (db, auth, rest, storage, realtime).
+[analytics]
+enabled = false
+
+[studio]
+enabled = false
+
+# Minimal stack for auth/data e2e (avoids pulling more images past the registry
+# rate limit). Re-enable storage (+ realtime) when Epic 2 upload tests need them.
+[inbucket]
+enabled = false
+
+[storage]
+enabled = false
+
+[realtime]
+enabled = false
+
+[edge_runtime]
+enabled = false
