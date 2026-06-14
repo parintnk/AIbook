@@ -20,6 +20,10 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
 });
 
+// Backstop before we stop waiting on the initial session and assume signed-out
+// (covers an unreachable Supabase, where the request hangs without settling).
+const SESSION_RESOLVE_TIMEOUT_MS = 5000;
+
 /**
  * Exposes the current auth user to client components and keeps it in sync via
  * `onAuthStateChange`, so the UI reacts to sign-in/out without a full reload.
@@ -42,22 +46,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
     let active = true;
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      setUser(data.user);
-      setLoading(false);
-    });
+    // Safety net: if the session can't be resolved — e.g. Supabase is
+    // unreachable from this device/origin, so `getUser()` neither resolves nor
+    // rejects — don't leave the UI stuck on the loading placeholder forever.
+    // Fall back to signed-out so the Sign in button still renders.
+    const fallback = setTimeout(() => {
+      if (active) setLoading(false);
+    }, SESSION_RESOLVE_TIMEOUT_MS);
+
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (active) setUser(data.user);
+      })
+      .catch(() => {
+        // Unreachable auth server → treat as signed-out (handled below).
+      })
+      .finally(() => {
+        if (!active) return;
+        clearTimeout(fallback);
+        setLoading(false);
+      });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
+      clearTimeout(fallback);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => {
       active = false;
+      clearTimeout(fallback);
       subscription.unsubscribe();
     };
   }, []);

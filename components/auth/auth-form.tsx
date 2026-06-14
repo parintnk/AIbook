@@ -4,12 +4,14 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { type Resolver, useForm } from "react-hook-form";
-import { signInWithEmail, signUpWithEmail } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { sanitizeNext } from "@/lib/auth/redirect";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   type SignUpValues,
@@ -23,6 +25,12 @@ const LEAD_ICON =
   "pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground";
 const REVEAL_BTN =
   "absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50";
+
+// Generic, non-distinguishing auth errors (anti-enumeration): never reveal
+// whether the email exists, is unconfirmed, or the password was simply wrong.
+const GENERIC_CREDENTIALS_ERROR =
+  "Incorrect email or password. Please try again.";
+const GENERIC_SIGNUP_ERROR = "Could not create your account. Please try again.";
 
 /** 0–4 strength score + label from length + character variety. */
 function passwordStrength(pw: string): { score: number; label: string } {
@@ -64,6 +72,7 @@ export function AuthForm({
   const captchaSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
+  const router = useRouter();
 
   const {
     register,
@@ -81,17 +90,56 @@ export function AuthForm({
   function onSubmit(values: SignUpValues) {
     setServerError(null);
     startTransition(async () => {
-      const token = captchaToken ?? undefined;
-      const result = isSignUp
-        ? await signUpWithEmail(values, next, token)
-        : await signInWithEmail(values, next, token);
-      if (result?.error) {
-        setServerError(result.error);
+      // Auth runs on the BROWSER client (not a server action) so the shared
+      // singleton client fires `onAuthStateChange` and the nav updates
+      // instantly — no manual refresh. It also keeps the password off the Next
+      // server (and out of its request logs): it goes straight to Supabase.
+      const supabase = createClient();
+      const captchaToken_ = captchaToken ?? undefined;
+      const safeNext = sanitizeNext(next);
+
+      const fail = (message: string) => {
+        setServerError(message);
         // The captcha token is single-use — reset the widget for a retry.
         turnstileRef.current?.reset();
         setCaptchaToken(null);
+      };
+
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+            captchaToken: captchaToken_,
+          },
+        });
+        if (error) {
+          fail(GENERIC_SIGNUP_ERROR);
+          return;
+        }
+        // Email-confirmation ON → no session yet; prompt to check the inbox.
+        // (An already-registered email also yields no session + no error, so
+        // the confirmation copy links back to sign-in.)
+        if (!data.session) {
+          setEmailSent(true);
+          return;
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+          options: { captchaToken: captchaToken_ },
+        });
+        if (error) {
+          fail(GENERIC_CREDENTIALS_ERROR);
+          return;
+        }
       }
-      if (result?.needsEmailConfirmation) setEmailSent(true);
+
+      // Session established → sync server components, then navigate.
+      router.refresh();
+      router.push(safeNext);
     });
   }
 

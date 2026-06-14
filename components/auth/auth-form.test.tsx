@@ -1,11 +1,23 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-// The auth components import server actions (next/headers, supabase/server).
-// Mock the module so the client components render in jsdom.
+// next/navigation and the browser Supabase client aren't available in jsdom —
+// mock them so the form renders and its submit handler can run.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+      signUp: vi
+        .fn()
+        .mockResolvedValue({ data: { session: null }, error: null }),
+    },
+  }),
+}));
+// OAuthButtons still calls a server action; mock the module so it renders.
 vi.mock("@/app/(auth)/actions", () => ({
-  signInWithEmail: vi.fn(),
-  signUpWithEmail: vi.fn(),
   oauthSignInAction: vi.fn(),
 }));
 
