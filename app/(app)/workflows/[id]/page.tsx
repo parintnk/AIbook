@@ -90,7 +90,6 @@ export default async function WorkflowDetailPage({ params }: Params) {
       </header>
 
       <WorkflowViewerSurface
-        workflowId={wf.id}
         nodes={nodes}
         edges={edges}
         outputsByNodeId={outputs}

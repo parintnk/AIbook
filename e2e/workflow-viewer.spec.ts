@@ -1,11 +1,18 @@
 import { expect, test } from "@playwright/test";
 
-// Public workflow viewer (Story 3.1 / FR6) — SIGNED-OUT (the `chromium` project, no
-// storageState). Drives the seeded published workflow fixture (seed.sql):
+// Public workflow viewer (Story 3.1 + 3.2 / FR6) — SIGNED-OUT (the `chromium`
+// project, no storageState). Drives the seeded published workflow fixture (seed.sql):
 // id …00aa, owned by parintnk, 2 covered nodes (ChatGPT → Midjourney), 1 edge.
 const PUBLISHED_ID = "00000000-0000-0000-0000-0000000000aa";
 
-test("an anonymous visitor reads a published workflow on the canvas", async ({
+// React-Flow-only marker (the canvas renders Controls); the connector text is
+// list-only. Used to prove which view is active without colliding with the app-shell
+// nav lists. Tool names use { exact: true } because the list's sr-only step summary
+// ("Step 1 of 2: ChatGPT, …") also contains the tool name (Playwright getByText is a
+// substring match by default).
+const CANVAS_MARKER = ".react-flow__controls";
+
+test("desktop defaults to the canvas; a node expands; toggling to List shows the ordered steps", async ({
   page,
 }) => {
   await page.goto(`/workflows/${PUBLISHED_ID}`);
@@ -15,18 +22,45 @@ test("an anonymous visitor reads a published workflow on the canvas", async ({
     page.getByRole("heading", { name: "Coffee shop brand kit" }),
   ).toBeVisible();
 
-  // The read-only canvas hydrates (dynamic ssr:false) and renders both recipe-card
-  // nodes. Generous timeout for the lazy React Flow chunk.
-  await expect(page.getByText("ChatGPT")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("Midjourney")).toBeVisible();
+  // ≥md (Playwright default 1280×720) promotes to the canvas after mount; the lazy
+  // React Flow chunk renders both recipe-card nodes.
+  await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("ChatGPT", { exact: true })).toBeVisible();
+  await expect(page.getByText("Midjourney", { exact: true })).toBeVisible();
 
-  // Click the first node → its full card expands (AC2): the purpose AND the
-  // creator's real sample output (the seeded text) both appear.
-  await page.getByText("ChatGPT").click();
+  // Click the first node → its full card expands (AC2): purpose + the creator's real
+  // sample output (the seeded text).
+  await page.getByText("ChatGPT", { exact: true }).click();
   await expect(page.getByText("Set the visual direction first")).toBeVisible();
   await expect(
     page.getByText("Brand direction: warm, artisanal, minimalist."),
   ).toBeVisible();
+
+  // Toggle to the list (the a11y primary view): the ordered step-list renders with
+  // the source→target connector, and the canvas is gone.
+  await page.getByRole("button", { name: "View as list" }).click();
+  await expect(page.getByText(/leads to step 2/i)).toBeVisible();
+  await expect(page.getByText("ChatGPT", { exact: true })).toBeVisible();
+  await expect(page.getByText("Midjourney", { exact: true })).toBeVisible();
+  await expect(page.locator(CANVAS_MARKER)).toHaveCount(0);
+});
+
+test("a phone defaults to the linear step-list, with a 'View as canvas' toggle (UX-DR25 / AC2)", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/workflows/${PUBLISHED_ID}`);
+
+  // List is the default on phones — no canvas finger-trap. The step-list renders both
+  // steps and the edge connector (AC1); the canvas is NOT auto-shown.
+  await expect(page.getByText(/leads to step 2/i)).toBeVisible();
+  await expect(page.getByText("ChatGPT", { exact: true })).toBeVisible();
+  await expect(page.getByText("Midjourney", { exact: true })).toBeVisible();
+  await expect(page.locator(CANVAS_MARKER)).toHaveCount(0);
+
+  // The "View as canvas" toggle is present; switching opts into the spatial view.
+  await page.getByRole("button", { name: "View as canvas" }).click();
+  await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });
 });
 
 test("a nonexistent / draft workflow shows the graceful not-found state (AC3)", async ({
