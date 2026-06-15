@@ -4,6 +4,7 @@ const singleMock = vi.fn();
 const maybeSingleMock = vi.fn();
 const orderMock = vi.fn();
 const getUserMock = vi.fn();
+const rpcMock = vi.fn();
 
 // One self-chaining builder covering every query the service uses; the chain
 // terminals (.single / .maybeSingle / .order) are the controllable mocks.
@@ -21,7 +22,7 @@ vi.mock("@/lib/supabase/server", () => ({
       single: singleMock,
       maybeSingle: maybeSingleMock,
     };
-    return { from: () => b, auth: { getUser: getUserMock } };
+    return { from: () => b, rpc: rpcMock, auth: { getUser: getUserMock } };
   }),
 }));
 
@@ -30,6 +31,7 @@ import {
   deleteDraft,
   getMyDraft,
   listMyDrafts,
+  publishWorkflow,
   updateDraft,
 } from "./workflows";
 
@@ -116,5 +118,72 @@ describe("getMyDraft", () => {
   it("returns null when unauthenticated", async () => {
     getUserMock.mockResolvedValueOnce(NO_USER);
     expect(await getMyDraft("w1")).toBeNull();
+  });
+});
+
+describe("publishWorkflow", () => {
+  it("requires authentication (no RPC call)", async () => {
+    getUserMock.mockResolvedValueOnce(NO_USER);
+    expect(await publishWorkflow("w1")).toEqual({
+      ok: false,
+      error: "not_authenticated",
+    });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("publishes when every node is covered", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({
+      data: { ok: true, reason: null, missing: [] },
+      error: null,
+    });
+    expect(await publishWorkflow("w1")).toEqual({ ok: true, id: "w1" });
+  });
+
+  it("maps reason:missing_outputs to the typed error + node list", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({
+      data: {
+        ok: false,
+        reason: "missing_outputs",
+        missing: [{ id: "n2", idx: 1 }],
+      },
+      error: null,
+    });
+    expect(await publishWorkflow("w1")).toEqual({
+      ok: false,
+      error: "missing_outputs",
+      missing: [{ id: "n2", idx: 1 }],
+    });
+  });
+
+  it("maps reason:no_nodes to the no_nodes error", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({
+      data: { ok: false, reason: "no_nodes", missing: [] },
+      error: null,
+    });
+    expect(await publishWorkflow("w1")).toEqual({
+      ok: false,
+      error: "no_nodes",
+    });
+  });
+
+  it("maps the RPC's 42501 (not owner / not draft) to not_found", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: "42501" } });
+    expect(await publishWorkflow("w1")).toEqual({
+      ok: false,
+      error: "not_found",
+    });
+  });
+
+  it("maps any other RPC error to db_error", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: "XX000" } });
+    expect(await publishWorkflow("w1")).toEqual({
+      ok: false,
+      error: "db_error",
+    });
   });
 });

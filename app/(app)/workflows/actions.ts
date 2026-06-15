@@ -21,6 +21,7 @@ import {
 import {
   createDraft,
   deleteDraft,
+  publishWorkflow,
   updateDraft,
 } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
@@ -120,6 +121,32 @@ export async function deleteDraftAction(
   if (!result.ok) return { error: message(result.error) };
   revalidatePath("/workflows");
   return { success: true };
+}
+
+// ── Publish gate (Story 2.5, FR9/FR10 MOAT) ─────────────────────────────────
+// The draft → published transition. On success it redirects to /workflows (the
+// published workflow leaves the drafts list; Epic 3's public viewer doesn't
+// exist yet). The gate rejections (no_nodes/missing_outputs) carry bespoke copy
+// — kept OUT of message() — and missing_outputs returns the node ids so a stale
+// client can re-paint amber.
+
+export async function publishWorkflowAction(
+  workflowId: string,
+): Promise<WorkflowFormState> {
+  const result = await publishWorkflow(workflowId);
+  if (result.ok) {
+    revalidatePath("/workflows");
+    revalidatePath(`/workflows/${workflowId}/edit`);
+    redirect("/workflows");
+  }
+  if (result.error === "no_nodes")
+    return { error: "Add at least one step before publishing." };
+  if (result.error === "missing_outputs")
+    return {
+      error: "Every step needs a sample output before you can publish.",
+      missingNodeIds: (result.missing ?? []).map((m) => m.id),
+    };
+  return { error: message(result.error) };
 }
 
 // ── Recipe-card nodes (Story 2.2) ───────────────────────────────────────────

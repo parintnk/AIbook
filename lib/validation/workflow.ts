@@ -65,4 +65,7 @@ export type WorkflowFormState = {
   error?: string;
   success?: boolean;
   nodeId?: string;
+  // Publish gate (Story 2.5): the nodes still lacking a sample output, so a
+  // stale-client rejection can re-paint the amber blocked treatment.
+  missingNodeIds?: string[];
 };

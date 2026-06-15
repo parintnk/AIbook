@@ -80,6 +80,30 @@ describe("RecipeCard", () => {
     expect(screen.getByText("javascript:alert(1)")).toBeInTheDocument();
   });
 
+  it("shows the publish-blocked affordance and routes its click to onEdit (editor)", () => {
+    const onEdit = vi.fn();
+    render(<RecipeCard node={node} mode="editor" blocked onEdit={onEdit} />);
+    const cta = screen.getByText("Add a sample output to publish");
+    expect(cta).toBeInTheDocument();
+    fireEvent.click(cta);
+    expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT show the authoring affordance in viewer mode even when blocked", () => {
+    render(<RecipeCard node={node} mode="viewer" blocked />);
+    expect(
+      screen.queryByText("Add a sample output to publish"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows neutral 'No sample output yet' when not blocked and outputless", () => {
+    render(<RecipeCard node={node} mode="editor" />);
+    expect(screen.getByText("No sample output yet")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Add a sample output to publish"),
+    ).not.toBeInTheDocument();
+  });
+
   it("reveals and wires Edit / Delete when selected (editor)", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();

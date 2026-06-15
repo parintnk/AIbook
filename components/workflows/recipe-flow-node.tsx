@@ -54,9 +54,11 @@ export function NodeActionsProvider({
 }
 
 // Override React Flow's default handle styling to match the mockup: 12px accent
-// ring on a surface fill.
+// ring on a surface fill. Blocked nodes (missing sample output) get an amber ring
+// to match the `.node.draft` treatment.
 const HANDLE_CLASS =
   "!size-3 !border-2 !border-accent-foreground !bg-background";
+const HANDLE_CLASS_BLOCKED = "!size-3 !border-2 !border-warning !bg-background";
 
 /**
  * The React Flow custom node (Story 2.3 / AC2) — wraps the shared RecipeCard
@@ -68,17 +70,20 @@ export function RecipeFlowNode({ data, selected }: NodeProps<CanvasNode>) {
   const actions = useContext(NodeActionsContext);
   const outputs = useContext(OutputsContext);
   const { node } = data;
+  const blocked = !outputs[node.id];
+  const handleClass = blocked ? HANDLE_CLASS_BLOCKED : HANDLE_CLASS;
   return (
     <div className="w-[280px]">
       <Handle
         type="target"
         position={Position.Left}
-        className={HANDLE_CLASS}
+        className={handleClass}
         aria-label="Step input"
       />
       <RecipeCard
         node={node}
         output={outputs[node.id] ?? null}
+        blocked={blocked}
         mode="editor"
         selected={selected}
         onEdit={() => actions?.onEdit(node.id)}
@@ -87,7 +92,7 @@ export function RecipeFlowNode({ data, selected }: NodeProps<CanvasNode>) {
       <Handle
         type="source"
         position={Position.Right}
-        className={HANDLE_CLASS}
+        className={handleClass}
         aria-label="Step output"
       />
     </div>

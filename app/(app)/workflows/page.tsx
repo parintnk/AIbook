@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteDraftButton } from "@/components/workflows/delete-draft-button";
+import { FlashToast } from "@/components/workflows/flash-toast";
 import { listMyDrafts } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ export default async function WorkflowsPage() {
 
   return (
     <div>
+      <FlashToast />
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-xl font-bold tracking-tight">

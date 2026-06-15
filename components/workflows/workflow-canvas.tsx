@@ -78,6 +78,10 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
 // ── Connector edge with an inline "+" splice button (AC1) ────────────────────
 const SpliceContext = createContext<((edge: Edge) => void) | null>(null);
 
+// The set of blocked (missing sample output) node ids (Story 2.5). A connector
+// leading INTO a blocked step is drawn amber + dashed to match the mockup.
+const BlockedNodesContext = createContext<Set<string>>(new Set());
+
 function ConnectorEdge({
   id,
   source,
@@ -91,6 +95,8 @@ function ConnectorEdge({
   markerEnd,
 }: EdgeProps) {
   const onSplice = useContext(SpliceContext);
+  const blockedNodes = useContext(BlockedNodesContext);
+  const targetBlocked = blockedNodes.has(target);
   const [path, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -101,7 +107,16 @@ function ConnectorEdge({
   });
   return (
     <>
-      <BaseEdge id={id} path={path} markerEnd={markerEnd} />
+      <BaseEdge
+        id={id}
+        path={path}
+        markerEnd={markerEnd}
+        style={
+          targetBlocked
+            ? { stroke: "var(--warning)", strokeDasharray: "6 5" }
+            : undefined
+        }
+      />
       <EdgeLabelRenderer>
         <button
           type="button"
@@ -294,6 +309,13 @@ function CanvasInner({
     [workflowId, router],
   );
 
+  // The blocked node ids (missing a sample output), for the amber edge treatment.
+  const blockedNodes = useMemo(
+    () =>
+      new Set(propNodes.filter((n) => !outputsByNodeId[n.id]).map((n) => n.id)),
+    [propNodes, outputsByNodeId],
+  );
+
   // The id of the current chain tail (highest idx) — new "Add step" nodes chain off it.
   const tailNodeId = useMemo(() => {
     if (propNodes.length === 0) return null;
@@ -370,34 +392,36 @@ function CanvasInner({
       <SpliceContext.Provider
         value={(edge) => setEditing({ mode: "splice", edge })}
       >
-        <OutputsProvider outputsByNodeId={outputsByNodeId}>
-          <NodeActionsProvider actions={nodeActions}>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onNodeDragStop={onNodeDragStop}
-              onBeforeDelete={onBeforeDelete}
-              onNodesDelete={onNodesDelete}
-              onEdgesDelete={onEdgesDelete}
-              zoomOnDoubleClick={false}
-              fitView
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background
-                variant={BackgroundVariant.Dots}
-                gap={24}
-                size={1.1}
-              />
-              <Controls />
-              <MiniMap pannable zoomable />
-            </ReactFlow>
-          </NodeActionsProvider>
-        </OutputsProvider>
+        <BlockedNodesContext.Provider value={blockedNodes}>
+          <OutputsProvider outputsByNodeId={outputsByNodeId}>
+            <NodeActionsProvider actions={nodeActions}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeDragStop={onNodeDragStop}
+                onBeforeDelete={onBeforeDelete}
+                onNodesDelete={onNodesDelete}
+                onEdgesDelete={onEdgesDelete}
+                zoomOnDoubleClick={false}
+                fitView
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background
+                  variant={BackgroundVariant.Dots}
+                  gap={24}
+                  size={1.1}
+                />
+                <Controls />
+                <MiniMap pannable zoomable />
+              </ReactFlow>
+            </NodeActionsProvider>
+          </OutputsProvider>
+        </BlockedNodesContext.Provider>
       </SpliceContext.Provider>
 
       <Sheet

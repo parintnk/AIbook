@@ -33,6 +33,28 @@ export type WorkflowResult =
         | "db_error";
     };
 
+/** A node that still lacks a sample output, blocking publish (FR10). */
+export type PublishMissingNode = { id: string; idx: number };
+
+/**
+ * Publish carries a `missing` node list on the gate failure, which the generic
+ * `WorkflowResult` can't. `not_found` covers both "not your draft" and "already
+ * published" (the RPC's single 42501 path); `missing_outputs`/`no_nodes` are the
+ * FR10/FR9 gate rejections.
+ */
+export type PublishResult =
+  | { ok: true; id: string }
+  | {
+      ok: false;
+      error:
+        | "not_authenticated"
+        | "not_found"
+        | "missing_outputs"
+        | "no_nodes"
+        | "db_error";
+      missing?: PublishMissingNode[];
+    };
+
 const DRAFT_SELECT =
   "*, profession:professions!workflows_profession_id_fkey(slug, name)";
 
@@ -131,6 +153,49 @@ export async function updateDraft(
   }
   if (!data) return { ok: false, error: "not_found" };
   return { ok: true, id: data.id };
+}
+
+/**
+ * Publish a draft (FR9/FR10 MOAT gate). Delegates to the `publish_workflow`
+ * SECURITY DEFINER RPC — the ONLY path that may flip status→'published', since
+ * the 2.1 column lock keeps status/published_at revoked from `authenticated` for
+ * direct writes. The RPC re-asserts owner+draft itself and returns a jsonb
+ * `{ ok, reason, missing }`; we map it to the typed PublishResult.
+ */
+export async function publishWorkflow(
+  workflowId: string,
+): Promise<PublishResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { data, error } = await supabase.rpc("publish_workflow", {
+    p_workflow_id: workflowId,
+  });
+  if (error) {
+    // 42501 = the RPC's owner/draft re-assertion failed (not your draft, or
+    // already published). Map to not_found, the codebase convention.
+    if (error.code === "42501") return { ok: false, error: "not_found" };
+    return { ok: false, error: "db_error" };
+  }
+
+  // The RPC always returns a non-null jsonb object; guard the null case anyway so a
+  // malformed/empty response degrades to db_error instead of a TypeError.
+  if (!data) return { ok: false, error: "db_error" };
+  // The RPC is the sole producer of this shape; a cast (not a parse) matches the
+  // 2.3 Args cast convention in workflow-nodes.ts.
+  const result = data as {
+    ok: boolean;
+    reason: "no_nodes" | "missing_outputs" | null;
+    missing: PublishMissingNode[];
+  };
+  if (result.ok) return { ok: true, id: workflowId };
+  if (result.reason === "no_nodes") return { ok: false, error: "no_nodes" };
+  if (result.reason === "missing_outputs")
+    return { ok: false, error: "missing_outputs", missing: result.missing };
+  return { ok: false, error: "db_error" };
 }
 
 /** Delete a draft the caller owns. Zero-row delete → not_found. */

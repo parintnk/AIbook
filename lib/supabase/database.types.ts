@@ -447,6 +447,7 @@ export type Database = {
         Args: { prof_id: string; uid: string };
         Returns: boolean;
       };
+      publish_workflow: { Args: { p_workflow_id: string }; Returns: Json };
       reorder_workflow_nodes: {
         Args: { p_node_ids: string[]; p_workflow_id: string };
         Returns: undefined;

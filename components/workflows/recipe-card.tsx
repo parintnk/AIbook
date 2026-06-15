@@ -72,6 +72,26 @@ function isSafeHttpUrl(url: string): boolean {
   return /^https?:\/\//i.test(url.trim());
 }
 
+/** A small warning triangle — the non-color a11y signal for the blocked state. */
+function WarningTriangle({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 export function RecipeCard({
   node,
   output = null,
@@ -99,7 +119,11 @@ export function RecipeCard({
         !isEditor && "hover:-translate-y-0.5 hover:shadow-lg",
         selected &&
           "ring-2 ring-accent-foreground/50 shadow-[0_10px_30px_-12px_var(--accent-foreground)]",
-        blocked && "ring-2 ring-warning/60",
+        // The mockup `.node.draft` amber outline — but the accent selection ring
+        // wins when a blocked card is also selected.
+        blocked &&
+          !selected &&
+          "ring-2 ring-warning/60 shadow-[0_10px_26px_-12px_var(--warning)]",
         className,
       )}
     >
@@ -171,6 +195,11 @@ export function RecipeCard({
                     {OUTPUT_KIND_LABEL[output.kind] ?? "Output"} attached
                   </span>
                 </>
+              ) : blocked ? (
+                <span className="inline-flex items-center gap-1.5 text-warning">
+                  <WarningTriangle className="size-3.5" />
+                  <span>Sample output required</span>
+                </span>
               ) : (
                 <>
                   <span
@@ -184,6 +213,27 @@ export function RecipeCard({
           </>
         ) : null}
       </button>
+
+      {isEditor && blocked ? (
+        // The mockup `.dropzone` affordance. NOT a real dropzone — clicking opens
+        // the NodeForm sheet where Story 2.4's uploader lives. `nodrag` so it
+        // clicks instead of starting a canvas node-drag (Story 2.3).
+        <button
+          type="button"
+          onClick={onEdit}
+          className="nodrag mx-4 mb-4 flex w-[calc(100%-2rem)] items-center gap-2.5 rounded-lg border border-dashed border-warning/40 bg-warning/[0.07] px-3 py-2.5 text-left outline-none transition hover:bg-warning/[0.12] focus-visible:ring-3 focus-visible:ring-warning/40"
+        >
+          <WarningTriangle className="size-4 shrink-0 text-warning" />
+          <span className="flex flex-col">
+            <span className="text-[12.5px] font-medium text-warning">
+              Add a sample output to publish
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Required to publish
+            </span>
+          </span>
+        </button>
+      ) : null}
 
       {detailsOpen ? (
         // `nodrag` so links/text inside don't start a React Flow node drag (Story 2.3).

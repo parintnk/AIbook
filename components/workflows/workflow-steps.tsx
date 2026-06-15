@@ -128,6 +128,7 @@ export function WorkflowSteps({
               <RecipeCard
                 node={node}
                 output={outputsByNodeId[node.id] ?? null}
+                blocked={!outputsByNodeId[node.id]}
                 mode="editor"
                 selected={selectedId === node.id}
                 onSelect={() => setSelectedId(node.id)}

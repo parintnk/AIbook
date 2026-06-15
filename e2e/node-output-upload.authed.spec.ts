@@ -37,9 +37,10 @@ test("upload, persist, and remove a node sample output", async ({ page }) => {
   await page.getByRole("button", { name: "Add step", exact: true }).click();
   await expect(page.getByText(stepTitle)).toBeVisible();
 
-  // Open the step in edit mode → the OutputUploader is in the sheet.
+  // Open the step in edit mode → the OutputUploader is in the sheet. (`exact`:
+  // the publish bar + the blocked-card affordance also contain "sample output".)
   await page.getByRole("button", { name: /ChatGPT/ }).dblclick();
-  await expect(page.getByText("Sample output")).toBeVisible();
+  await expect(page.getByText("Sample output", { exact: true })).toBeVisible();
 
   // Upload the real PNG via the (hidden) dropzone input.
   await page
@@ -57,12 +58,13 @@ test("upload, persist, and remove a node sample output", async ({ page }) => {
   await page.getByRole("button", { name: "List" }).click();
   await expect(page.getByText("Image attached")).toBeVisible();
 
-  // Remove it → the indicator goes back to "No sample output yet".
+  // Remove it → the step is now publish-blocked, so the indicator shows the
+  // amber "Sample output required" copy (Story 2.5 swapped the neutral text).
   await page.getByRole("button", { name: /ChatGPT/ }).dblclick();
   await page.getByRole("button", { name: "Remove", exact: true }).click();
   await page.reload();
   await page.getByRole("button", { name: "List" }).click();
-  await expect(page.getByText("No sample output yet")).toBeVisible();
+  await expect(page.getByText("Sample output required")).toBeVisible();
 });
 
 test("rejects a file whose bytes aren't a supported type", async ({ page }) => {
