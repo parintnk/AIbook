@@ -6,6 +6,7 @@ import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { cn } from "@/lib/utils";
+import { CanvasFrameSkeleton } from "./viewer-skeleton";
 import { WorkflowStepList } from "./workflow-step-list";
 
 // Canvas is client-only (React Flow can't SSR) — lazy so it stays out of the initial
@@ -17,8 +18,9 @@ const WorkflowCanvasViewer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[70vh] items-center justify-center rounded-card text-muted-foreground text-sm ring-1 ring-foreground/10">
-        Loading canvas…
+      <div>
+        <span className="sr-only">Loading canvas…</span>
+        <CanvasFrameSkeleton />
       </div>
     ),
   },
