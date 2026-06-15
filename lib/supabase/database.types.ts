@@ -49,6 +49,47 @@ export type Database = {
           },
         ];
       };
+      node_outputs: {
+        Row: {
+          bytes: number | null;
+          created_at: string;
+          id: string;
+          kind: Database["public"]["Enums"]["node_output_kind"];
+          mime: string | null;
+          node_id: string;
+          storage_path: string | null;
+          text_content: string | null;
+        };
+        Insert: {
+          bytes?: number | null;
+          created_at?: string;
+          id?: string;
+          kind: Database["public"]["Enums"]["node_output_kind"];
+          mime?: string | null;
+          node_id: string;
+          storage_path?: string | null;
+          text_content?: string | null;
+        };
+        Update: {
+          bytes?: number | null;
+          created_at?: string;
+          id?: string;
+          kind?: Database["public"]["Enums"]["node_output_kind"];
+          mime?: string | null;
+          node_id?: string;
+          storage_path?: string | null;
+          text_content?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "node_outputs_node_id_fkey";
+            columns: ["node_id"];
+            isOneToOne: true;
+            referencedRelation: "workflow_nodes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profession_members: {
         Row: {
           joined_at: string;
@@ -417,6 +458,7 @@ export type Database = {
       };
     };
     Enums: {
+      node_output_kind: "image" | "video" | "text" | "file";
       profession_role: "member" | "verified_pro" | "moderator";
       workflow_status: "draft" | "published";
     };
@@ -549,6 +591,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      node_output_kind: ["image", "video", "text", "file"],
       profession_role: ["member", "verified_pro", "moderator"],
       workflow_status: ["draft", "published"],
     },

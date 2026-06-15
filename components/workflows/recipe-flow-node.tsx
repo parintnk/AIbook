@@ -2,6 +2,7 @@
 
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { createContext, type ReactNode, useContext } from "react";
+import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { CanvasNode } from "@/lib/stores/canvas-store";
 import { RecipeCard } from "./recipe-card";
 
@@ -11,6 +12,27 @@ type NodeActions = {
 };
 
 const NodeActionsContext = createContext<NodeActions | null>(null);
+
+/**
+ * Per-node sample outputs (Story 2.4), provided by the canvas so a flow node can
+ * show its output indicator without putting the (refreshing, non-serializable-URL)
+ * view into the serializable React Flow node data.
+ */
+const OutputsContext = createContext<Record<string, NodeOutputView>>({});
+
+export function OutputsProvider({
+  outputsByNodeId,
+  children,
+}: {
+  outputsByNodeId: Record<string, NodeOutputView>;
+  children: ReactNode;
+}) {
+  return (
+    <OutputsContext.Provider value={outputsByNodeId}>
+      {children}
+    </OutputsContext.Provider>
+  );
+}
 
 /**
  * Provided by the canvas so the flow node reaches stable edit/delete handlers
@@ -44,6 +66,7 @@ const HANDLE_CLASS =
  */
 export function RecipeFlowNode({ data, selected }: NodeProps<CanvasNode>) {
   const actions = useContext(NodeActionsContext);
+  const outputs = useContext(OutputsContext);
   const { node } = data;
   return (
     <div className="w-[280px]">
@@ -55,6 +78,7 @@ export function RecipeFlowNode({ data, selected }: NodeProps<CanvasNode>) {
       />
       <RecipeCard
         node={node}
+        output={outputs[node.id] ?? null}
         mode="editor"
         selected={selected}
         onEdit={() => actions?.onEdit(node.id)}

@@ -12,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { NodeOutputView } from "@/lib/services/node-outputs";
 import {
   type WorkflowNodeValues,
   workflowNodeSchema,
 } from "@/lib/validation/workflow";
+import { OutputUploader } from "./output-uploader";
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
@@ -49,11 +51,14 @@ export function NodeForm({
   workflowId,
   nodeId,
   defaultValues,
+  output,
   onDone,
 }: {
   workflowId: string;
   nodeId?: string;
   defaultValues?: WorkflowNodeValues;
+  /** The node's current sample output (edit mode); null/undefined on create. */
+  output?: NodeOutputView | null;
   /** Called on success. On create, receives the new node's id (for the canvas). */
   onDone?: (newNodeId?: string) => void;
 }) {
@@ -169,13 +174,14 @@ export function NodeForm({
         <FieldError id="prompt-error" message={errors.prompt?.message} />
       </div>
 
-      {/* Sample output is uploaded in a later update (Story 2.4) — stub for now. */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">Sample output</span>
-        <p className="rounded-lg border border-dashed border-border/70 bg-foreground/[0.02] px-3 py-2.5 text-sm text-muted-foreground">
-          You'll be able to attach a sample output here in a later update.
-        </p>
-      </div>
+      {/* Sample output (Story 2.4). Needs a persisted node id → disabled on the
+          create path until the step is saved (then re-open in edit mode to attach). */}
+      <OutputUploader
+        workflowId={workflowId}
+        nodeId={nodeId}
+        output={output ?? null}
+        disabled={!isEdit}
+      />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="purpose">Purpose *</Label>

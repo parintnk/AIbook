@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-surface";
 import { WorkflowForm } from "@/components/workflows/workflow-form";
+import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { listProfessions } from "@/lib/services/professions";
 import { listEdges } from "@/lib/services/workflow-edges";
 import { listDraftNodes } from "@/lib/services/workflow-nodes";
@@ -26,10 +27,11 @@ export default async function EditWorkflowPage({
   const draft = await getMyDraft(id);
   if (!draft) notFound();
 
-  const [professions, nodes, edges] = await Promise.all([
+  const [professions, nodes, edges, outputs] = await Promise.all([
     listProfessions(),
     listDraftNodes(id),
     listEdges(id),
+    listOutputViewsForWorkflow(id),
   ]);
 
   return (
@@ -55,6 +57,7 @@ export default async function EditWorkflowPage({
         workflowId={draft.id}
         nodes={nodes}
         edges={edges}
+        outputsByNodeId={outputs}
       />
     </div>
   );

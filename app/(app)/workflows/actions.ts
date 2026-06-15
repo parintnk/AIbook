@@ -2,6 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  deleteNodeOutput,
+  deriveThumbPath,
+  getNodeOutput,
+  upsertTextOutput,
+} from "@/lib/services/node-outputs";
+import { createSupabaseStorage } from "@/lib/services/storage/supabase-storage";
 import { createEdge, deleteEdge } from "@/lib/services/workflow-edges";
 import {
   createNode,
@@ -16,6 +23,8 @@ import {
   deleteDraft,
   updateDraft,
 } from "@/lib/services/workflows";
+import { createClient } from "@/lib/supabase/server";
+import { textOutputSchema } from "@/lib/validation/output";
 import {
   edgeEndpointsSchema,
   nodeIdsSchema,
@@ -35,6 +44,7 @@ function message(
     | "invalid_nodes"
     | "self_edge"
     | "duplicate"
+    | "invalid_output"
     | "db_error",
 ): string {
   if (error === "not_authenticated") return "You must be signed in.";
@@ -45,6 +55,7 @@ function message(
   if (error === "invalid_nodes") return "Those steps can't be connected.";
   if (error === "self_edge") return "A step can't connect to itself.";
   if (error === "duplicate") return "Those steps are already connected.";
+  if (error === "invalid_output") return "That output couldn't be saved.";
   return "Something went wrong. Please try again.";
 }
 
@@ -214,6 +225,56 @@ export async function reorderNodesAction(
 
   const result = await reorderNodes(workflowId, parsed.data);
   if (!result.ok) return { error: message(result.error) };
+
+  revalidatePath(`/workflows/${workflowId}/edit`);
+  return { success: true };
+}
+
+// ── Sample outputs (Story 2.4) ──────────────────────────────────────────────
+// Binary uploads go through the Route Handler (1MB Server Action body limit). Text
+// + delete are small → they stay Server Actions. Both revalidate the edit page so
+// the RSC surface re-renders the node's output slot.
+
+export async function setTextOutputAction(
+  workflowId: string,
+  nodeId: string,
+  text: unknown,
+): Promise<WorkflowFormState> {
+  const parsed = textOutputSchema.safeParse({ text });
+  if (!parsed.success) return { error: "Please add some text." };
+
+  // Capture any prior binary object BEFORE the row flips to text (storage_path → null)
+  // so replacing an image/video/file with text doesn't orphan the stored object(s).
+  const prior = await getNodeOutput(nodeId);
+
+  const result = await upsertTextOutput({ nodeId, text: parsed.data.text });
+  if (!result.ok) return { error: message(result.error) };
+
+  if (prior?.storage_path) {
+    const supabase = await createClient();
+    const storage = createSupabaseStorage(supabase);
+    await storage
+      .remove([prior.storage_path, deriveThumbPath(prior.storage_path)])
+      .catch(() => {});
+  }
+
+  revalidatePath(`/workflows/${workflowId}/edit`);
+  return { success: true };
+}
+
+export async function deleteOutputAction(
+  workflowId: string,
+  nodeId: string,
+): Promise<WorkflowFormState> {
+  const result = await deleteNodeOutput(nodeId);
+  if (!result.ok) return { error: message(result.error) };
+
+  // Best-effort removal of the freed storage object(s) (none for a text output).
+  if (result.freedPaths.length) {
+    const supabase = await createClient();
+    const storage = createSupabaseStorage(supabase);
+    await storage.remove(result.freedPaths).catch(() => {});
+  }
 
   revalidatePath(`/workflows/${workflowId}/edit`);
   return { success: true };

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { cn } from "@/lib/utils";
@@ -35,10 +36,12 @@ export function WorkflowEditorSurface({
   workflowId,
   nodes,
   edges,
+  outputsByNodeId,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  outputsByNodeId: Record<string, NodeOutputView>;
 }) {
   const [view, setView] = useState<View>("list");
 
@@ -77,11 +80,21 @@ export function WorkflowEditorSurface({
 
       {view === "canvas" ? (
         <div className="mt-6">
-          <WorkflowCanvas workflowId={workflowId} nodes={nodes} edges={edges} />
+          <WorkflowCanvas
+            workflowId={workflowId}
+            nodes={nodes}
+            edges={edges}
+            outputsByNodeId={outputsByNodeId}
+          />
         </div>
       ) : (
         <>
-          <WorkflowSteps workflowId={workflowId} nodes={nodes} hideHeader />
+          <WorkflowSteps
+            workflowId={workflowId}
+            nodes={nodes}
+            outputsByNodeId={outputsByNodeId}
+            hideHeader
+          />
           <p className="mt-3 text-xs text-muted-foreground md:hidden">
             Tip: the visual canvas editor is best on a larger screen.
           </p>

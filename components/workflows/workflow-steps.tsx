@@ -12,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import type { WorkflowNodeValues } from "@/lib/validation/workflow";
 import { NodeForm } from "./node-form";
@@ -48,10 +49,12 @@ function nodeToValues(node: WorkflowNode): WorkflowNodeValues {
 export function WorkflowSteps({
   workflowId,
   nodes,
+  outputsByNodeId,
   hideHeader = false,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
+  outputsByNodeId: Record<string, NodeOutputView>;
   /** When the editor surface already renders the "Steps" heading (Story 2.3). */
   hideHeader?: boolean;
 }) {
@@ -124,6 +127,7 @@ export function WorkflowSteps({
             <li key={node.id}>
               <RecipeCard
                 node={node}
+                output={outputsByNodeId[node.id] ?? null}
                 mode="editor"
                 selected={selectedId === node.id}
                 onSelect={() => setSelectedId(node.id)}
@@ -164,6 +168,11 @@ export function WorkflowSteps({
                   editing.mode === "edit"
                     ? nodeToValues(editing.node)
                     : undefined
+                }
+                output={
+                  editing.mode === "edit"
+                    ? (outputsByNodeId[editing.node.id] ?? null)
+                    : null
                 }
                 onDone={closeForm}
               />

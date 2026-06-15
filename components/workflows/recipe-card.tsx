@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +18,17 @@ import { cn } from "@/lib/utils";
  * is an empty stub here; Story 2.4 fills it from `node_outputs`.
  */
 
+const OUTPUT_KIND_LABEL: Record<string, string> = {
+  image: "Image",
+  video: "Video",
+  text: "Text",
+  file: "File",
+};
+
 export type RecipeCardProps = {
   node: WorkflowNode;
+  /** The node's sample output (Story 2.4) — drives the compact indicator. */
+  output?: NodeOutputView | null;
   mode: "viewer" | "editor";
   /** editor: this card is the selected one (accent ring + Edit/Delete shown). */
   selected?: boolean;
@@ -64,6 +74,7 @@ function isSafeHttpUrl(url: string): boolean {
 
 export function RecipeCard({
   node,
+  output = null,
   mode,
   selected = false,
   onSelect,
@@ -133,12 +144,44 @@ export function RecipeCard({
           {node.tool_name}
         </span>
 
-        {/* Collapsed content: a prompt preview — the card's substance until
-            Story 2.4 adds the sample-output thumbnail. Hidden once details open. */}
+        {/* Collapsed content: a prompt preview + a compact sample-output indicator
+            (Story 2.4). Hidden once details open. */}
         {!detailsOpen ? (
-          <span className="mt-2.5 line-clamp-2 rounded-lg border border-border/60 bg-foreground/[0.02] px-2.5 py-2 font-mono text-[11.5px] leading-relaxed text-muted-foreground">
-            {node.prompt}
-          </span>
+          <>
+            <span className="mt-2.5 line-clamp-2 rounded-lg border border-border/60 bg-foreground/[0.02] px-2.5 py-2 font-mono text-[11.5px] leading-relaxed text-muted-foreground">
+              {node.prompt}
+            </span>
+            <span className="mt-2 inline-flex items-center gap-1.5 self-start text-[11px] text-muted-foreground">
+              {output ? (
+                <>
+                  {output.kind === "image" && output.thumbUrl ? (
+                    // biome-ignore lint/performance/noImgElement: signed CDN thumbnail, not a static asset
+                    <img
+                      src={output.thumbUrl}
+                      alt=""
+                      className="size-6 rounded border border-border/60 object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="size-2 rounded-full bg-success"
+                    />
+                  )}
+                  <span>
+                    {OUTPUT_KIND_LABEL[output.kind] ?? "Output"} attached
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-2 rounded-full bg-foreground/20"
+                  />
+                  <span>No sample output yet</span>
+                </>
+              )}
+            </span>
+          </>
         ) : null}
       </button>
 

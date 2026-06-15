@@ -45,12 +45,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { type CanvasNode, useCanvasStore } from "@/lib/stores/canvas-store";
 import type { WorkflowNodeValues } from "@/lib/validation/workflow";
 import { NodeForm } from "./node-form";
-import { NodeActionsProvider, RecipeFlowNode } from "./recipe-flow-node";
+import {
+  NodeActionsProvider,
+  OutputsProvider,
+  RecipeFlowNode,
+} from "./recipe-flow-node";
 
 // ── DB ⇆ React Flow mappers ─────────────────────────────────────────────────
 function toCanvasNodes(nodes: WorkflowNode[]): CanvasNode[] {
@@ -156,10 +161,12 @@ function CanvasInner({
   workflowId,
   nodes: propNodes,
   edges: propEdges,
+  outputsByNodeId,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  outputsByNodeId: Record<string, NodeOutputView>;
 }) {
   const router = useRouter();
   const nodes = useCanvasStore((s) => s.nodes);
@@ -363,28 +370,34 @@ function CanvasInner({
       <SpliceContext.Provider
         value={(edge) => setEditing({ mode: "splice", edge })}
       >
-        <NodeActionsProvider actions={nodeActions}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeDragStop={onNodeDragStop}
-            onBeforeDelete={onBeforeDelete}
-            onNodesDelete={onNodesDelete}
-            onEdgesDelete={onEdgesDelete}
-            zoomOnDoubleClick={false}
-            fitView
-            proOptions={{ hideAttribution: true }}
-          >
-            <Background variant={BackgroundVariant.Dots} gap={24} size={1.1} />
-            <Controls />
-            <MiniMap pannable zoomable />
-          </ReactFlow>
-        </NodeActionsProvider>
+        <OutputsProvider outputsByNodeId={outputsByNodeId}>
+          <NodeActionsProvider actions={nodeActions}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeDragStop={onNodeDragStop}
+              onBeforeDelete={onBeforeDelete}
+              onNodesDelete={onNodesDelete}
+              onEdgesDelete={onEdgesDelete}
+              zoomOnDoubleClick={false}
+              fitView
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={24}
+                size={1.1}
+              />
+              <Controls />
+              <MiniMap pannable zoomable />
+            </ReactFlow>
+          </NodeActionsProvider>
+        </OutputsProvider>
       </SpliceContext.Provider>
 
       <Sheet
@@ -417,6 +430,11 @@ function CanvasInner({
                     ? nodeToValues(editing.node)
                     : undefined
                 }
+                output={
+                  editing.mode === "edit"
+                    ? (outputsByNodeId[editing.node.id] ?? null)
+                    : null
+                }
                 onDone={(newNodeId) => {
                   const mode = editingMode;
                   setEditing(null);
@@ -440,6 +458,7 @@ export function WorkflowCanvas(props: {
   workflowId: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  outputsByNodeId: Record<string, NodeOutputView>;
 }) {
   return (
     <ReactFlowProvider>

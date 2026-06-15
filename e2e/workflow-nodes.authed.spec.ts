@@ -48,8 +48,10 @@ test("add, edit, and delete a recipe-card node", async ({ page }) => {
   await page.getByLabel("Step title").fill(edited);
   await page.getByRole("button", { name: "Save step", exact: true }).click();
 
-  // Persists across a reload.
+  // Persists across a reload. (Reload resets the surface to the canvas default on
+  // ≥md → switch back to the list so the select+delete is deterministic.)
   await page.reload();
+  await page.getByRole("button", { name: "List" }).click();
   await expect(page.getByText(edited)).toBeVisible();
 
   // Select the card (reveals Edit / Delete), then delete it.
