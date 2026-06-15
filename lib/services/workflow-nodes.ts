@@ -92,6 +92,24 @@ export const listDraftNodes = cache(
 );
 
 /**
+ * Nodes of a workflow for the PUBLIC viewer (Story 3.1). NO auth guard — unlike
+ * listDraftNodes, an anon visitor must see a published workflow's nodes; RLS
+ * (`status='published' OR author`) is the boundary. Ordered by idx (step order).
+ */
+export const listPublishedNodes = cache(
+  async (workflowId: string): Promise<WorkflowNode[]> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("workflow_nodes")
+      .select("*")
+      .eq("workflow_id", workflowId)
+      .order("idx", { ascending: true })
+      .order("created_at", { ascending: true });
+    return (data as WorkflowNode[] | null) ?? [];
+  },
+);
+
+/**
  * Append a node to a draft the caller owns. Delegates to the atomic
  * `append_workflow_node` RPC (idx = max+1 under a row-lock — no read-then-write
  * race; pos defaults to 0). The RPC re-asserts owner+draft and raises 42501 →

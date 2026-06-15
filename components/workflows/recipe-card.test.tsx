@@ -41,6 +41,32 @@ describe("RecipeCard", () => {
     expect(screen.getByText(node.prompt)).toBeInTheDocument();
   });
 
+  it("renders the sample output content in the expanded card (AC2)", () => {
+    render(
+      <RecipeCard
+        node={node}
+        mode="viewer"
+        output={
+          {
+            id: "o1",
+            node_id: node.id,
+            kind: "text",
+            text_content: "the produced result",
+            storage_path: null,
+            mime: null,
+            bytes: null,
+            created_at: "2026-06-15T00:00:00.000Z",
+            mainUrl: null,
+            thumbUrl: null,
+          } as React.ComponentProps<typeof RecipeCard>["output"]
+        }
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByText("Sample output")).toBeInTheDocument();
+    expect(screen.getByText("the produced result")).toBeInTheDocument();
+  });
+
   it("selects on click in editor mode", () => {
     const onSelect = vi.fn();
     render(<RecipeCard node={node} mode="editor" onSelect={onSelect} />);

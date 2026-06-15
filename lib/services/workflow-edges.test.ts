@@ -28,7 +28,12 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-import { createEdge, deleteEdge, listEdges } from "./workflow-edges";
+import {
+  createEdge,
+  deleteEdge,
+  listEdges,
+  listPublishedEdges,
+} from "./workflow-edges";
 
 const USER = { data: { user: { id: "u1" } } };
 const NO_USER = { data: { user: null } };
@@ -47,6 +52,14 @@ describe("listEdges", () => {
     getUserMock.mockResolvedValueOnce(USER);
     listMock.mockResolvedValueOnce({ data: [{ id: "e1" }], error: null });
     expect(await listEdges("w1")).toHaveLength(1);
+  });
+});
+
+describe("listPublishedEdges", () => {
+  it("queries without an auth guard (anon public viewer)", async () => {
+    listMock.mockResolvedValueOnce({ data: [{ id: "e1" }], error: null });
+    expect(await listPublishedEdges("w1")).toHaveLength(1);
+    expect(getUserMock).not.toHaveBeenCalled();
   });
 });
 

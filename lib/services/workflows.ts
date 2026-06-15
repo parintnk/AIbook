@@ -16,6 +16,16 @@ export type DraftListItem = Workflow & {
   profession: { slug: string; name: string } | null;
 };
 
+/** A published workflow for the public viewer (Story 3.1) — joins the author. */
+export type PublishedWorkflow = Workflow & {
+  profession: { slug: string; name: string } | null;
+  author: {
+    handle: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
 export type DraftInput = {
   title: string;
   summary: string | null;
@@ -58,6 +68,9 @@ export type PublishResult =
 const DRAFT_SELECT =
   "*, profession:professions!workflows_profession_id_fkey(slug, name)";
 
+const PUBLISHED_SELECT =
+  "*, profession:professions!workflows_profession_id_fkey(slug, name), author:profiles!workflows_author_id_fkey(handle, display_name, avatar_url)";
+
 /** The caller's own draft workflows, newest-updated first. RLS scopes to author. */
 export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {
   const supabase = await createClient();
@@ -90,6 +103,25 @@ export const getMyDraft = cache(
       .eq("status", "draft")
       .maybeSingle();
     return (data as DraftListItem | null) ?? null;
+  },
+);
+
+/**
+ * A single PUBLISHED workflow for the public detail viewer (Story 3.1 / FR6).
+ * NO auth guard — RLS (`status='published' OR author`) is the boundary, and a
+ * signed-out visitor must be able to read it. A draft / nonexistent / other id
+ * resolves to null (RLS hides it) → the route calls notFound().
+ */
+export const getPublishedWorkflow = cache(
+  async (id: string): Promise<PublishedWorkflow | null> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("workflows")
+      .select(PUBLISHED_SELECT)
+      .eq("id", id)
+      .eq("status", "published")
+      .maybeSingle();
+    return (data as PublishedWorkflow | null) ?? null;
   },
 );
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { cn } from "@/lib/utils";
+import { OutputPreview } from "./output-preview";
 
 /**
  * The recipe-card node — the single source of truth for how a workflow step is
@@ -243,6 +244,13 @@ export function RecipeCard({
               {node.prompt}
             </p>
           </Detail>
+          {/* Viewer only (AC2): the editor surfaces the output in the NodeForm
+              sheet, so rendering it here too would duplicate it (and its alt). */}
+          {!isEditor && output ? (
+            <Detail label="Sample output">
+              <OutputPreview output={output} />
+            </Detail>
+          ) : null}
           <Detail label="Purpose">
             <p className="text-sm text-muted-foreground">{node.purpose}</p>
           </Detail>

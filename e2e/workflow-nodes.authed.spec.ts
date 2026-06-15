@@ -25,7 +25,7 @@ test("add, edit, and delete a recipe-card node", async ({ page }) => {
     .getByRole("link", { name: /edit/i })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/workflows\/.+\/edit/);
+  await expect(page).toHaveURL(/\/workflows\/.+\/edit/, { timeout: 15_000 });
 
   // Story 2.3 made the canvas the desktop default — this spec exercises the
   // linear step-list, so switch to it explicitly.

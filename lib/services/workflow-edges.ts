@@ -48,6 +48,22 @@ export const listEdges = cache(
   },
 );
 
+/**
+ * Edges of a workflow for the PUBLIC viewer (Story 3.1). NO auth guard — an anon
+ * visitor must see a published workflow's edges; RLS is the boundary.
+ */
+export const listPublishedEdges = cache(
+  async (workflowId: string): Promise<WorkflowEdge[]> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("workflow_edges")
+      .select("*")
+      .eq("workflow_id", workflowId)
+      .order("created_at", { ascending: true });
+    return (data as WorkflowEdge[] | null) ?? [];
+  },
+);
+
 /** Connect two nodes of a draft the caller owns (directed source→target). */
 export async function createEdge(
   workflowId: string,

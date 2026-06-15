@@ -36,6 +36,7 @@ import {
   createNode,
   deleteNode,
   listDraftNodes,
+  listPublishedNodes,
   reorderNodes,
   updateNode,
   updateNodePositions,
@@ -72,6 +73,17 @@ describe("listDraftNodes", () => {
       error: null,
     });
     expect(await listDraftNodes("w1")).toHaveLength(2);
+  });
+});
+
+describe("listPublishedNodes", () => {
+  it("queries without an auth guard (anon public viewer)", async () => {
+    listMock.mockResolvedValueOnce({
+      data: [{ id: "n1" }, { id: "n2" }],
+      error: null,
+    });
+    expect(await listPublishedNodes("w1")).toHaveLength(2);
+    expect(getUserMock).not.toHaveBeenCalled();
   });
 });
 

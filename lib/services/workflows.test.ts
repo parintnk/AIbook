@@ -30,6 +30,7 @@ import {
   createDraft,
   deleteDraft,
   getMyDraft,
+  getPublishedWorkflow,
   listMyDrafts,
   publishWorkflow,
   updateDraft,
@@ -118,6 +119,24 @@ describe("getMyDraft", () => {
   it("returns null when unauthenticated", async () => {
     getUserMock.mockResolvedValueOnce(NO_USER);
     expect(await getMyDraft("w1")).toBeNull();
+  });
+});
+
+describe("getPublishedWorkflow", () => {
+  it("returns the published workflow without requiring auth", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { id: "w1", status: "published", author: { handle: "x" } },
+      error: null,
+    });
+    const wf = await getPublishedWorkflow("w1");
+    expect(wf?.id).toBe("w1");
+    // Public viewer: must NOT gate on getUser (anon visitors).
+    expect(getUserMock).not.toHaveBeenCalled();
+  });
+
+  it("returns null when no published row matches (draft/missing → RLS hides it)", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    expect(await getPublishedWorkflow("w1")).toBeNull();
   });
 });
 

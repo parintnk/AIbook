@@ -25,7 +25,7 @@ test("canvas renders the graph; add + delete persist across reload", async ({
     .getByRole("link", { name: /edit/i })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/workflows\/.+\/edit/);
+  await expect(page).toHaveURL(/\/workflows\/.+\/edit/, { timeout: 15_000 });
 
   // Add two steps via the List view (the stable DOM path).
   await page.getByRole("button", { name: "List" }).click();

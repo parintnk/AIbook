@@ -41,3 +41,42 @@ where p.handle = 'parintnk'
     select 1 from public.ai_stack_items a
     where a.profile_id = p.id and a.tool_name = 'n8n'
   );
+
+-- A PUBLISHED workflow fixture (fixed UUIDs) for the Story 3.1 anon viewer e2e:
+-- 2 covered nodes (each a text sample output) + 1 edge. Owned by parintnk, status
+-- published (so it never shows in "My drafts"). Seeded as the table owner → bypasses
+-- the 2.1 column-locks; the published_has_ts CHECK (2.5) is satisfied by published_at.
+insert into public.workflows (id, author_id, profession_id, title, summary, status, published_at)
+values (
+  '00000000-0000-0000-0000-0000000000aa',
+  '00000000-0000-0000-0000-000000000001',
+  (select id from public.professions where slug = 'ai-automation'),
+  'Coffee shop brand kit',
+  'A multi-tool recipe to generate a small brand kit end to end.',
+  'published', now()
+)
+on conflict (id) do nothing;
+
+insert into public.workflow_nodes (id, workflow_id, idx, pos_x, pos_y, tool_name, prompt, purpose)
+values
+  ('00000000-0000-0000-0000-0000000000ab', '00000000-0000-0000-0000-0000000000aa', 0,
+   0, 0, 'ChatGPT', 'Define a warm, artisanal brand direction', 'Set the visual direction first'),
+  ('00000000-0000-0000-0000-0000000000ac', '00000000-0000-0000-0000-0000000000aa', 1,
+   360, 40, 'Midjourney', 'Generate 4 logo concepts from the brief', 'Produce candidate logos')
+on conflict (id) do nothing;
+
+insert into public.node_outputs (node_id, kind, text_content)
+values
+  ('00000000-0000-0000-0000-0000000000ab', 'text', 'Brand direction: warm, artisanal, minimalist.'),
+  ('00000000-0000-0000-0000-0000000000ac', 'text', 'Concept A/B/C/D — cup-and-steam marks.')
+on conflict (node_id) do nothing;
+
+insert into public.workflow_edges (workflow_id, source_node_id, target_node_id)
+select '00000000-0000-0000-0000-0000000000aa',
+       '00000000-0000-0000-0000-0000000000ab',
+       '00000000-0000-0000-0000-0000000000ac'
+where not exists (
+  select 1 from public.workflow_edges
+  where source_node_id = '00000000-0000-0000-0000-0000000000ab'
+    and target_node_id = '00000000-0000-0000-0000-0000000000ac'
+);

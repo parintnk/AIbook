@@ -16,6 +16,7 @@ import {
   type OutputError,
   outputErrorMessage,
 } from "@/lib/validation/output";
+import { OutputPreview } from "./output-preview";
 
 /**
  * The single sample-output control (Story 2.4) used by both editor surfaces. Binary
@@ -305,65 +306,5 @@ function Dropzone({
         Or paste text instead
       </button>
     </div>
-  );
-}
-
-function OutputPreview({ output }: { output: NodeOutputView }) {
-  if (output.kind === "image") {
-    const src = output.thumbUrl ?? output.mainUrl;
-    return src ? (
-      // Signed URL from the private bucket — served via the supabase CDN, never
-      // inlined into the HTML (AC2). Plain <img> (signed URLs are short-lived, so
-      // next/image optimization isn't a fit).
-      // biome-ignore lint/performance/noImgElement: signed CDN URL, not a static asset
-      <img
-        src={src}
-        alt="Sample output"
-        className="max-h-48 w-full rounded-lg border border-border/60 object-contain"
-      />
-    ) : (
-      <PreviewFallback label="Image output" />
-    );
-  }
-  if (output.kind === "video") {
-    return output.mainUrl ? (
-      // biome-ignore lint/a11y/useMediaCaption: a user-uploaded sample output has no caption track
-      <video
-        src={output.mainUrl}
-        controls
-        preload="metadata"
-        className="max-h-48 w-full rounded-lg border border-border/60"
-      />
-    ) : (
-      <PreviewFallback label="Video output" />
-    );
-  }
-  if (output.kind === "text") {
-    return (
-      <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-border/60 bg-foreground/[0.02] p-2.5 font-mono text-[12px] leading-relaxed">
-        {output.text_content}
-      </pre>
-    );
-  }
-  // file (pdf)
-  return output.mainUrl ? (
-    <a
-      href={output.mainUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 self-start rounded-lg border border-border/60 bg-foreground/[0.02] px-3 py-2 text-sm text-accent-foreground underline underline-offset-2"
-    >
-      📄 Open PDF
-    </a>
-  ) : (
-    <PreviewFallback label="File output" />
-  );
-}
-
-function PreviewFallback({ label }: { label: string }) {
-  return (
-    <p className="rounded-lg border border-border/60 bg-foreground/[0.02] px-3 py-2.5 text-sm text-muted-foreground">
-      {label} (preview unavailable)
-    </p>
   );
 }

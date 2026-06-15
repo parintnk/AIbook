@@ -26,7 +26,8 @@ test("upload, persist, and remove a node sample output", async ({ page }) => {
     .getByRole("link", { name: /edit/i })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/workflows\/.+\/edit/);
+  // Generous timeout: /edit's first compile under parallel-worker load can exceed 5s.
+  await expect(page).toHaveURL(/\/workflows\/.+\/edit/, { timeout: 15_000 });
   await page.getByRole("button", { name: "List" }).click();
 
   await page.getByRole("button", { name: "+ Add step" }).first().click();
