@@ -46,14 +46,17 @@ where p.handle = 'parintnk'
 -- 2 covered nodes (each a text sample output) + 1 edge. Owned by parintnk, status
 -- published (so it never shows in "My drafts"). Seeded as the table owner → bypasses
 -- the 2.1 column-locks; the published_has_ts CHECK (2.5) is satisfied by published_at.
-insert into public.workflows (id, author_id, profession_id, title, summary, status, published_at)
+-- last_verified_at is a fixed 14-day offset (not now()) so the Story 3.3 trust-row
+-- e2e renders a deterministic "Last verified 2 weeks ago" (neutral, < 90-day stale)
+-- instead of a timing-fragile "just now" when the seed runs < 60s before the assertion.
+insert into public.workflows (id, author_id, profession_id, title, summary, status, published_at, last_verified_at)
 values (
   '00000000-0000-0000-0000-0000000000aa',
   '00000000-0000-0000-0000-000000000001',
   (select id from public.professions where slug = 'ai-automation'),
   'Coffee shop brand kit',
   'A multi-tool recipe to generate a small brand kit end to end.',
-  'published', now()
+  'published', now(), now() - interval '14 days'
 )
 on conflict (id) do nothing;
 

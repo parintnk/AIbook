@@ -22,6 +22,18 @@ test("desktop defaults to the canvas; a node expands; toggling to List shows the
     page.getByRole("heading", { name: "Coffee shop brand kit" }),
   ).toBeVisible();
 
+  // Trust row (Story 3.3) — read-only signals, SSR'd in the header. The seed fixture
+  // has 0 votes / 0 forks / no parent → zero-states: neutral outcome, "Original by
+  // creator", a neutral "Last verified … ago", and NO fork stat.
+  await expect(page.getByText("Original by creator")).toBeVisible();
+  // Seed sets last_verified_at = 14 days ago → deterministic, neutral (< 90d).
+  await expect(page.getByText(/last verified 2 weeks ago/i)).toBeVisible();
+  await expect(page.getByText(/be the first to try this/i)).toBeVisible();
+  // The fork STAT ("Forked 230×") is omitted at 0 — scope to the number form so it
+  // doesn't match the app-shell "Forked" nav link.
+  await expect(page.getByText(/forked \d/i)).toHaveCount(0);
+  await expect(page.getByText(/tools change fast/i)).toHaveCount(0);
+
   // ≥md (Playwright default 1280×720) promotes to the canvas after mount; the lazy
   // React Flow chunk renders both recipe-card nodes.
   await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });

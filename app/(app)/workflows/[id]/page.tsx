@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { TrustRow } from "@/components/workflows/trust-row";
 import { WorkflowViewerSurface } from "@/components/workflows/workflow-viewer-surface";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { listPublishedEdges } from "@/lib/services/workflow-edges";
@@ -85,8 +86,15 @@ export default async function WorkflowDetailPage({ params }: Params) {
           </Link>
         ) : null}
 
-        {/* Trust row (Story 3.3) + outcome vote (Epic 4) + Save/Fork (Epics 8/5)
-            land here — slot reserved intentionally. */}
+        {/* Read-only trust signals (Story 3.3). Outcome vote (Epic 4) + Save/Fork
+            (Epics 8/5) action affordances still land here — reserved. */}
+        <TrustRow
+          triedCount={wf.tried_count}
+          forkCount={wf.fork_count}
+          parentId={wf.parent_id}
+          lastVerifiedAt={wf.last_verified_at}
+          publishedAt={wf.published_at}
+        />
       </header>
 
       <WorkflowViewerSurface
