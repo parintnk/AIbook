@@ -53,6 +53,12 @@ test("desktop defaults to the canvas; a node expands; toggling to List shows the
     0,
   );
 
+  // Fork (Story 5.1) — the action is auth-gated; an anonymous viewer sees a "Sign in to fork"
+  // link, not an active Fork button.
+  await expect(
+    page.getByRole("link", { name: /sign in to fork/i }),
+  ).toBeVisible();
+
   // ≥md (Playwright default 1280×720) promotes to the canvas after mount; the lazy
   // React Flow chunk renders both recipe-card nodes.
   await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });

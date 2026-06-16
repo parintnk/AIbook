@@ -71,4 +71,20 @@ describe("TrustRow", () => {
     expect(screen.getByText(/variation/i)).toBeInTheDocument();
     expect(screen.queryByText(/original by creator/i)).not.toBeInTheDocument();
   });
+
+  it("renders 'Forked from @handle' when the parent author resolves (Story 5.1)", () => {
+    render(
+      <TrustRow
+        triedCount={0}
+        forkCount={0}
+        parentId="parent-id"
+        parentHandle="nok"
+        lastVerifiedAt={null}
+        publishedAt={daysAgo(1)}
+      />,
+    );
+    expect(screen.getByText("Forked from @nok")).toBeInTheDocument();
+    expect(screen.queryByText(/^variation$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/original by creator/i)).not.toBeInTheDocument();
+  });
 });

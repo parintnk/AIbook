@@ -35,6 +35,7 @@ import {
 import {
   createDraft,
   deleteDraft,
+  forkWorkflow,
   publishWorkflow,
   updateDraft,
 } from "@/lib/services/workflows";
@@ -162,6 +163,27 @@ export async function publishWorkflowAction(
       missingNodeIds: (result.missing ?? []).map((m) => m.id),
     };
   return { error: message(result.error) };
+}
+
+/**
+ * Fork a published workflow into the caller's new editable draft (Story 5.1 / FR15). Returns the
+ * new draft's id so the client toasts "Forked. Editing your copy." THEN navigates into the editor
+ * (a server redirect would skip the toast). revalidate the source so its fork_count is fresh if
+ * the user returns. Fork is NOT optimistic (the button waits for this result — UX-DR7).
+ */
+export async function forkWorkflowAction(
+  sourceId: string,
+): Promise<{ ok: true; forkId: string } | { ok: false; error: string }> {
+  const result = await forkWorkflow(sourceId);
+  if (result.ok) {
+    revalidatePath(`/workflows/${sourceId}`);
+    return { ok: true, forkId: result.forkId };
+  }
+  if (result.error === "not_authenticated")
+    return { ok: false, error: "Sign in to fork." };
+  if (result.error === "invalid_source")
+    return { ok: false, error: "That workflow can't be forked." };
+  return { ok: false, error: "Couldn't fork this workflow. Please try again." };
 }
 
 // ── Recipe-card nodes (Story 2.2) ───────────────────────────────────────────

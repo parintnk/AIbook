@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { CommentThread } from "@/components/workflows/comment-thread";
+import { ForkButton } from "@/components/workflows/fork-button";
 import { OutcomeVote } from "@/components/workflows/outcome-vote";
 import { ReportMenu } from "@/components/workflows/report-menu";
 import { TrustRow } from "@/components/workflows/trust-row";
@@ -11,7 +12,10 @@ import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { getMyOutcomeVote } from "@/lib/services/outcome-votes";
 import { listPublishedEdges } from "@/lib/services/workflow-edges";
 import { listPublishedNodes } from "@/lib/services/workflow-nodes";
-import { getPublishedWorkflow } from "@/lib/services/workflows";
+import {
+  getForkParentHandle,
+  getPublishedWorkflow,
+} from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
 
 type Params = { params: Promise<{ id: string }> };
@@ -80,6 +84,12 @@ export default async function WorkflowDetailPage({ params }: Params) {
     };
   }
 
+  // Story 5.1 attribution: resolve the parent author's @handle for a published fork (null for an
+  // original, or if the parent is no longer published/readable → the trust row falls back).
+  const parentHandle = wf.parent_id
+    ? await getForkParentHandle(wf.parent_id)
+    : null;
+
   const author = wf.author;
   const authorName =
     author?.display_name ?? (author ? `@${author.handle}` : "Unknown");
@@ -105,13 +115,12 @@ export default async function WorkflowDetailPage({ params }: Params) {
               </p>
             ) : null}
           </div>
-          {user ? (
-            <ReportMenu
-              targetType="workflow"
-              targetId={wf.id}
-              className="mt-1 shrink-0"
-            />
-          ) : null}
+          <div className="mt-1 flex shrink-0 items-center gap-2">
+            <ForkButton workflowId={wf.id} signedIn={user != null} />
+            {user ? (
+              <ReportMenu targetType="workflow" targetId={wf.id} />
+            ) : null}
+          </div>
         </div>
 
         {author ? (
@@ -140,6 +149,7 @@ export default async function WorkflowDetailPage({ params }: Params) {
           triedCount={wf.tried_count}
           forkCount={wf.fork_count}
           parentId={wf.parent_id}
+          parentHandle={parentHandle}
           lastVerifiedAt={wf.last_verified_at}
           publishedAt={wf.published_at}
         />

@@ -14,12 +14,14 @@ export function TrustRow({
   triedCount,
   forkCount,
   parentId,
+  parentHandle,
   lastVerifiedAt,
   publishedAt,
 }: {
   triedCount: number;
   forkCount: number;
   parentId: string | null;
+  parentHandle?: string | null;
   lastVerifiedAt: string | null;
   publishedAt: string | null;
 }) {
@@ -52,11 +54,20 @@ export function TrustRow({
         </span>
       ) : null}
 
-      {/* Lineage — "Original by creator" (no parent) or a variation (Epic 5 enriches
-          it with the parent link/author). */}
+      {/* Lineage — "Original by creator" (no parent), "Forked from @x" (Story 5.1 — the
+          resolved parent author), or "Variation" if the parent is no longer readable. The
+          clickable parent link is Story 5.2. */}
       <span className="inline-flex items-center gap-1.5 font-medium text-[13px] text-muted-foreground">
-        <OriginIcon className="size-3.5" />
-        {parentId == null ? "Original by creator" : "Variation"}
+        {parentId == null ? (
+          <OriginIcon className="size-3.5" />
+        ) : (
+          <ForkIcon className="size-3.5" />
+        )}
+        {parentId == null
+          ? "Original by creator"
+          : parentHandle
+            ? `Forked from @${parentHandle}`
+            : "Variation"}
       </span>
 
       {/* Last verified — neutral under 90 days; amber-cautionary past it, with the

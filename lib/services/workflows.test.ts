@@ -29,6 +29,8 @@ vi.mock("@/lib/supabase/server", () => ({
 import {
   createDraft,
   deleteDraft,
+  forkWorkflow,
+  getForkParentHandle,
   getMyDraft,
   getPublishedWorkflow,
   listMyDrafts,
@@ -204,5 +206,86 @@ describe("publishWorkflow", () => {
       ok: false,
       error: "db_error",
     });
+  });
+});
+
+describe("forkWorkflow", () => {
+  it("requires authentication (no RPC call)", async () => {
+    getUserMock.mockResolvedValueOnce(NO_USER);
+    expect(await forkWorkflow("src-1")).toEqual({
+      ok: false,
+      error: "not_authenticated",
+    });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the new fork id on success", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: "fork-123", error: null });
+    expect(await forkWorkflow("src-1")).toEqual({
+      ok: true,
+      forkId: "fork-123",
+    });
+  });
+
+  it("maps the RPC's 42501 raise to not_authenticated", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: "42501" } });
+    expect(await forkWorkflow("src-1")).toEqual({
+      ok: false,
+      error: "not_authenticated",
+    });
+  });
+
+  it("maps P0001 (invalid fork source) to invalid_source", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: "P0001" } });
+    expect(await forkWorkflow("src-1")).toEqual({
+      ok: false,
+      error: "invalid_source",
+    });
+  });
+
+  it("maps any other RPC error to db_error", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: "55000" } });
+    expect(await forkWorkflow("src-1")).toEqual({
+      ok: false,
+      error: "db_error",
+    });
+  });
+
+  it("degrades a null RPC result to db_error", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    rpcMock.mockResolvedValueOnce({ data: null, error: null });
+    expect(await forkWorkflow("src-1")).toEqual({
+      ok: false,
+      error: "db_error",
+    });
+  });
+});
+
+describe("getForkParentHandle", () => {
+  // Distinct parentIds per test — getForkParentHandle is cache()-wrapped, so a shared arg would
+  // return the first test's memoized result.
+  it("returns the parent author's handle", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { author: { handle: "nok" } },
+      error: null,
+    });
+    expect(await getForkParentHandle("p-handle")).toBe("nok");
+  });
+
+  it("returns null when the parent is unresolved / unpublished", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    expect(await getForkParentHandle("p-null")).toBeNull();
+  });
+
+  it("returns null when the parent row has no author", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { author: null },
+      error: null,
+    });
+    expect(await getForkParentHandle("p-noauthor")).toBeNull();
   });
 });

@@ -436,6 +436,39 @@ export type Database = {
           },
         ];
       };
+      workflow_lineage: {
+        Row: {
+          ancestor_id: string;
+          depth: number;
+          descendant_id: string;
+        };
+        Insert: {
+          ancestor_id: string;
+          depth: number;
+          descendant_id: string;
+        };
+        Update: {
+          ancestor_id?: string;
+          depth?: number;
+          descendant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workflow_lineage_ancestor_id_fkey";
+            columns: ["ancestor_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workflow_lineage_descendant_id_fkey";
+            columns: ["descendant_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workflow_nodes: {
         Row: {
           created_at: string;
@@ -654,6 +687,7 @@ export type Database = {
         };
         Returns: string;
       };
+      fork_workflow: { Args: { p_source_id: string }; Returns: string };
       generate_unique_handle: { Args: { seed: string }; Returns: string };
       is_profession_moderator: {
         Args: { prof_id: string; uid: string };

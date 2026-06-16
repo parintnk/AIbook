@@ -65,6 +65,10 @@ export type PublishResult =
       missing?: PublishMissingNode[];
     };
 
+export type ForkResult =
+  | { ok: true; forkId: string }
+  | { ok: false; error: "not_authenticated" | "invalid_source" | "db_error" };
+
 const DRAFT_SELECT =
   "*, profession:professions!workflows_profession_id_fkey(slug, name)";
 
@@ -122,6 +126,26 @@ export const getPublishedWorkflow = cache(
       .eq("status", "published")
       .maybeSingle();
     return (data as PublishedWorkflow | null) ?? null;
+  },
+);
+
+/**
+ * The `@handle` of a published fork's PARENT author (Story 5.1 AC3 attribution).
+ * Returns null when the parent is no longer published / readable (parent_id's
+ * on-delete-set-null, or an unpublished parent) → the trust row falls back.
+ */
+export const getForkParentHandle = cache(
+  async (parentId: string): Promise<string | null> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("workflows")
+      .select("author:profiles!workflows_author_id_fkey(handle)")
+      .eq("id", parentId)
+      .eq("status", "published")
+      .maybeSingle();
+    const author = (data as { author: { handle: string } | null } | null)
+      ?.author;
+    return author?.handle ?? null;
   },
 );
 
@@ -228,6 +252,36 @@ export async function publishWorkflow(
   if (result.reason === "missing_outputs")
     return { ok: false, error: "missing_outputs", missing: result.missing };
   return { ok: false, error: "db_error" };
+}
+
+/**
+ * Fork a PUBLISHED workflow into a new editable draft owned by the caller (FR15 / UX-DR7).
+ * Delegates to the `fork_workflow` SECURITY DEFINER RPC — the ONLY path that may set
+ * `parent_id` (client-locked) and copy nodes/edges/outputs atomically; the maintain-lineage
+ * trigger then writes the closure rows + increments the source's `fork_count`. Returns the new
+ * draft's id (the caller navigates into its editor). Binary outputs are zero-copy references to
+ * the source's published storage objects (no duplication).
+ */
+export async function forkWorkflow(sourceId: string): Promise<ForkResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { data, error } = await supabase.rpc("fork_workflow", {
+    p_source_id: sourceId,
+  });
+  if (error) {
+    // 42501 = the RPC's not-authenticated raise; P0001 = 'invalid fork source'
+    // (a draft / nonexistent source — one generic error, no existence oracle).
+    if (error.code === "42501")
+      return { ok: false, error: "not_authenticated" };
+    if (error.code === "P0001") return { ok: false, error: "invalid_source" };
+    return { ok: false, error: "db_error" };
+  }
+  if (!data) return { ok: false, error: "db_error" };
+  return { ok: true, forkId: data };
 }
 
 /** Delete a draft the caller owns. Zero-row delete → not_found. */
