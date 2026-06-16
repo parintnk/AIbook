@@ -72,7 +72,7 @@ describe("TrustRow", () => {
     expect(screen.queryByText(/original by creator/i)).not.toBeInTheDocument();
   });
 
-  it("renders 'Forked from @handle' when the parent author resolves (Story 5.1)", () => {
+  it("renders 'Forked from @handle' as a link to the parent (Story 5.2)", () => {
     render(
       <TrustRow
         triedCount={0}
@@ -83,7 +83,8 @@ describe("TrustRow", () => {
         publishedAt={daysAgo(1)}
       />,
     );
-    expect(screen.getByText("Forked from @nok")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /forked from @nok/i });
+    expect(link).toHaveAttribute("href", "/workflows/parent-id");
     expect(screen.queryByText(/^variation$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/original by creator/i)).not.toBeInTheDocument();
   });

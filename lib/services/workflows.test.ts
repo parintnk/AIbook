@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const singleMock = vi.fn();
 const maybeSingleMock = vi.fn();
 const orderMock = vi.fn();
+const inMock = vi.fn();
 const getUserMock = vi.fn();
 const rpcMock = vi.fn();
 
@@ -18,6 +19,8 @@ vi.mock("@/lib/supabase/server", () => ({
       update: () => b,
       delete: () => b,
       eq: () => b,
+      not: () => b,
+      in: inMock,
       order: orderMock,
       single: singleMock,
       maybeSingle: maybeSingleMock,
@@ -34,6 +37,7 @@ import {
   getMyDraft,
   getPublishedWorkflow,
   listMyDrafts,
+  listMyForks,
   publishWorkflow,
   updateDraft,
 } from "./workflows";
@@ -58,6 +62,50 @@ describe("listMyDrafts", () => {
       error: null,
     });
     expect(await listMyDrafts()).toHaveLength(1);
+  });
+});
+
+describe("listMyForks", () => {
+  it("returns [] when unauthenticated (no query)", async () => {
+    getUserMock.mockResolvedValueOnce(NO_USER);
+    expect(await listMyForks()).toEqual([]);
+    expect(orderMock).not.toHaveBeenCalled();
+  });
+
+  it("enriches each fork with its parent's title + author handle (batch query)", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    orderMock.mockResolvedValueOnce({
+      data: [{ id: "f1", title: "My fork", status: "draft", parent_id: "p1" }],
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [
+        {
+          id: "p1",
+          title: "Source",
+          status: "published",
+          author: { handle: "nok" },
+        },
+      ],
+      error: null,
+    });
+    const forks = await listMyForks();
+    expect(forks).toHaveLength(1);
+    expect(forks[0].parent?.id).toBe("p1");
+    expect(forks[0].parent?.author?.handle).toBe("nok");
+  });
+
+  it("maps an unreadable parent to null (graceful — the published-only batch hides it)", async () => {
+    getUserMock.mockResolvedValueOnce(USER);
+    orderMock.mockResolvedValueOnce({
+      data: [{ id: "f1", title: "My fork", status: "draft", parent_id: "p1" }],
+      error: null,
+    });
+    // The parent batch (published-only) returns no matching row → parentMap miss → parent: null.
+    inMock.mockResolvedValueOnce({ data: [], error: null });
+    const forks = await listMyForks();
+    expect(forks).toHaveLength(1);
+    expect(forks[0].parent).toBeNull();
   });
 });
 

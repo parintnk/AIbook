@@ -16,6 +16,18 @@ export type DraftListItem = Workflow & {
   profession: { slug: string; name: string } | null;
 };
 
+/** A fork in the caller's "My forks" list (Story 5.2) — the fork row + its parent's title/@handle
+ * for the "Forked from @x" lineage link. */
+export type MyForkListItem = Workflow & {
+  profession: { slug: string; name: string } | null;
+  parent: {
+    id: string;
+    title: string;
+    status: string;
+    author: { handle: string } | null;
+  } | null;
+};
+
 /** A published workflow for the public viewer (Story 3.1) — joins the author. */
 export type PublishedWorkflow = Workflow & {
   profession: { slug: string; name: string } | null;
@@ -75,6 +87,9 @@ const DRAFT_SELECT =
 const PUBLISHED_SELECT =
   "*, profession:professions!workflows_profession_id_fkey(slug, name), author:profiles!workflows_author_id_fkey(handle, display_name, avatar_url)";
 
+const FORK_LIST_SELECT =
+  "*, profession:professions!workflows_profession_id_fkey(slug, name)";
+
 /** The caller's own draft workflows, newest-updated first. RLS scopes to author. */
 export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {
   const supabase = await createClient();
@@ -89,6 +104,77 @@ export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {
     .eq("status", "draft")
     .order("updated_at", { ascending: false });
   return (data as DraftListItem[] | null) ?? [];
+});
+
+/**
+ * The caller's FORKS (workflows I authored that have a `parent_id`), newest-updated first — both
+ * draft AND published (the row branches Edit/View on status). Each embeds the parent's title +
+ * author `@handle` for the "Forked from @x" lineage link (Story 5.2 / FR15). RLS scopes the rows
+ * to the author; the published parent embeds inline, an unreadable parent → `null` (graceful).
+ */
+export const listMyForks = cache(async (): Promise<MyForkListItem[]> => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // My forks (draft + published), newest-updated first.
+  const { data } = await supabase
+    .from("workflows")
+    .select(FORK_LIST_SELECT)
+    .eq("author_id", user.id)
+    .not("parent_id", "is", null)
+    .order("updated_at", { ascending: false });
+  const forks = (data ?? []) as Array<
+    Workflow & { profession: { slug: string; name: string } | null }
+  >;
+  if (forks.length === 0) return [];
+
+  // Enrich each fork with its parent's title + author @handle in ONE batch query (reusing the
+  // `author:profiles!workflows_author_id_fkey(handle)` embed getForkParentHandle uses — NOT a
+  // self-referential nested embed). Not N+1. Filter to PUBLISHED parents for parity with
+  // getForkParentHandle: the lineage link targets the public `/workflows/{id}` detail, so a
+  // non-published parent (e.g. a fork of my own source I later unpublish) resolves to `null` and
+  // the row omits the link — never a dead link to a draft.
+  const parentIds = [
+    ...new Set(
+      forks.map((f) => f.parent_id).filter((id): id is string => id != null),
+    ),
+  ];
+  const parentMap = new Map<
+    string,
+    {
+      id: string;
+      title: string;
+      status: string;
+      author: { handle: string } | null;
+    }
+  >();
+  if (parentIds.length > 0) {
+    const { data: parents } = await supabase
+      .from("workflows")
+      .select(
+        "id, title, status, author:profiles!workflows_author_id_fkey(handle)",
+      )
+      .eq("status", "published")
+      .in("id", parentIds);
+    for (const p of (parents ?? []) as Array<{
+      id: string;
+      title: string;
+      status: string;
+      author: { handle: string } | null;
+    }>) {
+      parentMap.set(p.id, p);
+    }
+  }
+
+  return forks.map(
+    (f): MyForkListItem => ({
+      ...f,
+      parent: f.parent_id ? (parentMap.get(f.parent_id) ?? null) : null,
+    }),
+  );
 });
 
 /** A single draft the caller owns, or null. RLS + the filters enforce ownership. */

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatVerifiedAge } from "@/lib/format/verified-age";
 import { cn } from "@/lib/utils";
 
@@ -63,11 +64,18 @@ export function TrustRow({
         ) : (
           <ForkIcon className="size-3.5" />
         )}
-        {parentId == null
-          ? "Original by creator"
-          : parentHandle
-            ? `Forked from @${parentHandle}`
-            : "Variation"}
+        {parentId == null ? (
+          "Original by creator"
+        ) : parentHandle ? (
+          <Link
+            href={`/workflows/${parentId}`}
+            className="underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Forked from @{parentHandle}
+          </Link>
+        ) : (
+          "Variation"
+        )}
       </span>
 
       {/* Last verified — neutral under 90 days; amber-cautionary past it, with the

@@ -113,3 +113,10 @@ test("the /admin/reports queue redirects an anonymous visitor to sign-in (Story 
   await page.goto("/admin/reports");
   await expect(page).toHaveURL(/\/sign-in/);
 });
+
+test("the /forked My-forks page redirects an anonymous visitor to sign-in (Story 5.2)", async ({
+  page,
+}) => {
+  await page.goto("/forked");
+  await expect(page).toHaveURL(/\/sign-in/);
+});
