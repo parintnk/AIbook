@@ -108,3 +108,28 @@ insert into public.node_outputs (node_id, kind, text_content)
 values
   ('00000000-0000-0000-0000-0000000000de', 'text', 'Five crisp bullets, ready to send.')
 on conflict (node_id) do nothing;
+
+-- A THIRD published workflow fixture for the Story 4.2 comment e2e — kept separate from
+-- …00aa (3.3 anon zero-state) and …00dd (4.1 vote) so comment volume doesn't pollute
+-- their assertions. The comment thread starts empty; the e2e posts into it.
+insert into public.workflows (id, author_id, profession_id, title, summary, status, published_at, last_verified_at)
+values (
+  '00000000-0000-0000-0000-0000000000ee',
+  '00000000-0000-0000-0000-000000000001',
+  (select id from public.professions where slug = 'ai-automation'),
+  'Prompt chaining starter',
+  'Chain two models for a tighter draft.',
+  'published', now(), now() - interval '7 days'
+)
+on conflict (id) do nothing;
+
+insert into public.workflow_nodes (id, workflow_id, idx, pos_x, pos_y, tool_name, prompt, purpose)
+values
+  ('00000000-0000-0000-0000-0000000000ef', '00000000-0000-0000-0000-0000000000ee', 0,
+   0, 0, 'ChatGPT', 'Draft an outline from the brief', 'Set the structure first')
+on conflict (id) do nothing;
+
+insert into public.node_outputs (node_id, kind, text_content)
+values
+  ('00000000-0000-0000-0000-0000000000ef', 'text', 'A three-part outline, ready to expand.')
+on conflict (node_id) do nothing;

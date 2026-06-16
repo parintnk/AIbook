@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { CommentThread } from "@/components/workflows/comment-thread";
 import { OutcomeVote } from "@/components/workflows/outcome-vote";
 import { TrustRow } from "@/components/workflows/trust-row";
 import { WorkflowViewerSurface } from "@/components/workflows/workflow-viewer-surface";
+import { countComments, listCommentPage } from "@/lib/services/comments";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { getMyOutcomeVote } from "@/lib/services/outcome-votes";
 import { listPublishedEdges } from "@/lib/services/workflow-edges";
@@ -40,17 +42,42 @@ export default async function WorkflowDetailPage({ params }: Params) {
   const wf = await getPublishedWorkflow(id);
   if (!wf) notFound();
 
-  const [nodes, edges, outputs, myVote] = await Promise.all([
-    listPublishedNodes(id),
-    listPublishedEdges(id),
-    listOutputViewsForWorkflow(id),
-    getMyOutcomeVote(id),
-  ]);
+  const [nodes, edges, outputs, myVote, commentPage, commentCount] =
+    await Promise.all([
+      listPublishedNodes(id),
+      listPublishedEdges(id),
+      listOutputViewsForWorkflow(id),
+      getMyOutcomeVote(id),
+      listCommentPage(id, { sort: "top" }),
+      countComments(id),
+    ]);
 
-  // Voting is auth-gated (anon sees the counts + a "Sign in to vote" affordance).
+  // Voting + commenting are auth-gated (anon sees the counts + a sign-in affordance).
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await (await createClient()).auth.getUser();
+  } = await supabase.auth.getUser();
+
+  // The caller's profile powers the comment composer + the optimistic comment author.
+  let currentUser: {
+    id: string;
+    handle: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  } | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("handle, display_name, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    currentUser = {
+      id: user.id,
+      handle: profile?.handle ?? "you",
+      displayName: profile?.display_name ?? null,
+      avatarUrl: profile?.avatar_url ?? null,
+    };
+  }
 
   const author = wf.author;
   const authorName =
@@ -123,6 +150,16 @@ export default async function WorkflowDetailPage({ params }: Params) {
         nodes={nodes}
         edges={edges}
         outputsByNodeId={outputs}
+      />
+
+      {/* Threaded comments (Story 4.2 / FR19) — the last section, below the canvas. */}
+      <CommentThread
+        workflowId={wf.id}
+        workflowAuthorId={wf.author_id}
+        initialComments={commentPage.comments}
+        initialHasMore={commentPage.hasMore}
+        total={commentCount}
+        currentUser={currentUser}
       />
     </div>
   );

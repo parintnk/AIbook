@@ -3,6 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  type CommentPage,
+  type CommentSort,
+  listCommentPage,
+  type PostCommentResult,
+  postComment,
+  type ToggleLikeResult,
+  toggleCommentLike,
+} from "@/lib/services/comments";
+import {
   deleteNodeOutput,
   deriveThumbPath,
   getNodeOutput,
@@ -328,4 +337,34 @@ export async function castOutcomeVoteAction(
     return { ok: true };
   }
   return { ok: false, error: result.error };
+}
+
+/**
+ * Post a comment / 1-level reply (Story 4.2 / FR19). Returns the new enriched comment so
+ * the client reconciles its optimistic insert. No `revalidatePath`: the thread owns its
+ * loaded-page state client-side (a refresh would reset Load-more + scroll, and re-run the
+ * whole detail RSC). The route is dynamic, so a cold reload / back-nav re-fetches fresh.
+ */
+export async function postCommentAction(
+  workflowId: string,
+  body: string,
+  parentCommentId?: string | null,
+): Promise<PostCommentResult> {
+  return postComment(workflowId, body, parentCommentId);
+}
+
+/** Toggle the caller's like on a comment; the ±1 trigger maintains like_count. */
+export async function toggleCommentLikeAction(
+  commentId: string,
+): Promise<ToggleLikeResult> {
+  return toggleCommentLike(commentId);
+}
+
+/** Fetch the next page of top-level comments — the "Load more" affordance (read-only). */
+export async function loadMoreCommentsAction(
+  workflowId: string,
+  sort: CommentSort,
+  offset: number,
+): Promise<CommentPage> {
+  return listCommentPage(workflowId, { sort, offset });
 }

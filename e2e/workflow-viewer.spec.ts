@@ -42,6 +42,11 @@ test("desktop defaults to the canvas; a node expands; toggling to List shows the
     page.getByRole("button", { name: /tried & worked/i }),
   ).toBeDisabled();
 
+  // Comments (Story 4.2) — anon sees the thread + a "Sign in to comment" affordance
+  // (empty thread here) instead of a composer; commenting is auth-gated.
+  await expect(page.getByRole("heading", { name: /comments/i })).toBeVisible();
+  await expect(page.getByText(/sign in to comment/i)).toBeVisible();
+
   // ≥md (Playwright default 1280×720) promotes to the canvas after mount; the lazy
   // React Flow chunk renders both recipe-card nodes.
   await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });
