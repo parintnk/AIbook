@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { compactAgo } from "@/lib/format/relative-time";
 import type { CommentView } from "@/lib/services/comments";
 import { cn } from "@/lib/utils";
 import { CommentComposer } from "./comment-composer";
+import { ReportMenu } from "./report-menu";
 
 /**
  * One comment (Story 4.2 / UX-DR19): avatar + @handle + an "Author" tag when it's the
@@ -110,17 +110,14 @@ export function CommentItem({
                 </span>
               ) : null}
             </button>
-            <button
-              type="button"
-              title="More — report"
-              aria-label="More actions"
-              onClick={() =>
-                toast("Reporting comments arrives in a later update.")
-              }
-              className="ml-auto inline-flex items-center rounded-md px-1 text-muted-foreground transition hover:text-foreground"
-            >
-              <DotsIcon className="size-4" />
-            </button>
+            {canInteract ? (
+              <ReportMenu
+                targetType="comment"
+                targetId={comment.id}
+                disabled={isOptimistic}
+                className="ml-auto"
+              />
+            ) : null}
           </div>
         )}
 
@@ -206,21 +203,6 @@ function HeartIcon({
       className={className}
     >
       <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" />
-    </svg>
-  );
-}
-
-function DotsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="currentColor"
-      className={className}
-    >
-      <circle cx="5" cy="12" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="19" cy="12" r="1.6" />
     </svg>
   );
 }

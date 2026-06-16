@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { CommentThread } from "@/components/workflows/comment-thread";
 import { OutcomeVote } from "@/components/workflows/outcome-vote";
+import { ReportMenu } from "@/components/workflows/report-menu";
 import { TrustRow } from "@/components/workflows/trust-row";
 import { WorkflowViewerSurface } from "@/components/workflows/workflow-viewer-surface";
 import { countComments, listCommentPage } from "@/lib/services/comments";
@@ -93,12 +94,23 @@ export default async function WorkflowDetailPage({ params }: Params) {
           </span>
         ) : null}
 
-        <div>
-          <h1 className="font-bold font-heading text-2xl tracking-tight">
-            {wf.title}
-          </h1>
-          {wf.summary ? (
-            <p className="mt-2 max-w-2xl text-muted-foreground">{wf.summary}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-bold font-heading text-2xl tracking-tight">
+              {wf.title}
+            </h1>
+            {wf.summary ? (
+              <p className="mt-2 max-w-2xl text-muted-foreground">
+                {wf.summary}
+              </p>
+            ) : null}
+          </div>
+          {user ? (
+            <ReportMenu
+              targetType="workflow"
+              targetId={wf.id}
+              className="mt-1 shrink-0"
+            />
           ) : null}
         </div>
 

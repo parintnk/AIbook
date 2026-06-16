@@ -8,6 +8,7 @@ import type { Database } from "./database.types";
  */
 const PROTECTED_PREFIXES = [
   "/account",
+  "/admin",
   "/settings",
   "/workflows/new",
   "/forked",

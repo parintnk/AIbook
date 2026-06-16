@@ -140,6 +140,73 @@ export type Database = {
           },
         ];
       };
+      reports: {
+        Row: {
+          created_at: string;
+          detail: string | null;
+          id: string;
+          profession_id: string;
+          reason: Database["public"]["Enums"]["report_reason"];
+          reporter_id: string;
+          resolution: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          status: Database["public"]["Enums"]["report_status"];
+          target_id: string;
+          target_type: Database["public"]["Enums"]["report_target_type"];
+        };
+        Insert: {
+          created_at?: string;
+          detail?: string | null;
+          id?: string;
+          profession_id?: string;
+          reason: Database["public"]["Enums"]["report_reason"];
+          reporter_id?: string;
+          resolution?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["report_status"];
+          target_id: string;
+          target_type: Database["public"]["Enums"]["report_target_type"];
+        };
+        Update: {
+          created_at?: string;
+          detail?: string | null;
+          id?: string;
+          profession_id?: string;
+          reason?: Database["public"]["Enums"]["report_reason"];
+          reporter_id?: string;
+          resolution?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["report_status"];
+          target_id?: string;
+          target_type?: Database["public"]["Enums"]["report_target_type"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reports_profession_id_fkey";
+            columns: ["profession_id"];
+            isOneToOne: false;
+            referencedRelation: "professions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_resolved_by_fkey";
+            columns: ["resolved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       node_outputs: {
         Row: {
           bytes: number | null;
@@ -607,6 +674,15 @@ export type Database = {
       node_output_kind: "image" | "video" | "text" | "file";
       outcome_verdict: "worked" | "tweaked" | "failed" | "untried";
       profession_role: "member" | "verified_pro" | "moderator";
+      report_reason:
+        | "fake_output"
+        | "spam"
+        | "copyright"
+        | "harassment"
+        | "not_working"
+        | "other";
+      report_status: "open" | "resolved";
+      report_target_type: "workflow" | "comment";
       workflow_status: "draft" | "published";
     };
     CompositeTypes: {
@@ -741,6 +817,16 @@ export const Constants = {
       node_output_kind: ["image", "video", "text", "file"],
       outcome_verdict: ["worked", "tweaked", "failed", "untried"],
       profession_role: ["member", "verified_pro", "moderator"],
+      report_reason: [
+        "fake_output",
+        "spam",
+        "copyright",
+        "harassment",
+        "not_working",
+        "other",
+      ],
+      report_status: ["open", "resolved"],
+      report_target_type: ["workflow", "comment"],
       workflow_status: ["draft", "published"],
     },
   },

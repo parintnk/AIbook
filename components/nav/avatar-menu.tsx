@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Flag,
   LogOut,
   Monitor,
   Moon,
@@ -44,6 +45,35 @@ export function AvatarMenu() {
 
   // Theme is only known on the client — gate to avoid a hydration mismatch.
   useEffect(() => setMounted(true), []);
+
+  // Moderators (the founder in v1) get a hidden "Reports" entry to the mod queue
+  // (UX-DR21). A cheap indexed check via the browser client (profession_members is
+  // public-select); members never see it.
+  const userId = user?.id;
+  const [isModerator, setIsModerator] = useState(false);
+  useEffect(() => {
+    if (!userId) {
+      setIsModerator(false);
+      return;
+    }
+    let active = true;
+    createClient()
+      .from("profession_members")
+      .select("profile_id", { head: true, count: "exact" })
+      .eq("profile_id", userId)
+      .eq("role", "moderator")
+      .then(
+        ({ count }) => {
+          if (active) setIsModerator((count ?? 0) > 0);
+        },
+        () => {
+          if (active) setIsModerator(false);
+        },
+      );
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   // Avoid a flash of the wrong state before the session resolves.
   if (loading) return <div className="size-9" aria-hidden="true" />;
@@ -104,6 +134,11 @@ export function AvatarMenu() {
           <DropdownMenuItem render={<Link href="/settings" />}>
             <Settings className="size-4" aria-hidden /> Settings
           </DropdownMenuItem>
+          {isModerator ? (
+            <DropdownMenuItem render={<Link href="/admin/reports" />}>
+              <Flag className="size-4" aria-hidden /> Reports
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup

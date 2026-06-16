@@ -31,6 +31,27 @@ setup("authenticate a seeded test user", async ({ page }) => {
   });
   if (error && !/already|registered|exists/i.test(error.message)) throw error;
 
+  // Make the e2e user a moderator of ONE profession (ai-automation — the …00ee fixture's)
+  // so the Story 4.3 reports-queue e2e can review reports. Scoped (not all professions) so
+  // no other authed spec changes. Service role bypasses the member-only self-join RLS.
+  {
+    const { data } = await admin.auth.admin.listUsers();
+    const e2eUser = data.users.find((u) => u.email === TEST_EMAIL);
+    const { data: prof } = await admin
+      .from("professions")
+      .select("id")
+      .eq("slug", "ai-automation")
+      .maybeSingle();
+    if (e2eUser && prof) {
+      await admin
+        .from("profession_members")
+        .upsert(
+          { profile_id: e2eUser.id, profession_id: prof.id, role: "moderator" },
+          { onConflict: "profile_id,profession_id" },
+        );
+    }
+  }
+
   // Sign in through the real form so the @supabase/ssr cookies are written by
   // the app itself (no manual cookie construction). Local Supabase has no
   // captcha, so the form submits without a Turnstile token.

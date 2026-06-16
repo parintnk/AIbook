@@ -47,6 +47,12 @@ test("desktop defaults to the canvas; a node expands; toggling to List shows the
   await expect(page.getByRole("heading", { name: /comments/i })).toBeVisible();
   await expect(page.getByText(/sign in to comment/i)).toBeVisible();
 
+  // Report (Story 4.3) — the ••• overflow → Report is gated behind sign-in, so an
+  // anonymous viewer sees no "More actions" affordance (workflow header or comments).
+  await expect(page.getByRole("button", { name: /more actions/i })).toHaveCount(
+    0,
+  );
+
   // ≥md (Playwright default 1280×720) promotes to the canvas after mount; the lazy
   // React Flow chunk renders both recipe-card nodes.
   await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });
@@ -93,4 +99,11 @@ test("a nonexistent / draft workflow shows the graceful not-found state (AC3)", 
 }) => {
   await page.goto("/workflows/11111111-1111-1111-1111-111111111111");
   await expect(page.getByText("This workflow isn’t available")).toBeVisible();
+});
+
+test("the /admin/reports queue redirects an anonymous visitor to sign-in (Story 4.3 / UX-DR21)", async ({
+  page,
+}) => {
+  await page.goto("/admin/reports");
+  await expect(page).toHaveURL(/\/sign-in/);
 });

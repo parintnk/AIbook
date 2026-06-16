@@ -21,6 +21,7 @@ import {
   castOutcomeVote,
   type OutcomeVerdict,
 } from "@/lib/services/outcome-votes";
+import { createReport } from "@/lib/services/reports";
 import { createSupabaseStorage } from "@/lib/services/storage/supabase-storage";
 import { createEdge, deleteEdge } from "@/lib/services/workflow-edges";
 import {
@@ -39,6 +40,7 @@ import {
 } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
 import { textOutputSchema } from "@/lib/validation/output";
+import { reportSchema } from "@/lib/validation/report";
 import {
   edgeEndpointsSchema,
   nodeIdsSchema,
@@ -367,4 +369,30 @@ export async function loadMoreCommentsAction(
   offset: number,
 ): Promise<CommentPage> {
   return listCommentPage(workflowId, { sort, offset });
+}
+
+/**
+ * File a report on a workflow / comment (Story 4.3 / FR14). The action is the trust boundary
+ * (Zod-validates reason + detail). `already_reported` is a soft-success (the user already filed an
+ * open report — a friendly toast, not an error). No `revalidatePath`: nothing on the page changes.
+ */
+export async function submitReportAction(
+  input: unknown,
+): Promise<{ ok: true; duplicate?: boolean } | { ok: false; error: string }> {
+  const parsed = reportSchema.safeParse(input);
+  if (!parsed.success)
+    return {
+      ok: false,
+      error: "Couldn't submit your report. Please try again.",
+    };
+  const { targetType, targetId, reason, detail } = parsed.data;
+
+  const result = await createReport(targetType, targetId, reason, detail);
+  if (result.ok) return { ok: true };
+  if (result.error === "already_reported") return { ok: true, duplicate: true };
+  if (result.error === "not_authenticated")
+    return { ok: false, error: "You must be signed in to report." };
+  if (result.error === "invalid_target")
+    return { ok: false, error: "That content can't be reported." };
+  return { ok: false, error: "Couldn't submit your report. Please try again." };
 }
