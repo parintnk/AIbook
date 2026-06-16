@@ -1,7 +1,15 @@
 import "server-only";
 import { cache } from "react";
+import {
+  PAGE_SIZE,
+  type ThumbKind,
+  type WorkflowCardData,
+  type WorkflowSort,
+} from "@/lib/explore";
 import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { deriveThumbPath } from "./node-outputs";
+import { createSupabaseStorage } from "./storage/supabase-storage";
 
 /**
  * Workflows domain/service layer (DR-1) — the ONLY place workflow SQL lives.
@@ -234,6 +242,204 @@ export const getForkParentHandle = cache(
     return author?.handle ?? null;
   },
 );
+
+/** The columns a feed card needs (counters + embedded profession + author). */
+const CARD_SELECT =
+  "id, title, fork_count, worked_score, tried_count, published_at, profession:professions!workflows_profession_id_fkey(slug, name), author:profiles!workflows_author_id_fkey(handle, display_name, avatar_url)";
+
+type PublishedCardRow = {
+  id: string;
+  title: string;
+  fork_count: number;
+  worked_score: number;
+  tried_count: number;
+  published_at: string | null;
+  profession: { slug: string; name: string } | null;
+  author: {
+    handle: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
+function toCardData(
+  r: PublishedCardRow,
+  thumb: { kind: ThumbKind | null; url: string | null },
+): WorkflowCardData {
+  return {
+    id: r.id,
+    title: r.title,
+    authorHandle: r.author?.handle ?? null,
+    authorDisplayName: r.author?.display_name ?? null,
+    authorAvatarUrl: r.author?.avatar_url ?? null,
+    professionName: r.profession?.name ?? null,
+    professionSlug: r.profession?.slug ?? null,
+    forkCount: r.fork_count,
+    workedScore: r.worked_score,
+    triedCount: r.tried_count,
+    publishedAt: r.published_at,
+    thumb,
+  };
+}
+
+/**
+ * The thumbnail (output preview) for each workflow on a feed page, derived in TWO batched
+ * queries (the `listMyForks` 2-step `.in()` pattern — NOT N+1, NOT a self-ref embed): the
+ * first node (idx 0) per workflow, then that node's output. An image output resolves to a
+ * signed thumb URL (private bucket); every other kind carries only its `kind` for the
+ * wash/kit fallback. A workflow whose node/output can't be read → `{kind:null,url:null}`
+ * (graceful — the card falls back to a deterministic wash).
+ */
+async function resolveThumbs(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  workflowIds: string[],
+): Promise<Map<string, { kind: ThumbKind | null; url: string | null }>> {
+  const result = new Map<
+    string,
+    { kind: ThumbKind | null; url: string | null }
+  >();
+  if (workflowIds.length === 0) return result;
+
+  // Step 1 — the first node (idx 0) per workflow. `.eq("idx", 0)` BEFORE `.in()` (the mock terminal).
+  const { data: nodes } = await supabase
+    .from("workflow_nodes")
+    .select("id, workflow_id")
+    .eq("idx", 0)
+    .in("workflow_id", workflowIds);
+  const firstNodeByWorkflow = new Map<string, string>();
+  const nodeIds: string[] = [];
+  for (const n of (nodes ?? []) as Array<{ id: string; workflow_id: string }>) {
+    if (!firstNodeByWorkflow.has(n.workflow_id)) {
+      firstNodeByWorkflow.set(n.workflow_id, n.id);
+      nodeIds.push(n.id);
+    }
+  }
+  if (nodeIds.length === 0) return result;
+
+  // Step 2 — the output for each first node (single-per-node via unique(node_id)).
+  const { data: outputs } = await supabase
+    .from("node_outputs")
+    .select("node_id, kind, storage_path")
+    .in("node_id", nodeIds);
+  const outByNode = new Map<
+    string,
+    { kind: ThumbKind; storage_path: string | null }
+  >();
+  for (const o of (outputs ?? []) as Array<{
+    node_id: string;
+    kind: ThumbKind;
+    storage_path: string | null;
+  }>) {
+    if (!outByNode.has(o.node_id)) outByNode.set(o.node_id, o);
+  }
+
+  // Resolve image thumbnails to signed URLs (batched over the page; ≤ PAGE_SIZE).
+  // Construct the storage client lazily — only when a page actually carries an image output —
+  // so a text-only feed never touches storage.
+  const hasImage = [...outByNode.values()].some(
+    (o) => o.kind === "image" && o.storage_path,
+  );
+  const storage = hasImage ? createSupabaseStorage(supabase) : null;
+  await Promise.all(
+    [...firstNodeByWorkflow.entries()].map(async ([wfId, nodeId]) => {
+      const out = outByNode.get(nodeId);
+      if (!out) {
+        result.set(wfId, { kind: null, url: null });
+        return;
+      }
+      let url: string | null = null;
+      if (storage && out.kind === "image" && out.storage_path) {
+        try {
+          url = await storage.signedUrl(deriveThumbPath(out.storage_path));
+        } catch {
+          url = null;
+        }
+      }
+      result.set(wfId, { kind: out.kind, url });
+    }),
+  );
+  return result;
+}
+
+/**
+ * A page of PUBLISHED workflows for the Explore feed (Story 6.1 / FR3). Public —
+ * NO `auth.getUser` gate; RLS (`status='published' OR author`) is the boundary, so a
+ * signed-out visitor reads the same published rows (mirrors `getPublishedWorkflow`).
+ * Offset pagination with an exact `total` ("Showing X of Y"). `sort`: `trending` =
+ * most-forked (recency tiebreak), `new` = recency. `profession` is a slug; an unknown
+ * slug falls back to no filter (never 404). Not cached (varying object args defeat it).
+ */
+export async function listPublishedWorkflows(opts: {
+  profession?: string | null;
+  sort?: WorkflowSort;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: WorkflowCardData[]; total: number }> {
+  const {
+    profession = null,
+    sort = "trending",
+    limit = PAGE_SIZE,
+    offset = 0,
+  } = opts;
+  const supabase = await createClient();
+
+  // Resolve the profession slug → id (filter by id; unknown slug → no filter).
+  let professionId: string | null = null;
+  if (profession) {
+    const { data: prof } = await supabase
+      .from("professions")
+      .select("id")
+      .eq("slug", profession)
+      .maybeSingle();
+    professionId = (prof as { id: string } | null)?.id ?? null;
+  }
+
+  let query = supabase
+    .from("workflows")
+    .select(CARD_SELECT, { count: "exact" })
+    .eq("status", "published");
+  if (professionId) query = query.eq("profession_id", professionId);
+  // A unique `id` tiebreak terminates every sort so offset pagination is deterministic across
+  // the SSR page + the Load-more page (colliding fork_count/published_at would otherwise let a
+  // card duplicate or get skipped at the page boundary).
+  query =
+    sort === "new"
+      ? query
+          .order("published_at", { ascending: false })
+          .order("id", { ascending: false })
+      : query
+          .order("fork_count", { ascending: false })
+          .order("published_at", { ascending: false })
+          .order("id", { ascending: false });
+
+  // `.range()` is the awaitable terminal — every filter/order is chained BEFORE it.
+  const { data, count } = await query.range(offset, offset + limit - 1);
+  const rows = (data ?? []) as PublishedCardRow[];
+  const total = count ?? 0;
+  if (rows.length === 0) return { items: [], total };
+
+  const thumbs = await resolveThumbs(
+    supabase,
+    rows.map((r) => r.id),
+  );
+  const items = rows.map((r) =>
+    toCardData(r, thumbs.get(r.id) ?? { kind: null, url: null }),
+  );
+  return { items, total };
+}
+
+/**
+ * The newest published workflows for the "New this week" rail (Story 6.1) — recency-sorted,
+ * no profession filter. Reuses `listPublishedWorkflows({ sort: "new" })`.
+ */
+export async function listNewThisWeek(limit = 10): Promise<WorkflowCardData[]> {
+  const { items } = await listPublishedWorkflows({
+    sort: "new",
+    limit,
+    offset: 0,
+  });
+  return items;
+}
 
 /** Create a draft owned by the caller (status defaults to 'draft'). */
 export async function createDraft(input: DraftInput): Promise<WorkflowResult> {

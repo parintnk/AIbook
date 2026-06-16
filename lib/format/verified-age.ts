@@ -26,7 +26,7 @@ export function formatVerifiedAge(
 }
 
 /** Coarse "N units ago" from a millisecond delta; a future/sub-minute delta → "just now". */
-function relativeAgo(diffMs: number): string {
+export function relativeAgo(diffMs: number): string {
   const sec = Math.round(diffMs / 1000);
   if (sec < 60) return "just now";
   const min = Math.round(sec / 60);

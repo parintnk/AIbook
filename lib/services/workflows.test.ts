@@ -4,6 +4,7 @@ const singleMock = vi.fn();
 const maybeSingleMock = vi.fn();
 const orderMock = vi.fn();
 const inMock = vi.fn();
+const rangeMock = vi.fn();
 const getUserMock = vi.fn();
 const rpcMock = vi.fn();
 
@@ -21,7 +22,14 @@ vi.mock("@/lib/supabase/server", () => ({
       eq: () => b,
       not: () => b,
       in: inMock,
-      order: orderMock,
+      // `order` is a terminal when a test configures it (returns the resolved promise), but
+      // chainable when not (returns the builder) — so `.order().order().range()` works without
+      // breaking the existing queries that `await` a single `.order()`.
+      order: (...args: unknown[]) => {
+        const r = orderMock(...args);
+        return r === undefined ? b : r;
+      },
+      range: rangeMock,
       single: singleMock,
       maybeSingle: maybeSingleMock,
     };
@@ -38,6 +46,8 @@ import {
   getPublishedWorkflow,
   listMyDrafts,
   listMyForks,
+  listNewThisWeek,
+  listPublishedWorkflows,
   publishWorkflow,
   updateDraft,
 } from "./workflows";
@@ -187,6 +197,116 @@ describe("getPublishedWorkflow", () => {
   it("returns null when no published row matches (draft/missing → RLS hides it)", async () => {
     maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
     expect(await getPublishedWorkflow("w1")).toBeNull();
+  });
+});
+
+describe("listPublishedWorkflows", () => {
+  const cardRow = {
+    id: "w1",
+    title: "Revenue dashboard",
+    fork_count: 198,
+    worked_score: 0.91,
+    tried_count: 20,
+    profession: { slug: "data-analysts", name: "Data Analysts" },
+    author: { handle: "priya", display_name: "Priya", avatar_url: null },
+  };
+
+  it("short-circuits an empty page (no thumbnail enrichment, no auth gate)", async () => {
+    rangeMock.mockResolvedValueOnce({ data: [], count: 0, error: null });
+    expect(await listPublishedWorkflows({})).toEqual({ items: [], total: 0 });
+    // Empty page → resolveThumbs never runs (no `.in()` enrichment queries).
+    expect(inMock).not.toHaveBeenCalled();
+    // Public feed: RLS-only, never gates on the session.
+    expect(getUserMock).not.toHaveBeenCalled();
+  });
+
+  it("returns enriched cards with the exact total (2-step .in() thumbnail enrich)", async () => {
+    rangeMock.mockResolvedValueOnce({
+      data: [cardRow],
+      count: 248,
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [{ id: "n1", workflow_id: "w1" }],
+      error: null,
+    }); // first nodes
+    inMock.mockResolvedValueOnce({
+      data: [{ node_id: "n1", kind: "text", storage_path: null }],
+      error: null,
+    }); // outputs
+    const { items, total } = await listPublishedWorkflows({});
+    expect(total).toBe(248);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      id: "w1",
+      title: "Revenue dashboard",
+      authorHandle: "priya",
+      professionName: "Data Analysts",
+      forkCount: 198,
+      workedScore: 0.91,
+      triedCount: 20,
+      thumb: { kind: "text", url: null },
+    });
+  });
+
+  it("resolves a profession slug → id before filtering", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: { id: "p1" }, error: null });
+    rangeMock.mockResolvedValueOnce({ data: [cardRow], count: 1, error: null });
+    inMock.mockResolvedValueOnce({
+      data: [{ id: "n1", workflow_id: "w1" }],
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [{ node_id: "n1", kind: "text", storage_path: null }],
+      error: null,
+    });
+    const { items } = await listPublishedWorkflows({
+      profession: "data-analysts",
+    });
+    expect(maybeSingleMock).toHaveBeenCalled(); // the slug→id lookup ran
+    expect(items).toHaveLength(1);
+  });
+
+  it("falls back to a wash (kind:null) when a workflow has no readable output", async () => {
+    rangeMock.mockResolvedValueOnce({ data: [cardRow], count: 1, error: null });
+    inMock.mockResolvedValueOnce({
+      data: [{ id: "n1", workflow_id: "w1" }],
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({ data: [], error: null }); // no outputs
+    const { items } = await listPublishedWorkflows({});
+    expect(items[0].thumb).toEqual({ kind: null, url: null });
+  });
+});
+
+describe("listNewThisWeek", () => {
+  it("returns the newest published cards (delegates to listPublishedWorkflows)", async () => {
+    rangeMock.mockResolvedValueOnce({
+      data: [
+        {
+          id: "w2",
+          title: "Newsletter from commits",
+          fork_count: 3,
+          worked_score: 0,
+          tried_count: 0,
+          profession: { slug: "content-writer", name: "Content Writer" },
+          author: { handle: "noor", display_name: null, avatar_url: null },
+        },
+      ],
+      count: 1,
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [{ id: "n2", workflow_id: "w2" }],
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [{ node_id: "n2", kind: "text", storage_path: null }],
+      error: null,
+    });
+    const items = await listNewThisWeek(5);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("w2");
   });
 });
 
