@@ -83,3 +83,28 @@ where not exists (
   where source_node_id = '00000000-0000-0000-0000-0000000000ab'
     and target_node_id = '00000000-0000-0000-0000-0000000000ac'
 );
+
+-- A SECOND published workflow fixture for the Story 4.1 outcome-vote e2e — kept
+-- separate from …00aa so casting a vote here doesn't pollute the 3.3 anon-viewer
+-- zero-state assertions on …00aa. 1 covered node; no votes seeded (counts start at 0).
+insert into public.workflows (id, author_id, profession_id, title, summary, status, published_at, last_verified_at)
+values (
+  '00000000-0000-0000-0000-0000000000dd',
+  '00000000-0000-0000-0000-000000000001',
+  (select id from public.professions where slug = 'ai-automation'),
+  'Newsletter summarizer',
+  'Turn long threads into a tight newsletter.',
+  'published', now(), now() - interval '14 days'
+)
+on conflict (id) do nothing;
+
+insert into public.workflow_nodes (id, workflow_id, idx, pos_x, pos_y, tool_name, prompt, purpose)
+values
+  ('00000000-0000-0000-0000-0000000000de', '00000000-0000-0000-0000-0000000000dd', 0,
+   0, 0, 'Claude', 'Summarize the thread into 5 bullets', 'Condense the source')
+on conflict (id) do nothing;
+
+insert into public.node_outputs (node_id, kind, text_content)
+values
+  ('00000000-0000-0000-0000-0000000000de', 'text', 'Five crisp bullets, ready to send.')
+on conflict (node_id) do nothing;

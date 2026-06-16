@@ -346,10 +346,56 @@ export type Database = {
           },
         ];
       };
+      outcome_votes: {
+        Row: {
+          created_at: string;
+          id: string;
+          note: string | null;
+          updated_at: string;
+          verdict: Database["public"]["Enums"]["outcome_verdict"];
+          voter_id: string;
+          workflow_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          updated_at?: string;
+          verdict: Database["public"]["Enums"]["outcome_verdict"];
+          voter_id?: string;
+          workflow_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          updated_at?: string;
+          verdict?: Database["public"]["Enums"]["outcome_verdict"];
+          voter_id?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "outcome_votes_voter_id_fkey";
+            columns: ["voter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "outcome_votes_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workflows: {
         Row: {
           author_id: string;
           created_at: string;
+          failed_count: number;
           fork_count: number;
           id: string;
           last_verified_at: string | null;
@@ -360,12 +406,15 @@ export type Database = {
           summary: string | null;
           title: string;
           tried_count: number;
+          tweaked_count: number;
           updated_at: string;
+          worked_count: number;
           worked_score: number;
         };
         Insert: {
           author_id: string;
           created_at?: string;
+          failed_count?: number;
           fork_count?: number;
           id?: string;
           last_verified_at?: string | null;
@@ -376,12 +425,15 @@ export type Database = {
           summary?: string | null;
           title: string;
           tried_count?: number;
+          tweaked_count?: number;
           updated_at?: string;
+          worked_count?: number;
           worked_score?: number;
         };
         Update: {
           author_id?: string;
           created_at?: string;
+          failed_count?: number;
           fork_count?: number;
           id?: string;
           last_verified_at?: string | null;
@@ -392,7 +444,9 @@ export type Database = {
           summary?: string | null;
           title?: string;
           tried_count?: number;
+          tweaked_count?: number;
           updated_at?: string;
+          worked_count?: number;
           worked_score?: number;
         };
         Relationships: [
@@ -460,6 +514,7 @@ export type Database = {
     };
     Enums: {
       node_output_kind: "image" | "video" | "text" | "file";
+      outcome_verdict: "worked" | "tweaked" | "failed" | "untried";
       profession_role: "member" | "verified_pro" | "moderator";
       workflow_status: "draft" | "published";
     };
@@ -593,6 +648,7 @@ export const Constants = {
   public: {
     Enums: {
       node_output_kind: ["image", "video", "text", "file"],
+      outcome_verdict: ["worked", "tweaked", "failed", "untried"],
       profession_role: ["member", "verified_pro", "moderator"],
       workflow_status: ["draft", "published"],
     },

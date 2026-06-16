@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { OutcomeVote } from "@/components/workflows/outcome-vote";
 import { TrustRow } from "@/components/workflows/trust-row";
 import { WorkflowViewerSurface } from "@/components/workflows/workflow-viewer-surface";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
+import { getMyOutcomeVote } from "@/lib/services/outcome-votes";
 import { listPublishedEdges } from "@/lib/services/workflow-edges";
 import { listPublishedNodes } from "@/lib/services/workflow-nodes";
 import { getPublishedWorkflow } from "@/lib/services/workflows";
+import { createClient } from "@/lib/supabase/server";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -37,11 +40,17 @@ export default async function WorkflowDetailPage({ params }: Params) {
   const wf = await getPublishedWorkflow(id);
   if (!wf) notFound();
 
-  const [nodes, edges, outputs] = await Promise.all([
+  const [nodes, edges, outputs, myVote] = await Promise.all([
     listPublishedNodes(id),
     listPublishedEdges(id),
     listOutputViewsForWorkflow(id),
+    getMyOutcomeVote(id),
   ]);
+
+  // Voting is auth-gated (anon sees the counts + a "Sign in to vote" affordance).
+  const {
+    data: { user },
+  } = await (await createClient()).auth.getUser();
 
   const author = wf.author;
   const authorName =
@@ -96,6 +105,19 @@ export default async function WorkflowDetailPage({ params }: Params) {
           publishedAt={wf.published_at}
         />
       </header>
+
+      {/* Outcome vote (Story 4.1 / FR11) — feeds the trust row's counters. Save/Fork
+          (Epics 8/5) still land in the reserved header slot. */}
+      <OutcomeVote
+        workflowId={wf.id}
+        counts={{
+          worked: wf.worked_count,
+          tweaked: wf.tweaked_count,
+          failed: wf.failed_count,
+        }}
+        myVerdict={myVote?.verdict ?? null}
+        canVote={user != null}
+      />
 
       <WorkflowViewerSurface
         nodes={nodes}

@@ -8,6 +8,10 @@ import {
   getNodeOutput,
   upsertTextOutput,
 } from "@/lib/services/node-outputs";
+import {
+  castOutcomeVote,
+  type OutcomeVerdict,
+} from "@/lib/services/outcome-votes";
 import { createSupabaseStorage } from "@/lib/services/storage/supabase-storage";
 import { createEdge, deleteEdge } from "@/lib/services/workflow-edges";
 import {
@@ -305,4 +309,23 @@ export async function deleteOutputAction(
 
   revalidatePath(`/workflows/${workflowId}/edit`);
   return { success: true };
+}
+
+/**
+ * Cast / change the caller's outcome vote (Story 4.1 / FR11). The recompute trigger
+ * updates the workflow's denormalized tallies; revalidate the detail path so the
+ * trust row + segment counts re-read the recomputed truth (the client also
+ * optimistically updates + `router.refresh()`es).
+ */
+export async function castOutcomeVoteAction(
+  workflowId: string,
+  verdict: OutcomeVerdict,
+  note?: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await castOutcomeVote(workflowId, verdict, note);
+  if (result.ok) {
+    revalidatePath(`/workflows/${workflowId}`);
+    return { ok: true };
+  }
+  return { ok: false, error: result.error };
 }

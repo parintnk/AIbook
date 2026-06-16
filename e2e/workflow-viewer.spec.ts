@@ -34,6 +34,14 @@ test("desktop defaults to the canvas; a node expands; toggling to List shows the
   await expect(page.getByText(/forked \d/i)).toHaveCount(0);
   await expect(page.getByText(/tools change fast/i)).toHaveCount(0);
 
+  // Outcome vote (Story 4.1) — anon sees the control + a sign-in affordance and the
+  // segments are disabled (voting is auth-gated).
+  await expect(page.getByText(/did this work for you/i)).toBeVisible();
+  await expect(page.getByText(/sign in to vote/i)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /tried & worked/i }),
+  ).toBeDisabled();
+
   // ≥md (Playwright default 1280×720) promotes to the canvas after mount; the lazy
   // React Flow chunk renders both recipe-card nodes.
   await expect(page.locator(CANVAS_MARKER)).toBeVisible({ timeout: 15_000 });
