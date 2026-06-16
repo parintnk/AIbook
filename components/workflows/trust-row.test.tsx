@@ -9,6 +9,7 @@ describe("TrustRow", () => {
   it("renders graceful zero-states (no votes, no forks, original, recent)", () => {
     render(
       <TrustRow
+        workflowId="w1"
         triedCount={0}
         forkCount={0}
         parentId={null}
@@ -28,6 +29,7 @@ describe("TrustRow", () => {
   it("renders populated counts (outcome pill + fork count)", () => {
     render(
       <TrustRow
+        workflowId="w1"
         triedCount={47}
         forkCount={230}
         parentId={null}
@@ -46,6 +48,7 @@ describe("TrustRow", () => {
   it("shows the cautionary tone when last-verified is older than 90 days", () => {
     render(
       <TrustRow
+        workflowId="w1"
         triedCount={0}
         forkCount={0}
         parentId={null}
@@ -61,6 +64,7 @@ describe("TrustRow", () => {
   it("shows a variation marker for a forked workflow", () => {
     render(
       <TrustRow
+        workflowId="w1"
         triedCount={0}
         forkCount={0}
         parentId="parent-id"
@@ -75,6 +79,7 @@ describe("TrustRow", () => {
   it("renders 'Forked from @handle' as a link to the parent (Story 5.2)", () => {
     render(
       <TrustRow
+        workflowId="w1"
         triedCount={0}
         forkCount={0}
         parentId="parent-id"
@@ -87,5 +92,38 @@ describe("TrustRow", () => {
     expect(link).toHaveAttribute("href", "/workflows/parent-id");
     expect(screen.queryByText(/^variation$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/original by creator/i)).not.toBeInTheDocument();
+  });
+
+  it("links to the lineage tree when there are forks or an ancestor (Story 5.3)", () => {
+    // Has forks → the "View lineage" entry appears, pointing at /workflows/{id}/lineage.
+    const { rerender } = render(
+      <TrustRow
+        workflowId="w1"
+        triedCount={0}
+        forkCount={3}
+        parentId={null}
+        lastVerifiedAt={null}
+        publishedAt={daysAgo(1)}
+      />,
+    );
+    expect(screen.getByRole("link", { name: /view lineage/i })).toHaveAttribute(
+      "href",
+      "/workflows/w1/lineage",
+    );
+
+    // No forks AND no parent → no lineage to explore → no entry.
+    rerender(
+      <TrustRow
+        workflowId="w1"
+        triedCount={0}
+        forkCount={0}
+        parentId={null}
+        lastVerifiedAt={null}
+        publishedAt={daysAgo(1)}
+      />,
+    );
+    expect(
+      screen.queryByRole("link", { name: /view lineage/i }),
+    ).not.toBeInTheDocument();
   });
 });

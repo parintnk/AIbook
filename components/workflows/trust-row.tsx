@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
  * number/label — never color-only (UX-DR9 / Accessibility Floor).
  */
 export function TrustRow({
+  workflowId,
   triedCount,
   forkCount,
   parentId,
@@ -19,6 +20,7 @@ export function TrustRow({
   lastVerifiedAt,
   publishedAt,
 }: {
+  workflowId: string;
   triedCount: number;
   forkCount: number;
   parentId: string | null;
@@ -27,6 +29,8 @@ export function TrustRow({
   publishedAt: string | null;
 }) {
   const verified = formatVerifiedAge(lastVerifiedAt, publishedAt);
+  // The workflow has a lineage tree to explore if it has forks OR an ancestor (Story 5.3 / FR16).
+  const hasLineage = forkCount > 0 || parentId != null;
 
   return (
     <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -77,6 +81,18 @@ export function TrustRow({
           "Variation"
         )}
       </span>
+
+      {/* Lineage tree entry (Story 5.3 / FR16 / UX-DR14) — the "explore the family tree" affordance,
+          shown whenever there's lineage to explore (forks below or an ancestor above). */}
+      {hasLineage ? (
+        <Link
+          href={`/workflows/${workflowId}/lineage`}
+          className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 font-medium text-[12.5px] text-accent-foreground underline-offset-2 hover:underline"
+        >
+          <TreeIcon className="size-3.5" />
+          View lineage
+        </Link>
+      ) : null}
 
       {/* Last verified — neutral under 90 days; amber-cautionary past it, with the
           literal re-check sentence so the meaning isn't color-only (UX-DR21). */}
@@ -132,6 +148,26 @@ function ForkIcon({ className }: { className?: string }) {
       <circle cx="6" cy="18" r="2.4" />
       <circle cx="18" cy="9" r="2.4" />
       <path d="M6 8.4v7.2M8.2 6h4.5a3 3 0 0 1 3 3v.2" />
+    </svg>
+  );
+}
+
+function TreeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="12" r="3" />
+      <path d="M9 6h3a3 3 0 0 1 3 3M9 18h3a3 3 0 0 0 3-3" />
     </svg>
   );
 }

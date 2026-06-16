@@ -133,3 +133,61 @@ insert into public.node_outputs (node_id, kind, text_content)
 values
   ('00000000-0000-0000-0000-0000000000ef', 'text', 'A three-part outline, ready to expand.')
 on conflict (node_id) do nothing;
+
+-- A deterministic LINEAGE TREE fixture for the Story 5.3 lineage-tree e2e (the seed otherwise has
+-- NO fork lineage — no workflow has a parent_id). A published root → child → grandchild chain, all
+-- owned by parintnk. Inserted root-first so the Story 5.1 `maintain_workflow_lineage` AFTER-INSERT
+-- trigger sees each parent's closure rows already present → it auto-builds the closure
+-- (fa,fb,1)/(fa,fc,2)/(fb,fc,1) + the self-rows + increments each parent's fork_count. Seeded as the
+-- table owner → bypasses the 2.1 column-locks on `parent_id`/counters. Kept on FRESH ids (…fa/…fb/
+-- …fc + nodes …b1/…b2/…b3) so it never touches …00aa (the 3.3 zero-fork assertion) or …00ee.
+insert into public.workflows (id, author_id, profession_id, title, summary, status, published_at, last_verified_at)
+values (
+  '00000000-0000-0000-0000-0000000000fa',
+  '00000000-0000-0000-0000-000000000001',
+  (select id from public.professions where slug = 'ai-automation'),
+  'Brand kit — origin recipe',
+  'The original multi-tool brand-kit recipe that others forked and adapted.',
+  'published', now(), now() - interval '20 days'
+)
+on conflict (id) do nothing;
+
+insert into public.workflows (id, author_id, profession_id, title, summary, status, parent_id, published_at, last_verified_at, tried_count, worked_count, worked_score)
+values (
+  '00000000-0000-0000-0000-0000000000fb',
+  '00000000-0000-0000-0000-000000000001',
+  (select id from public.professions where slug = 'ai-automation'),
+  'Café rebrand — pastel fork',
+  'A softer, pastel-leaning fork of the origin brand kit.',
+  'published', '00000000-0000-0000-0000-0000000000fa', now(), now() - interval '12 days',
+  12, 11, 0.92
+)
+on conflict (id) do nothing;
+
+insert into public.workflows (id, author_id, profession_id, title, summary, status, parent_id, published_at, last_verified_at)
+values (
+  '00000000-0000-0000-0000-0000000000fc',
+  '00000000-0000-0000-0000-000000000001',
+  (select id from public.professions where slug = 'ai-automation'),
+  'Matcha café kit',
+  'A matcha-shop spin forked from the pastel rebrand.',
+  'published', '00000000-0000-0000-0000-0000000000fb', now(), now() - interval '4 days'
+)
+on conflict (id) do nothing;
+
+insert into public.workflow_nodes (id, workflow_id, idx, pos_x, pos_y, tool_name, prompt, purpose)
+values
+  ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000fa', 0,
+   0, 0, 'ChatGPT', 'Define a warm, artisanal brand direction', 'Set the visual direction'),
+  ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000fb', 0,
+   0, 0, 'ChatGPT', 'Shift the palette to soft pastels', 'Rework the direction'),
+  ('00000000-0000-0000-0000-0000000000b3', '00000000-0000-0000-0000-0000000000fc', 0,
+   0, 0, 'Midjourney', 'Generate matcha-themed brand marks', 'Produce candidate logos')
+on conflict (id) do nothing;
+
+insert into public.node_outputs (node_id, kind, text_content)
+values
+  ('00000000-0000-0000-0000-0000000000b1', 'text', 'Brand direction: warm, artisanal, minimalist.'),
+  ('00000000-0000-0000-0000-0000000000b2', 'text', 'Palette: soft sage, blush, cream.'),
+  ('00000000-0000-0000-0000-0000000000b3', 'text', 'Concept marks: whisk-and-leaf motifs.')
+on conflict (node_id) do nothing;

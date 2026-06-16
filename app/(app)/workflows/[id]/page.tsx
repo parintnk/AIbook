@@ -146,6 +146,7 @@ export default async function WorkflowDetailPage({ params }: Params) {
         {/* Read-only trust signals (Story 3.3). Outcome vote (Epic 4) + Save/Fork
             (Epics 8/5) action affordances still land here — reserved. */}
         <TrustRow
+          workflowId={wf.id}
           triedCount={wf.tried_count}
           forkCount={wf.fork_count}
           parentId={wf.parent_id}

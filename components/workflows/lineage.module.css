@@ -1,0 +1,930 @@
+/*
+ * Lineage tree view (Story 5.3 / FR16 / UX-DR14) — ported from the LOCKED design
+ * `mockups/lineage-light.html` (+ dark) to a scoped CSS module. Structural sizes/radii/shadows
+ * are verbatim from the mockup; colours route through the app design tokens (globals.css :root /
+ * .dark) so the view is dark-aware automatically (the tokens ARE the mockup values: --ring = the
+ * violet accent #6d5ef0, --accent = the chip tint #ece9ff, --success = "worked" emerald). The
+ * brand gradient + glow are the only constants declared locally (same in both themes).
+ */
+
+.root {
+  --lin-grad: linear-gradient(135deg, #7c6bff, #6d5ef0);
+  --lin-glow: color-mix(in srgb, var(--ring) 28%, transparent);
+  --lin-glow-soft: color-mix(in srgb, var(--ring) 18%, transparent);
+  --lin-ring-30: color-mix(in srgb, var(--ring) 30%, transparent);
+  --lin-ring-20: color-mix(in srgb, var(--ring) 20%, transparent);
+  --lin-line: var(--border);
+  --lin-soft: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --lin-glass: var(--card);
+  --lin-glass-strong: color-mix(in srgb, var(--card) 70%, var(--background));
+  --lin-shadow:
+    0 8px 30px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --lin-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --lin-shadow-lg:
+    0 24px 60px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.05);
+  --lin-hi: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+:global(.dark) .root {
+  --lin-hi: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --lin-glass-strong: color-mix(in srgb, var(--card) 70%, #0b1120);
+  --lin-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --lin-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --lin-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* ============================================================ HEADER STRIP */
+.linHead {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  border-bottom: 1px solid var(--lin-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.linTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.titleIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--lin-grad);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 6px 16px var(--lin-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  flex: 0 0 auto;
+}
+.summary {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.summary b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.sep {
+  color: var(--muted-foreground);
+  opacity: 0.6;
+}
+.linCtrls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.seg {
+  display: inline-flex;
+  background: color-mix(in srgb, var(--card) 80%, var(--background));
+  border: 1px solid var(--lin-line);
+  border-radius: 11px;
+  padding: 3px;
+  box-shadow: var(--lin-shadow-sm);
+}
+.segBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  padding: 7px 12px;
+  border-radius: 8px;
+  transition: all 0.22s ease;
+}
+.segBtn:hover {
+  color: var(--foreground);
+}
+.segOn,
+.segOn:hover {
+  color: #fff;
+  background: var(--lin-grad);
+  box-shadow: 0 6px 16px var(--lin-glow);
+}
+.ctrlPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--card) 80%, var(--background));
+  border: 1px solid var(--lin-line);
+  border-radius: 11px;
+  padding: 8px 13px;
+  box-shadow: var(--lin-shadow-sm);
+  transition: all 0.22s ease;
+}
+.ctrlPill:hover {
+  background: var(--background);
+}
+.ctrlPill .pillLab {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.ctrlPill .chev {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  display: inline-flex;
+}
+.ctrlPillAccent {
+  color: var(--ring);
+  background: var(--accent);
+  border-color: var(--lin-ring-20);
+}
+.ctrlPillAccent:hover {
+  background: color-mix(in srgb, var(--accent) 80%, var(--ring));
+}
+
+/* ============================================================ BODY GRID */
+.linGrid {
+  display: grid;
+  grid-template-columns: 1fr 332px;
+  height: min(72vh, 768px);
+}
+@media (max-width: 1180px) {
+  .linGrid {
+    grid-template-columns: 1fr;
+  }
+  .detail {
+    display: none;
+  }
+}
+
+/* ---------- CANVAS (React Flow chrome) ---------- */
+.canvasShell {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--background) 70%, #fff);
+  border-right: 1px solid var(--lin-soft);
+}
+:global(.dark) .canvasShell {
+  background: color-mix(in srgb, var(--background) 70%, #000);
+}
+.rfGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    620px 380px at 40% 12%,
+    var(--lin-glow-soft),
+    transparent 70%
+  );
+}
+
+/* React Flow surface overrides — scoped to the canvas shell */
+.canvasShell :global(.react-flow__edge-path) {
+  stroke: var(--ring);
+  filter: drop-shadow(0 0 3px var(--lin-glow));
+}
+.canvasShell :global(.react-flow__controls) {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--lin-line);
+  box-shadow: var(--lin-shadow), var(--lin-hi);
+  background: color-mix(in srgb, var(--card) 82%, var(--background));
+  backdrop-filter: blur(18px);
+}
+.canvasShell :global(.react-flow__controls-button) {
+  background: transparent;
+  border-bottom: 1px solid var(--lin-soft);
+  color: var(--muted-foreground);
+  width: 36px;
+  height: 36px;
+}
+.canvasShell :global(.react-flow__controls-button:hover) {
+  background: var(--accent);
+  color: var(--ring);
+}
+.canvasShell :global(.react-flow__controls-button svg) {
+  fill: currentColor;
+  max-width: 14px;
+  max-height: 14px;
+}
+.canvasShell :global(.react-flow__minimap) {
+  border-radius: 14px;
+  border: 1px solid var(--lin-line);
+  box-shadow: var(--lin-shadow), var(--lin-hi);
+  background: color-mix(in srgb, var(--card) 82%, var(--background));
+}
+
+/* ---------- lineage node (compact glass card, radius 18) ---------- */
+.lnode {
+  width: 194px;
+  background: var(--lin-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--lin-line);
+  border-radius: var(--radius-node, 18px);
+  box-shadow: var(--lin-shadow), var(--lin-hi);
+  padding: 11px;
+  transition: all 0.22s ease;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+.lnode:hover {
+  box-shadow:
+    var(--lin-shadow-lg),
+    0 0 0 1px var(--lin-ring-20),
+    var(--lin-hi);
+  transform: translateY(-2px);
+}
+.lnodeRoot {
+  border-color: var(--lin-ring-30);
+  box-shadow:
+    0 0 0 1px var(--lin-ring-30),
+    0 0 26px var(--lin-glow),
+    var(--lin-hi);
+}
+.lnodeCurrent {
+  border-color: color-mix(in srgb, var(--ring) 60%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--ring) 50%, transparent),
+    0 0 34px var(--lin-glow),
+    0 0 0 6px var(--lin-glow-soft),
+    var(--lin-hi);
+}
+.lnodeDim {
+  opacity: 0.78;
+}
+.ntag {
+  position: absolute;
+  top: -11px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--lin-grad);
+  padding: 4px 9px;
+  border-radius: 7px;
+  box-shadow:
+    0 6px 16px var(--lin-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  z-index: 5;
+  white-space: nowrap;
+}
+.lthumb {
+  height: 62px;
+  border-radius: 11px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--lin-soft);
+  margin-bottom: 9px;
+}
+.thumbTag {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  padding: 2px 6px;
+  border-radius: 5px;
+  z-index: 3;
+}
+.kitMark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kitBadge {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+}
+.nodeTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.28;
+  margin-bottom: 8px;
+  color: var(--foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lauth {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-bottom: 9px;
+}
+.lauth .handle {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.lfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--lin-soft);
+}
+.forkstat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.forkstat b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.forkstat svg {
+  color: var(--ring);
+}
+.workedStat {
+  color: var(--success);
+}
+.crown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--ring);
+  border: 1px solid var(--lin-ring-20);
+  flex: 0 0 auto;
+}
+
+/* ---------- "+N forks" collapse badge ---------- */
+.forkbadge {
+  position: relative;
+  display: inline-block;
+}
+.fbPill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  border: 1px dashed color-mix(in srgb, var(--ring) 50%, transparent);
+  border-radius: 13px;
+  padding: 8px 12px;
+  box-shadow:
+    0 6px 20px var(--lin-glow-soft),
+    var(--lin-hi);
+  backdrop-filter: blur(18px);
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+.fbPill:hover {
+  background: color-mix(in srgb, var(--accent) 75%, var(--ring));
+  border-color: color-mix(in srgb, var(--ring) 70%, transparent);
+  transform: translateY(-1px);
+}
+.fbStack::before,
+.fbStack::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 13px;
+  background: var(--lin-glass-strong);
+  border: 1px solid var(--lin-line);
+  box-shadow: var(--lin-shadow-sm);
+}
+.fbStack::before {
+  top: 5px;
+  bottom: -5px;
+  transform: scale(0.96);
+  opacity: 0.7;
+}
+.fbStack::after {
+  top: 9px;
+  bottom: -9px;
+  transform: scale(0.9);
+  opacity: 0.45;
+}
+.fbIc {
+  display: inline-flex;
+  color: var(--ring);
+  flex: 0 0 auto;
+}
+.fbN {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+.fbLab {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.fbChev {
+  display: inline-flex;
+  color: var(--ring);
+}
+.fbHint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 5px);
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* ---------- aggregated leaf-tip cluster (the mockup's .leafcluster) ---------- */
+.leafcluster {
+  position: relative;
+  width: 178px;
+  background: var(--lin-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--lin-line);
+  border-radius: var(--radius-node, 18px);
+  box-shadow: var(--lin-shadow), var(--lin-hi);
+  padding: 11px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+.leafcluster::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 6px;
+  height: 100%;
+  border-radius: var(--radius-node, 18px);
+  background: color-mix(in srgb, var(--card) 80%, var(--background));
+  border: 1px solid var(--lin-soft);
+  transform: translateY(6px) scale(0.965);
+  z-index: -1;
+  opacity: 0.7;
+  box-shadow: var(--lin-shadow-sm);
+}
+.leafcluster:hover {
+  box-shadow:
+    var(--lin-shadow-lg),
+    0 0 0 1px var(--lin-ring-20),
+    var(--lin-hi);
+  transform: translateY(-2px);
+}
+.lcSeg {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 9px;
+}
+.lcSeg i {
+  flex: 1;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--lin-soft);
+}
+.lcTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.lcTitle .mono {
+  font-size: 14px;
+}
+.lcUnit {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.lcFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--lin-soft);
+}
+.lcAvs {
+  display: flex;
+}
+.lcAvs > * {
+  margin-left: -6px;
+}
+.lcAvs > *:first-child {
+  margin-left: 0;
+}
+.lcMore {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin-left: -6px;
+  background: var(--accent);
+  border: 1.5px solid var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7.5px;
+  font-weight: 700;
+  color: var(--ring);
+}
+.drill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ring);
+}
+
+/* ---------- focus / lazy-load chrome ---------- */
+.focuslabel {
+  position: absolute;
+  left: 17px;
+  top: 17px;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ring);
+  background: var(--accent);
+  border: 1px solid var(--lin-ring-20);
+  border-radius: 999px;
+  padding: 6px 12px;
+  box-shadow: var(--lin-shadow-sm), var(--lin-hi);
+  backdrop-filter: blur(14px);
+}
+.lazycap {
+  position: absolute;
+  left: 17px;
+  bottom: 19px;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--card) 82%, var(--background));
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--lin-line);
+  border-radius: 999px;
+  padding: 7px 13px;
+  box-shadow: var(--lin-shadow-sm), var(--lin-hi);
+  max-width: calc(100% - 230px);
+}
+.lazycap svg {
+  color: var(--ring);
+  flex: 0 0 auto;
+}
+.lazycap b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* ============================================================ DETAIL PANEL */
+.detail {
+  background: color-mix(in srgb, var(--background) 50%, transparent);
+  border-left: 1px solid var(--lin-soft);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.dHead {
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--lin-soft);
+}
+.dEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ring);
+  background: var(--accent);
+  border: 1px solid var(--lin-ring-20);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 11px;
+}
+.ancestry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-bottom: 13px;
+  flex-wrap: wrap;
+}
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--foreground);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--card) 80%, var(--background));
+  border: 1px solid var(--lin-line);
+  padding: 3px 9px 3px 4px;
+  border-radius: 999px;
+}
+.crumbCur {
+  color: var(--ring);
+  background: var(--accent);
+  border-color: var(--lin-ring-20);
+}
+.crumbArr {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  display: flex;
+}
+.dThumb {
+  height: 118px;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--lin-soft);
+  margin-bottom: 13px;
+}
+.dTitle {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--foreground);
+  margin-bottom: 11px;
+}
+.dAuthor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+.dAuthorName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.dAuthorRole {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.forkedfrom {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--card) 70%, var(--background));
+  border: 1px solid var(--lin-line);
+  border-radius: 10px;
+  padding: 8px 11px;
+  box-shadow: var(--lin-shadow-sm);
+}
+.forkedfrom b {
+  color: var(--ring);
+  font-weight: 700;
+}
+.forkedfrom svg {
+  color: var(--ring);
+  flex: 0 0 auto;
+}
+.dBody {
+  padding: 15px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.statsrow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.statcard {
+  background: color-mix(in srgb, var(--card) 70%, var(--background));
+  border: 1px solid var(--lin-line);
+  border-radius: 13px;
+  padding: 11px 12px;
+  box-shadow: var(--lin-shadow-sm);
+}
+.statV {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.statVok {
+  color: var(--success);
+}
+.statV svg {
+  color: var(--ring);
+}
+.statVok svg {
+  color: var(--success);
+}
+.statK {
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.ministats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: color-mix(in srgb, var(--card) 70%, var(--background));
+  border: 1px solid var(--lin-line);
+  border-radius: 13px;
+  padding: 11px 13px;
+  box-shadow: var(--lin-shadow-sm);
+}
+.ministat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  flex: 1;
+}
+.ministat b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.ministat span {
+  font-size: 9.5px;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.miniDivider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--lin-soft);
+}
+.descend {
+  background: color-mix(in srgb, var(--card) 70%, var(--background));
+  border: 1px solid var(--lin-line);
+  border-radius: 13px;
+  padding: 11px 13px;
+  box-shadow: var(--lin-shadow-sm);
+}
+.descendTitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 9px;
+}
+.drow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--foreground);
+  padding: 5px 0;
+  text-decoration: none;
+}
+.drow:not(:last-child) {
+  border-bottom: 1px solid var(--lin-soft);
+}
+.drow .handle {
+  font-weight: 600;
+}
+.drow:hover .handle {
+  color: var(--ring);
+}
+.drowFk {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+}
+.drowFk b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.dFoot {
+  padding: 15px 18px;
+  border-top: 1px solid var(--lin-soft);
+  background: color-mix(in srgb, var(--background) 40%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: auto;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: 13px;
+  width: 100%;
+  text-decoration: none;
+  transition: all 0.22s ease;
+}
+.btnPrimary {
+  background: var(--lin-grad);
+  color: #fff;
+  box-shadow:
+    0 10px 26px var(--lin-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btnPrimary:hover {
+  box-shadow:
+    0 14px 34px var(--lin-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  filter: brightness(1.04);
+}
+.btnGhost {
+  background: color-mix(in srgb, var(--card) 80%, var(--background));
+  color: var(--foreground);
+  border: 1px solid var(--lin-line);
+  box-shadow: var(--lin-shadow-sm);
+}
+.btnGhost:hover {
+  background: var(--background);
+}
+
+/* thumbnail washes — deterministic per-node gradients (the mockup's t-* palette) */
+.tViolet {
+  background: linear-gradient(140deg, #6d5ef0, #a99bff);
+}
+.tRose {
+  background: linear-gradient(140deg, #c2548e, #f2b8d6);
+}
+.tAmber {
+  background: linear-gradient(140deg, #c2613b, #e8c9a0);
+}
+.tTeal {
+  background: linear-gradient(140deg, #1f8c8c, #9fd9d9);
+}
+.tEmerald {
+  background: linear-gradient(140deg, #2eaf6e, #a7e8c6);
+}
+.tIndigo {
+  background: linear-gradient(140deg, #4f46e5, #a9a4f2);
+}

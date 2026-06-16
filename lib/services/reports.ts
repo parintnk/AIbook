@@ -1,4 +1,4 @@
-    import "server-only";
+import "server-only";
 import { cache } from "react";
 import type { Database, Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
