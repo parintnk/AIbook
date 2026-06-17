@@ -280,3 +280,37 @@ from (values
 ) as v(slug, wf)
 join public.professions p on p.slug = v.slug
 on conflict (feature_date, profession_id) do nothing;
+
+-- ── Story 7.2: per-profession house rules + mod-curated "Start here" pins (production demo) ──
+-- Rules render in the community rail (parseHouseRules falls back to the 3 universal norms when a
+-- profession sets none); pins replace the 6.2 interim most-forked proxy. pinned_by stays null on
+-- a seed insert (no JWT) — fine (on delete set null).
+update public.professions set rules = '[
+  {"title":"Show real output.","body":"Every recipe needs a sample to publish."},
+  {"title":"Credit your fork.","body":"Keep lineage intact when you remix."},
+  {"title":"Ship the stack.","body":"Name every tool + model your recipe uses."}
+]'::jsonb where slug = 'web-developer';
+update public.professions set rules = '[
+  {"title":"Show real output.","body":"Post the generated asset, not just the prompt."},
+  {"title":"Credit your fork.","body":"Keep lineage intact when you remix."},
+  {"title":"Mind the license.","body":"Flag commercial-use limits on generated art."}
+]'::jsonb where slug = 'graphic-designer';
+update public.professions set rules = '[
+  {"title":"Show real output.","body":"Attach a sample run or export."},
+  {"title":"Credit your fork.","body":"Keep lineage intact when you remix."},
+  {"title":"No secrets in prompts.","body":"Redact keys + customer data from samples."}
+]'::jsonb where slug = 'ai-automation';
+
+insert into public.profession_pins (profession_id, workflow_id, position)
+select p.id, v.wf, v.pos
+from (values
+  ('web-developer',    'b0000000-0000-4000-8000-000000000011'::uuid, 0),
+  ('web-developer',    'b0000000-0000-4000-8000-000000000012'::uuid, 1),
+  ('web-developer',    'b0000000-0000-4000-8000-000000000013'::uuid, 2),
+  ('graphic-designer', 'b0000000-0000-4000-8000-000000000003'::uuid, 0),
+  ('graphic-designer', 'b0000000-0000-4000-8000-000000000001'::uuid, 1),
+  ('ai-automation',    'b0000000-0000-4000-8000-000000000005'::uuid, 0),
+  ('ai-automation',    'b0000000-0000-4000-8000-000000000007'::uuid, 1)
+) as v(slug, wf, pos)
+join public.professions p on p.slug = v.slug
+on conflict (profession_id, workflow_id) do nothing;

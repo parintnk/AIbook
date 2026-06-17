@@ -385,3 +385,38 @@ from (values
 ) as v(slug, wf)
 join public.professions p on p.slug = v.slug
 on conflict (feature_date, profession_id) do nothing;
+
+-- Story 7.2 — per-profession house rules (rendered in the community rail; parseHouseRules falls
+-- back to the 3 universal norms when a profession's rules are empty). One craft-specific rule each
+-- so the rail (and the e2e) show real per-profession content, not just the universal defaults.
+update public.professions set rules = '[
+  {"title":"Show real output.","body":"Every recipe needs a sample to publish."},
+  {"title":"Credit your fork.","body":"Keep lineage intact when you remix."},
+  {"title":"Ship the stack.","body":"Name every tool + model your recipe uses."}
+]'::jsonb where slug = 'web-developer';
+update public.professions set rules = '[
+  {"title":"Show real output.","body":"Post the generated asset, not just the prompt."},
+  {"title":"Credit your fork.","body":"Keep lineage intact when you remix."},
+  {"title":"Mind the license.","body":"Flag commercial-use limits on generated art."}
+]'::jsonb where slug = 'graphic-designer';
+update public.professions set rules = '[
+  {"title":"Show real output.","body":"Attach a sample run or export."},
+  {"title":"Credit your fork.","body":"Keep lineage intact when you remix."},
+  {"title":"No secrets in prompts.","body":"Redact keys + customer data from samples."}
+]'::jsonb where slug = 'ai-automation';
+
+-- Story 7.2 — mod-curated "Start here" pinned canon (founder-curated in v1; the pin/unpin UI is
+-- Story 7.3). Replaces the 6.2 interim most-forked proxy. Ordered by position.
+insert into public.profession_pins (profession_id, workflow_id, position)
+select p.id, v.wf, v.pos
+from (values
+  ('web-developer',    '00000000-0000-0000-0000-0000000c0001'::uuid, 0),
+  ('web-developer',    '00000000-0000-0000-0000-0000000c0007'::uuid, 1),
+  ('web-developer',    '00000000-0000-0000-0000-0000000c0013'::uuid, 2),
+  ('graphic-designer', '00000000-0000-0000-0000-0000000c0004'::uuid, 0),
+  ('graphic-designer', '00000000-0000-0000-0000-0000000c0011'::uuid, 1),
+  ('ai-automation',    '00000000-0000-0000-0000-0000000c0002'::uuid, 0),
+  ('ai-automation',    '00000000-0000-0000-0000-0000000c0009'::uuid, 1)
+) as v(slug, wf, pos)
+join public.professions p on p.slug = v.slug
+on conflict (profession_id, workflow_id) do nothing;

@@ -29,13 +29,16 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import {
+  DEFAULT_HOUSE_RULES,
   getMyMembership,
   getProfessionBySlug,
   isProfessionModerator,
   joinProfession,
   leaveProfession,
   listProfessionMods,
+  listProfessionPins,
   listProfessions,
+  parseHouseRules,
 } from "./professions";
 
 const USER = { data: { user: { id: "u1" } } };
@@ -177,5 +180,58 @@ describe("listProfessionMods", () => {
         avatarUrl: null,
       },
     ]);
+  });
+});
+
+describe("listProfessionPins", () => {
+  it("maps published pinned workflows to {id,title} in position order", async () => {
+    queryMock.mockReturnValueOnce({
+      data: [
+        { workflow: { id: "w1", title: "Pinned A", status: "published" } },
+        { workflow: { id: "w2", title: "Pinned B", status: "published" } },
+      ],
+      error: null,
+    });
+    expect(await listProfessionPins("p1")).toEqual([
+      { id: "w1", title: "Pinned A" },
+      { id: "w2", title: "Pinned B" },
+    ]);
+  });
+
+  it("returns [] when the profession has no pins", async () => {
+    queryMock.mockReturnValueOnce({ data: [], error: null });
+    expect(await listProfessionPins("p1")).toEqual([]);
+  });
+
+  it("drops a row whose workflow embed is null (defensive — the inner-join published filter)", async () => {
+    queryMock.mockReturnValueOnce({
+      data: [
+        { workflow: null },
+        { workflow: { id: "w3", title: "C", status: "published" } },
+      ],
+      error: null,
+    });
+    expect(await listProfessionPins("p1")).toEqual([{ id: "w3", title: "C" }]);
+  });
+});
+
+describe("parseHouseRules", () => {
+  it("returns the profession's own rules when well-formed", () => {
+    const rules = [
+      { title: "Ship the stack.", body: "Name every tool." },
+      { title: "Show real output.", body: "Attach a sample." },
+    ];
+    expect(parseHouseRules(rules)).toEqual(rules);
+  });
+
+  it("falls back to the 3 universal defaults when rules is empty", () => {
+    expect(parseHouseRules([])).toEqual(DEFAULT_HOUSE_RULES);
+    expect(DEFAULT_HOUSE_RULES).toHaveLength(3);
+  });
+
+  it("falls back when rules is null or malformed (missing body)", () => {
+    expect(parseHouseRules(null)).toEqual(DEFAULT_HOUSE_RULES);
+    expect(parseHouseRules("nope")).toEqual(DEFAULT_HOUSE_RULES);
+    expect(parseHouseRules([{ title: "x" }])).toEqual(DEFAULT_HOUSE_RULES);
   });
 });

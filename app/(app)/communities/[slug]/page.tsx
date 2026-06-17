@@ -12,6 +12,8 @@ import {
   getMyMembership,
   getProfessionBySlug,
   listProfessionMods,
+  listProfessionPins,
+  parseHouseRules,
 } from "@/lib/services/professions";
 import { listProfessionTags } from "@/lib/services/tags";
 import { listPublishedWorkflows } from "@/lib/services/workflows";
@@ -70,7 +72,7 @@ export default async function CommunityPage({
   const tags = await listProfessionTags(slug);
   const activeTag = tag && tags.some((t) => t.slug === tag) ? tag : null;
 
-  const [feed, mods, canonFeed, membership, wotd] = await Promise.all([
+  const [feed, mods, canon, membership, wotd] = await Promise.all([
     listPublishedWorkflows({
       profession: slug,
       tag: activeTag,
@@ -81,14 +83,12 @@ export default async function CommunityPage({
       asOf,
     }),
     listProfessionMods(profession.id),
-    // "Start here" interim proxy = the profession's most-forked published workflows.
-    listPublishedWorkflows({ profession: slug, sort: "trending", limit: 5 }),
+    // "Start here" = the profession's mod-curated pinned canon (Story 7.2; replaces the 6.2 proxy).
+    listProfessionPins(profession.id),
     user ? getMyMembership(profession.id) : Promise.resolve(null),
     // The profession's Workflow of the Day (6.3) — prepends the feed column.
     getWorkflowOfTheDay({ professionId: profession.id }),
   ]);
-
-  const canon = canonFeed.items.map((w) => ({ id: w.id, title: w.title }));
   const isMember = membership !== null;
   // Only a moderator / verified_pro can't self-leave (RLS). A plain member — or a
   // non-member who's about to join AS a member (optimistic) — can. So the leave is
@@ -109,6 +109,7 @@ export default async function CommunityPage({
         <CommunityRail
           mods={mods}
           canon={canon}
+          rules={parseHouseRules(profession.rules)}
           description={profession.description}
         />
         <section className={styles.main}>

@@ -1,31 +1,18 @@
 import { FileText, Info, MessageSquare, Shield, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import type { ProfessionMod } from "@/lib/services/professions";
+import type { HouseRule, ProfessionMod } from "@/lib/services/professions";
 import styles from "./community.module.css";
 
 /**
- * The community left rail (Story 6.2 / FR17) — the "home context". Four cards, each
+ * The community left rail (Story 6.2 + 7.2 / FR17) — the "home context". Four cards, each
  * rendered only when it has content (the 6.1 "no empty stubs" rule):
  *  - Mods: real `profession_members` read (moderator / verified_pro).
- *  - Start here: an INTERIM proxy (the profession's most-forked published workflows) —
- *    Epic 7.2 replaces it with mod-curated pins.
- *  - House rules: the 3 universal platform norms (DESIGN.md:174), static for now —
- *    Epic 7.2 makes them per-profession from `professions.rules`.
+ *  - Start here: the profession's mod-curated pinned canon (Story 7.2 `profession_pins`).
+ *  - House rules: the profession's own `rules` (Story 7.2), falling back to the 3 universal
+ *    platform norms (DESIGN.md) when unset — parsed by `parseHouseRules` on the page.
  *  - About: the profession description (+ a static AMA placeholder — no events system yet).
  */
-
-const HOUSE_RULES: { title: string; body: string }[] = [
-  {
-    title: "Show real output.",
-    body: "Every recipe needs a sample to publish.",
-  },
-  { title: "Credit your fork.", body: "Keep lineage intact when you remix." },
-  {
-    title: "Vote honestly.",
-    body: "Worked / tweaks / didn't — it helps everyone.",
-  },
-];
 
 function roleLabel(role: ProfessionMod["role"]): {
   shield: string;
@@ -41,10 +28,12 @@ function roleLabel(role: ProfessionMod["role"]): {
 export function CommunityRail({
   mods,
   canon,
+  rules,
   description,
 }: {
   mods: ProfessionMod[];
   canon: { id: string; title: string }[];
+  rules: HouseRule[];
   description: string | null;
 }) {
   return (
@@ -82,7 +71,7 @@ export function CommunityRail({
       ) : null}
 
       {canon.length > 0 ? (
-        <div className={styles.card}>
+        <div className={styles.card} data-testid="start-here">
           <div className={styles.ct}>
             <Sparkles width={14} height={14} aria-hidden="true" />
             Start here
@@ -106,8 +95,8 @@ export function CommunityRail({
           House rules
         </div>
         <ul className={styles.rules}>
-          {HOUSE_RULES.map((r) => (
-            <li key={r.title}>
+          {rules.map((r, i) => (
+            <li key={`${i}-${r.title}`}>
               <span className={styles.rn}>
                 <CheckGlyph />
               </span>

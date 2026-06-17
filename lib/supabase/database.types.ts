@@ -284,6 +284,55 @@ export type Database = {
           },
         ];
       };
+      profession_pins: {
+        Row: {
+          created_at: string;
+          id: string;
+          pinned_by: string | null;
+          position: number;
+          profession_id: string;
+          workflow_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          pinned_by?: string | null;
+          position?: number;
+          profession_id: string;
+          workflow_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          pinned_by?: string | null;
+          position?: number;
+          profession_id?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profession_pins_pinned_by_fkey";
+            columns: ["pinned_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profession_pins_profession_id_fkey";
+            columns: ["profession_id"];
+            isOneToOne: false;
+            referencedRelation: "professions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profession_pins_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       professions: {
         Row: {
           created_at: string;

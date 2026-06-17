@@ -82,6 +82,26 @@ test("the Top sort tab re-ranks the feed via a shareable URL (Story 7.1)", async
   ).toBeVisible();
 });
 
+test("the rail shows real per-profession house rules + mod-curated pinned canon (Story 7.2)", async ({
+  page,
+}) => {
+  await page.goto("/communities/web-developer");
+
+  // House rules render from the profession's OWN `rules` — assert a craft-specific rule (seeded
+  // for web-developer), distinct from the 3 universal norms → proves real per-profession rules.
+  await expect(page.getByText("Ship the stack.")).toBeVisible();
+
+  // "Start here" renders real mod-curated pins (scoped to the rail card via its testid so the
+  // pinned title doesn't collide with the same workflow in the feed).
+  const startHere = page.getByTestId("start-here");
+  await expect(startHere).toBeVisible();
+  await expect(
+    startHere.getByRole("link", {
+      name: /SaaS landing page from a one-line brief/i,
+    }),
+  ).toHaveAttribute("href", `/workflows/${SAAS_CARD}`);
+});
+
 test("an unknown profession slug 404s", async ({ page }) => {
   const res = await page.goto("/communities/not-a-real-profession");
   expect(res?.status()).toBe(404);

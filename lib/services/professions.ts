@@ -192,3 +192,78 @@ export async function listProfessionMods(
     avatarUrl: r.profile?.avatar_url ?? null,
   }));
 }
+
+// ── Story 7.2 — house rules + pinned canon ──────────────────────────────────
+
+/** A pinned "Start here" canon entry (Story 7.2) — the workflow id + title for the rail. */
+export type ProfessionPin = { id: string; title: string };
+
+/**
+ * A profession's mod-curated "Start here" pinned canon (Story 7.2 / FR17), ordered by `position`.
+ * RLS-only public read (no auth gate, like `listProfessionMods`). The workflow embed re-asserts
+ * `status = 'published'` via an INNER join, so a pinned draft / deleted / unpublished workflow is
+ * SKIPPED (never a broken rail link — the 6.3 defensive pattern). Replaces the 6.2 interim
+ * most-forked proxy; an empty result → the rail omits the "Start here" card (no empty stub).
+ */
+export async function listProfessionPins(
+  professionId: string,
+): Promise<ProfessionPin[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profession_pins")
+    .select(
+      "position, created_at, workflow:workflows!profession_pins_workflow_id_fkey!inner(id, title, status)",
+    )
+    .eq("profession_id", professionId)
+    .eq("workflow.status", "published")
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true })
+    // Final deterministic tiebreak: `position` is non-unique and same-transaction
+    // pins share an identical (txn-fixed) `created_at`, so the pin `id` keeps the
+    // numbered "Start here" order stable across requests (matches the migration's
+    // "ties break by id" contract).
+    .order("id", { ascending: true });
+  const rows = (data ?? []) as Array<{
+    workflow: { id: string; title: string; status: string } | null;
+  }>;
+  return rows
+    .map((r) => r.workflow)
+    .filter(
+      (w): w is { id: string; title: string; status: string } => w != null,
+    )
+    .map((w) => ({ id: w.id, title: w.title }));
+}
+
+/** A community house rule (Story 7.2) — a short titled norm rendered in the rail. */
+export type HouseRule = { title: string; body: string };
+
+/** The 3 universal platform norms (DESIGN.md) — the fallback when a profession sets no `rules`. */
+export const DEFAULT_HOUSE_RULES: HouseRule[] = [
+  {
+    title: "Show real output.",
+    body: "Every recipe needs a sample to publish.",
+  },
+  { title: "Credit your fork.", body: "Keep lineage intact when you remix." },
+  {
+    title: "Vote honestly.",
+    body: "Worked / tweaks / didn't — it helps everyone.",
+  },
+];
+
+/**
+ * Parse a profession's `rules` jsonb (Story 7.2) into renderable house rules. Returns the
+ * per-profession rules when present + well-formed, else the 3 universal defaults (so every
+ * community home always shows house rules). Defensive: `rules` is `Json`, so it validates each
+ * element is `{ title, body }` strings; an empty array / null / malformed shape → defaults.
+ */
+export function parseHouseRules(rules: Profession["rules"]): HouseRule[] {
+  if (!Array.isArray(rules)) return DEFAULT_HOUSE_RULES;
+  const parsed = rules.filter(
+    (r): r is HouseRule =>
+      typeof r === "object" &&
+      r !== null &&
+      typeof (r as Record<string, unknown>).title === "string" &&
+      typeof (r as Record<string, unknown>).body === "string",
+  );
+  return parsed.length > 0 ? parsed : DEFAULT_HOUSE_RULES;
+}
