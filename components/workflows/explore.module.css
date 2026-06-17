@@ -243,6 +243,17 @@
   height: 100%;
   object-fit: cover;
 }
+/* The WOTD hero thumbnail (Story 6.3) — fills the hero's `.fthumb` frame, which
+ * supplies the 320px size + 18px radius + clipping (featured.module.css). */
+.featuredThumb {
+  position: absolute;
+  inset: 0;
+}
+.featuredThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .tg {
   position: absolute;
   bottom: 8px;

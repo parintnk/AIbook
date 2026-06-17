@@ -715,6 +715,55 @@ export type Database = {
           },
         ];
       };
+      daily_featured: {
+        Row: {
+          created_at: string;
+          curated_by: string | null;
+          feature_date: string;
+          id: string;
+          profession_id: string;
+          workflow_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          curated_by?: string | null;
+          feature_date: string;
+          id?: string;
+          profession_id: string;
+          workflow_id: string;
+        };
+        Update: {
+          created_at?: string;
+          curated_by?: string | null;
+          feature_date?: string;
+          id?: string;
+          profession_id?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "daily_featured_curated_by_fkey";
+            columns: ["curated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "daily_featured_profession_id_fkey";
+            columns: ["profession_id"];
+            isOneToOne: false;
+            referencedRelation: "professions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "daily_featured_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

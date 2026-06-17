@@ -258,10 +258,10 @@ export const getForkParentHandle = cache(
 );
 
 /** The columns a feed card needs (counters + embedded profession + author). */
-const CARD_SELECT =
+export const CARD_SELECT =
   "id, title, fork_count, worked_score, tried_count, published_at, profession:professions!workflows_profession_id_fkey(slug, name), author:profiles!workflows_author_id_fkey(handle, display_name, avatar_url)";
 
-type PublishedCardRow = {
+export type PublishedCardRow = {
   id: string;
   title: string;
   fork_count: number;
@@ -276,7 +276,7 @@ type PublishedCardRow = {
   } | null;
 };
 
-function toCardData(
+export function toCardData(
   r: PublishedCardRow,
   thumb: { kind: ThumbKind | null; url: string | null },
 ): WorkflowCardData {
@@ -304,7 +304,7 @@ function toCardData(
  * wash/kit fallback. A workflow whose node/output can't be read → `{kind:null,url:null}`
  * (graceful — the card falls back to a deterministic wash).
  */
-async function resolveThumbs(
+export async function resolveThumbs(
   supabase: Awaited<ReturnType<typeof createClient>>,
   workflowIds: string[],
 ): Promise<Map<string, { kind: ThumbKind | null; url: string | null }>> {

@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { ExploreFeed } from "@/components/explore/explore-feed";
+import { WorkflowOfTheDay } from "@/components/explore/workflow-of-the-day";
 import styles from "@/components/professions/community.module.css";
 import { CommunityRail } from "@/components/professions/community-rail";
 import { FeedSortTabs } from "@/components/professions/feed-sort-tabs";
 import { ProfessionHero } from "@/components/professions/profession-hero";
 import { ProfessionTagChips } from "@/components/professions/profession-tag-chips";
 import { PAGE_SIZE, type WorkflowSort } from "@/lib/explore";
+import { getWorkflowOfTheDay } from "@/lib/services/featured";
 import {
   getMyMembership,
   getProfessionBySlug,
@@ -64,7 +66,7 @@ export default async function CommunityPage({
   const tags = await listProfessionTags(slug);
   const activeTag = tag && tags.some((t) => t.slug === tag) ? tag : null;
 
-  const [feed, mods, canonFeed, membership] = await Promise.all([
+  const [feed, mods, canonFeed, membership, wotd] = await Promise.all([
     listPublishedWorkflows({
       profession: slug,
       tag: activeTag,
@@ -75,6 +77,8 @@ export default async function CommunityPage({
     // "Start here" interim proxy = the profession's most-forked published workflows.
     listPublishedWorkflows({ profession: slug, sort: "trending", limit: 5 }),
     user ? getMyMembership(profession.id) : Promise.resolve(null),
+    // The profession's Workflow of the Day (6.3) — prepends the feed column.
+    getWorkflowOfTheDay({ professionId: profession.id }),
   ]);
 
   const canon = canonFeed.items.map((w) => ({ id: w.id, title: w.title }));
@@ -101,6 +105,7 @@ export default async function CommunityPage({
           description={profession.description}
         />
         <section className={styles.main}>
+          {wotd ? <WorkflowOfTheDay data={wotd} /> : null}
           <FeedSortTabs slug={slug} sort={sort} tag={activeTag} />
           <ProfessionTagChips
             slug={slug}

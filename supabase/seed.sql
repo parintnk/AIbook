@@ -370,3 +370,18 @@ insert into public.profession_members (profile_id, profession_id, role) values
   ('00000000-0000-0000-0000-0000000000d3', (select id from public.professions where slug = 'video-creator'),  'member'),
   ('00000000-0000-0000-0000-0000000000d3', (select id from public.professions where slug = 'marketer'),       'member')
 on conflict (profile_id, profession_id) do nothing;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- Story 6.3 — Workflow of the Day. A curated feature per a few professions, dated
+-- current_date so the WOTD hero renders on /explore + the community pages. curated_by =
+-- the founder. (Feed fixtures not asserted by name in explore.spec.ts, so the hero never
+-- collides with the trending-grid card assertions.) The read picks the most recent.
+insert into public.daily_featured (feature_date, profession_id, workflow_id, curated_by)
+select current_date, p.id, v.wf, '00000000-0000-0000-0000-000000000001'
+from (values
+  ('graphic-designer', '00000000-0000-0000-0000-0000000c0004'::uuid),
+  ('ai-automation',    '00000000-0000-0000-0000-0000000c0002'::uuid),
+  ('web-developer',    '00000000-0000-0000-0000-0000000c0007'::uuid)
+) as v(slug, wf)
+join public.professions p on p.slug = v.slug
+on conflict (feature_date, profession_id) do nothing;

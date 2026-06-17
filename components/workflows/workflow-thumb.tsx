@@ -97,11 +97,18 @@ export function WorkflowThumb({
 }: {
   id: string;
   thumb: { kind: ThumbKind | null; url: string | null };
-  variant?: "card" | "rail";
+  variant?: "card" | "rail" | "featured";
   /** Optional overlay rendered inside the frame (e.g. the rail's "New" pill). */
   badge?: ReactNode;
 }) {
-  const frame = variant === "rail" ? styles.newthumb : styles.wthumb;
+  // `featured` fills its parent (the WOTD hero's .fthumb sizes + clips it); the hero
+  // renders its own output tag, so (like `rail`) this variant omits the inline `.tg`.
+  const frame =
+    variant === "rail"
+      ? styles.newthumb
+      : variant === "featured"
+        ? styles.featuredThumb
+        : styles.wthumb;
 
   if (thumb.kind === "image" && thumb.url) {
     return (

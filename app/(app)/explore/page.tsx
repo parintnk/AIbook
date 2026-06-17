@@ -3,8 +3,10 @@ import { ExploreFeed } from "@/components/explore/explore-feed";
 import { NewThisWeekRail } from "@/components/explore/new-this-week-rail";
 import { ProfessionChips } from "@/components/explore/profession-chips";
 import { SectionHead } from "@/components/explore/section-head";
+import { WorkflowOfTheDay } from "@/components/explore/workflow-of-the-day";
 import styles from "@/components/workflows/explore.module.css";
 import { PAGE_SIZE, type WorkflowSort } from "@/lib/explore";
+import { getWorkflowOfTheDay } from "@/lib/services/featured";
 import { listProfessions } from "@/lib/services/professions";
 import {
   listNewThisWeek,
@@ -28,10 +30,11 @@ export default async function ExplorePage({
   const profession = sp.profession ?? null;
   const sort: WorkflowSort = sp.sort === "new" ? "new" : "trending";
 
-  const [feed, professions, newThisWeek] = await Promise.all([
+  const [feed, professions, newThisWeek, wotd] = await Promise.all([
     listPublishedWorkflows({ profession, sort, limit: PAGE_SIZE, offset: 0 }),
     listProfessions(),
     sort === "new" ? Promise.resolve([]) : listNewThisWeek(),
+    getWorkflowOfTheDay(),
   ]);
 
   // Validate the slug against real professions — an unknown slug → "All" (null). The service
@@ -50,6 +53,11 @@ export default async function ExplorePage({
       className={`${styles.explore} mx-auto w-full max-w-[1180px] px-6 py-8`}
     >
       <h1 className="sr-only">Explore — discover AI workflows</h1>
+      {wotd ? (
+        <div className="mb-[34px]">
+          <WorkflowOfTheDay data={wotd} />
+        </div>
+      ) : null}
       <ProfessionChips professions={professions} active={activeProfession} />
       <SectionHead
         icon={<Zap width={19} height={19} aria-hidden="true" />}

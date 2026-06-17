@@ -267,3 +267,16 @@ update public.professions set member_count = case slug
   when 'marketer'         then 87
   else member_count end
 where slug in ('ai-automation','web-developer','graphic-designer','content-writer','video-creator','marketer');
+
+-- ── Story 6.3: Workflow of the Day (current_date features → the WOTD hero on production)
+-- curated_by resolves the founder by a stable handle (NOT a raw uuid) so a re-run on a
+-- fresh / branch DB without that profile yields a null curator instead of a FK-abort.
+insert into public.daily_featured (feature_date, profession_id, workflow_id, curated_by)
+select current_date, p.id, v.wf, (select id from public.profiles where handle = 'parintnk')
+from (values
+  ('graphic-designer', 'b0000000-0000-4000-8000-000000000001'::uuid),
+  ('web-developer',    'b0000000-0000-4000-8000-000000000011'::uuid),
+  ('ai-automation',    'b0000000-0000-4000-8000-000000000005'::uuid)
+) as v(slug, wf)
+join public.professions p on p.slug = v.slug
+on conflict (feature_date, profession_id) do nothing;
