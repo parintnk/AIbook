@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { houseRulesSchema } from "@/lib/profession-rules";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -226,12 +227,17 @@ export async function listProfessionPins(
   const rows = (data ?? []) as Array<{
     workflow: { id: string; title: string; status: string } | null;
   }>;
-  return rows
-    .map((r) => r.workflow)
-    .filter(
-      (w): w is { id: string; title: string; status: string } => w != null,
-    )
-    .map((w) => ({ id: w.id, title: w.title }));
+  return (
+    rows
+      .map((r) => r.workflow)
+      .filter(
+        (w): w is { id: string; title: string; status: string } => w != null,
+      )
+      // Defense-in-depth (7.3): published-ness is enforced by the `!inner` embed + the `.eq` above;
+      // re-assert it in JS so a future refactor that drops `!inner` can't silently leak drafts.
+      .filter((w) => w.status === "published")
+      .map((w) => ({ id: w.id, title: w.title }))
+  );
 }
 
 /** A community house rule (Story 7.2) — a short titled norm rendered in the rail. */
@@ -266,4 +272,124 @@ export function parseHouseRules(rules: Profession["rules"]): HouseRule[] {
       typeof (r as Record<string, unknown>).body === "string",
   );
   return parsed.length > 0 ? parsed : DEFAULT_HOUSE_RULES;
+}
+
+// ── Story 7.3 — moderator mutations (RLS-gated; called by the rail's mod UI via Server Actions) ──
+// Every write is gated by the EXISTING mod RLS (`is_profession_moderator`): the 7.2 profession_pins
+// insert/update/delete policies + column-lock (after 7.3 harden: insert(profession_id,workflow_id,
+// position) / update(position) only) and the 1.5 professions mod-UPDATE policy + grant(rules). The
+// Server Action ALSO re-checks `isProfessionModerator` (defense-in-depth) — RLS is the real boundary.
+
+/**
+ * Pin a published workflow to a profession's "Start here" canon (Story 7.3 / FR18). New pin lands at
+ * the end of the ordered list (`position` = current max + 1). RLS gates the insert to moderators; the
+ * `enforce_pin_target` trigger additionally rejects a non-published or cross-profession target (one
+ * generic error → `db_error` here). A `23505` (UNIQUE — already pinned) is an idempotent success
+ * (the `joinProfession` convention).
+ */
+export async function pinWorkflow(
+  professionId: string,
+  workflowId: string,
+): Promise<MembershipResult> {
+  const supabase = await createClient();
+  const { data: last } = await supabase
+    .from("profession_pins")
+    .select("position")
+    .eq("profession_id", professionId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const position = ((last as { position: number } | null)?.position ?? -1) + 1;
+  const { error } = await supabase
+    .from("profession_pins")
+    .insert({ profession_id: professionId, workflow_id: workflowId, position });
+  if (error) {
+    if (error.code === "23505") return { ok: true }; // already pinned — idempotent
+    return { ok: false, error: "db_error" };
+  }
+  return { ok: true };
+}
+
+/**
+ * Unpin a workflow from a profession's canon (Story 7.3). RLS gates the delete to moderators; a
+ * zero-row delete (not a moderator / not pinned) → `not_found` via `.select().maybeSingle()` (the
+ * `leaveProfession` deleteDraft pattern — never a false "Unpinned").
+ */
+export async function unpinWorkflow(
+  professionId: string,
+  workflowId: string,
+): Promise<MembershipResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profession_pins")
+    .delete()
+    .eq("profession_id", professionId)
+    .eq("workflow_id", workflowId)
+    .select("id")
+    .maybeSingle();
+  if (error) return { ok: false, error: "db_error" };
+  if (!data) return { ok: false, error: "not_found" };
+  return { ok: true };
+}
+
+/**
+ * Reorder a profession's pinned canon (Story 7.3). Persists each workflow's new `position` = its
+ * index in `orderedWorkflowIds` (only `position` is client-updatable after the 7.3 harden — a pin's
+ * `workflow_id` can't be re-pointed). Sequential per-row updates (the founder-curated list is small;
+ * no atomic RPC). RLS gates each update to moderators. Any failure → `db_error`.
+ */
+export async function reorderPins(
+  professionId: string,
+  orderedWorkflowIds: string[],
+): Promise<MembershipResult> {
+  const supabase = await createClient();
+  for (let i = 0; i < orderedWorkflowIds.length; i++) {
+    const { error } = await supabase
+      .from("profession_pins")
+      .update({ position: i })
+      .eq("profession_id", professionId)
+      .eq("workflow_id", orderedWorkflowIds[i] as string);
+    if (error) return { ok: false, error: "db_error" };
+  }
+  return { ok: true };
+}
+
+/**
+ * Replace a profession's house rules (Story 7.3). Re-validates server-side with `houseRulesSchema`
+ * (the action is the trust boundary — the 4.2 lesson; closes 7.2 defer #3) before the RLS-gated
+ * `update` (mod-gated policy + `grant update(rules)`, both since Story 1.5). Invalid input →
+ * `db_error` (the client form validates with the SAME schema). `parseHouseRules` still guards the read.
+ */
+export async function updateHouseRules(
+  professionId: string,
+  rules: HouseRule[],
+): Promise<MembershipResult> {
+  const parsed = houseRulesSchema.safeParse(rules);
+  if (!parsed.success) return { ok: false, error: "db_error" };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("professions")
+    .update({ rules: parsed.data })
+    .eq("id", professionId);
+  if (error) return { ok: false, error: "db_error" };
+  return { ok: true };
+}
+
+/**
+ * Published workflows of a profession a moderator can pin (Story 7.3 pin picker). RLS-only public
+ * read (published workflows are public). Returns `{ id, title }` for the dialog's select list; the
+ * caller excludes already-pinned ids client-side, and a re-pin is a no-op anyway (UNIQUE → 23505 →
+ * idempotent).
+ */
+export async function listPinnableWorkflows(
+  professionId: string,
+): Promise<ProfessionPin[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("workflows")
+    .select("id, title")
+    .eq("profession_id", professionId)
+    .eq("status", "published")
+    .order("title", { ascending: true });
+  return (data ?? []) as ProfessionPin[];
 }

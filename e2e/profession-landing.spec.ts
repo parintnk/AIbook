@@ -102,6 +102,26 @@ test("the rail shows real per-profession house rules + mod-curated pinned canon 
   ).toHaveAttribute("href", `/workflows/${SAAS_CARD}`);
 });
 
+test("the mod affordances are hidden from non-moderators (Story 7.3 / UX-DR21)", async ({
+  page,
+}) => {
+  await page.goto("/communities/web-developer");
+
+  // The rail still renders for everyone (Start here + House rules)...
+  await expect(page.getByTestId("start-here")).toBeVisible();
+  await expect(page.getByText("House rules")).toBeVisible();
+
+  // ...but an anon visitor sees ZERO mod chrome — no pin / edit / reorder controls, and crucially
+  // no "access denied" anywhere (the affordances are simply absent).
+  await expect(
+    page.getByRole("button", { name: /pin a workflow/i }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /edit house rules/i }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^reorder/i })).toHaveCount(0);
+});
+
 test("an unknown profession slug 404s", async ({ page }) => {
   const res = await page.goto("/communities/not-a-real-profession");
   expect(res?.status()).toBe(404);

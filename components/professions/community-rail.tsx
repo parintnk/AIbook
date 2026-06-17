@@ -1,17 +1,29 @@
 import { FileText, Info, MessageSquare, Shield, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import type { HouseRule, ProfessionMod } from "@/lib/services/professions";
+import type {
+  HouseRule,
+  ProfessionMod,
+  ProfessionPin,
+} from "@/lib/services/professions";
 import styles from "./community.module.css";
+import { EditRulesDialog } from "./edit-rules-dialog";
+import { PinWorkflowDialog } from "./pin-workflow-dialog";
+import { SortableCanon } from "./sortable-canon";
 
 /**
- * The community left rail (Story 6.2 + 7.2 / FR17) — the "home context". Four cards, each
- * rendered only when it has content (the 6.1 "no empty stubs" rule):
+ * The community left rail (Story 6.2 + 7.2 + 7.3 / FR17/FR18) — the "home context". Cards render only
+ * when they have content (the 6.1 "no empty stubs" rule):
  *  - Mods: real `profession_members` read (moderator / verified_pro).
- *  - Start here: the profession's mod-curated pinned canon (Story 7.2 `profession_pins`).
- *  - House rules: the profession's own `rules` (Story 7.2), falling back to the 3 universal
- *    platform norms (DESIGN.md) when unset — parsed by `parseHouseRules` on the page.
+ *  - Start here: the profession's mod-curated pinned canon (Story 7.2 `profession_pins`). For a
+ *    MODERATOR (Story 7.3) the card is editable — drag-reorder + unpin + a "Pin a workflow" picker —
+ *    and shows even when empty (so a mod can add the first pin); members get the plain read-only list.
+ *  - House rules: the profession's own `rules` (Story 7.2); a moderator gets an "Edit" affordance (7.3).
  *  - About: the profession description (+ a static AMA placeholder — no events system yet).
+ *
+ * `isModerator` is server-derived (the `isProfessionModerator` RPC on the page). When false, NO mod
+ * chrome renders — no buttons, no disabled controls, no "access denied" (UX-DR21); the member sees
+ * exactly the 6.2/7.2 rail, and the @dnd-kit / dialog client bundles never load.
  */
 
 function roleLabel(role: ProfessionMod["role"]): {
@@ -30,11 +42,17 @@ export function CommunityRail({
   canon,
   rules,
   description,
+  isModerator = false,
+  professionId,
+  pinnable = [],
 }: {
   mods: ProfessionMod[];
-  canon: { id: string; title: string }[];
+  canon: ProfessionPin[];
   rules: HouseRule[];
   description: string | null;
+  isModerator?: boolean;
+  professionId: string;
+  pinnable?: ProfessionPin[];
 }) {
   return (
     <aside className={styles.rail}>
@@ -70,7 +88,30 @@ export function CommunityRail({
         </div>
       ) : null}
 
-      {canon.length > 0 ? (
+      {/* Start here — editable for a moderator (Story 7.3), read-only for members (Story 7.2). */}
+      {isModerator ? (
+        <div className={styles.card} data-testid="start-here">
+          <div className={`${styles.ct} ${styles.ctMod}`}>
+            <span className={styles.ctLabel}>
+              <Sparkles width={14} height={14} aria-hidden="true" />
+              Start here
+            </span>
+            <PinWorkflowDialog
+              professionId={professionId}
+              pinnable={pinnable}
+              pinnedIds={canon.map((w) => w.id)}
+            />
+          </div>
+          {canon.length > 0 ? (
+            <SortableCanon professionId={professionId} canon={canon} />
+          ) : (
+            <p className={styles.canonEmpty}>
+              No pins yet — add the first essential workflow newcomers should
+              try.
+            </p>
+          )}
+        </div>
+      ) : canon.length > 0 ? (
         <div className={styles.card} data-testid="start-here">
           <div className={styles.ct}>
             <Sparkles width={14} height={14} aria-hidden="true" />
@@ -90,10 +131,20 @@ export function CommunityRail({
       ) : null}
 
       <div className={styles.card}>
-        <div className={styles.ct}>
-          <FileText width={14} height={14} aria-hidden="true" />
-          House rules
-        </div>
+        {isModerator ? (
+          <div className={`${styles.ct} ${styles.ctMod}`}>
+            <span className={styles.ctLabel}>
+              <FileText width={14} height={14} aria-hidden="true" />
+              House rules
+            </span>
+            <EditRulesDialog professionId={professionId} rules={rules} />
+          </div>
+        ) : (
+          <div className={styles.ct}>
+            <FileText width={14} height={14} aria-hidden="true" />
+            House rules
+          </div>
+        )}
         <ul className={styles.rules}>
           {rules.map((r, i) => (
             <li key={`${i}-${r.title}`}>

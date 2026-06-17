@@ -11,6 +11,8 @@ import { getWorkflowOfTheDay } from "@/lib/services/featured";
 import {
   getMyMembership,
   getProfessionBySlug,
+  isProfessionModerator,
+  listPinnableWorkflows,
   listProfessionMods,
   listProfessionPins,
   parseHouseRules,
@@ -72,7 +74,7 @@ export default async function CommunityPage({
   const tags = await listProfessionTags(slug);
   const activeTag = tag && tags.some((t) => t.slug === tag) ? tag : null;
 
-  const [feed, mods, canon, membership, wotd] = await Promise.all([
+  const [feed, mods, canon, membership, wotd, isModerator] = await Promise.all([
     listPublishedWorkflows({
       profession: slug,
       tag: activeTag,
@@ -88,12 +90,21 @@ export default async function CommunityPage({
     user ? getMyMembership(profession.id) : Promise.resolve(null),
     // The profession's Workflow of the Day (6.3) — prepends the feed column.
     getWorkflowOfTheDay({ professionId: profession.id }),
+    // Mod gate (Story 7.3) — the RPC, NOT membership.role: the founder moderates EVERY profession via
+    // is_profession_moderator but has no profession_members row for most, so role would wrongly hide
+    // the mod tools. Anon → false (no RPC).
+    user ? isProfessionModerator(profession.id) : Promise.resolve(false),
   ]);
   const isMember = membership !== null;
   // Only a moderator / verified_pro can't self-leave (RLS). A plain member — or a
   // non-member who's about to join AS a member (optimistic) — can. So the leave is
   // blocked only for the elevated roles, never for the common join→leave path.
   const canLeave = !membership || membership.role === "member";
+  // Mod-only (Story 7.3): the pin picker's options = this profession's published workflows. Fetched
+  // ONLY for a moderator → zero extra query on the member/anon path (UX-DR21 stays cheap).
+  const pinnable = isModerator
+    ? await listPinnableWorkflows(profession.id)
+    : [];
 
   return (
     <div
@@ -111,6 +122,9 @@ export default async function CommunityPage({
           canon={canon}
           rules={parseHouseRules(profession.rules)}
           description={profession.description}
+          isModerator={isModerator}
+          professionId={profession.id}
+          pinnable={pinnable}
         />
         <section className={styles.main}>
           {wotd ? <WorkflowOfTheDay data={wotd} /> : null}

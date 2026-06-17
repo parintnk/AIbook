@@ -16,10 +16,12 @@ vi.mock("@/lib/supabase/server", () => ({
     const b = {
       select: () => b,
       insert: (...a: unknown[]) => insertMock(...a),
+      update: () => b,
       delete: () => b,
       eq: () => b,
       in: () => b,
       order: () => b,
+      limit: () => b,
       maybeSingle: () => maybeSingleMock(),
       // biome-ignore lint/suspicious/noThenProperty: the mock builder is intentionally thenable so an awaited query chain resolves.
       then: (resolve: (v: unknown) => unknown) => resolve(queryMock()),
@@ -35,10 +37,15 @@ import {
   isProfessionModerator,
   joinProfession,
   leaveProfession,
+  listPinnableWorkflows,
   listProfessionMods,
   listProfessionPins,
   listProfessions,
   parseHouseRules,
+  pinWorkflow,
+  reorderPins,
+  unpinWorkflow,
+  updateHouseRules,
 } from "./professions";
 
 const USER = { data: { user: { id: "u1" } } };
@@ -213,6 +220,19 @@ describe("listProfessionPins", () => {
     });
     expect(await listProfessionPins("p1")).toEqual([{ id: "w3", title: "C" }]);
   });
+
+  it("drops a non-published embed in JS too (7.3 defense-in-depth if `!inner` is ever dropped)", async () => {
+    queryMock.mockReturnValueOnce({
+      data: [
+        { workflow: { id: "w4", title: "Draft", status: "draft" } },
+        { workflow: { id: "w5", title: "Live", status: "published" } },
+      ],
+      error: null,
+    });
+    expect(await listProfessionPins("p1")).toEqual([
+      { id: "w5", title: "Live" },
+    ]);
+  });
 });
 
 describe("parseHouseRules", () => {
@@ -233,5 +253,128 @@ describe("parseHouseRules", () => {
     expect(parseHouseRules(null)).toEqual(DEFAULT_HOUSE_RULES);
     expect(parseHouseRules("nope")).toEqual(DEFAULT_HOUSE_RULES);
     expect(parseHouseRules([{ title: "x" }])).toEqual(DEFAULT_HOUSE_RULES);
+  });
+});
+
+// ── Story 7.3 — moderator mutations ──────────────────────────────────────────
+
+describe("pinWorkflow", () => {
+  it("inserts at the next position (max+1) and succeeds", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { position: 1 },
+      error: null,
+    });
+    insertMock.mockReturnValueOnce({ error: null });
+    expect(await pinWorkflow("p1", "w1")).toEqual({ ok: true });
+    expect(insertMock).toHaveBeenCalledWith({
+      profession_id: "p1",
+      workflow_id: "w1",
+      position: 2,
+    });
+  });
+
+  it("uses position 0 when the profession has no pins yet", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    insertMock.mockReturnValueOnce({ error: null });
+    await pinWorkflow("p1", "w1");
+    expect(insertMock).toHaveBeenCalledWith({
+      profession_id: "p1",
+      workflow_id: "w1",
+      position: 0,
+    });
+  });
+
+  it("treats a duplicate pin (23505) as an idempotent success", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { position: 0 },
+      error: null,
+    });
+    insertMock.mockReturnValueOnce({ error: { code: "23505" } });
+    expect(await pinWorkflow("p1", "w1")).toEqual({ ok: true });
+  });
+
+  it("returns db_error on a trigger rejection / other insert error", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    insertMock.mockReturnValueOnce({ error: { code: "P0001" } });
+    expect(await pinWorkflow("p1", "w1")).toEqual({
+      ok: false,
+      error: "db_error",
+    });
+  });
+});
+
+describe("unpinWorkflow", () => {
+  it("returns ok when a row was deleted", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { id: "pin1" },
+      error: null,
+    });
+    expect(await unpinWorkflow("p1", "w1")).toEqual({ ok: true });
+  });
+
+  it("returns not_found when the delete matched zero rows (RLS / not pinned)", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    expect(await unpinWorkflow("p1", "w1")).toEqual({
+      ok: false,
+      error: "not_found",
+    });
+  });
+});
+
+describe("reorderPins", () => {
+  it("succeeds when every position update succeeds", async () => {
+    queryMock.mockReturnValue({ data: null, error: null });
+    expect(await reorderPins("p1", ["w1", "w2", "w3"])).toEqual({ ok: true });
+  });
+
+  it("returns db_error if a position update fails", async () => {
+    queryMock.mockReturnValueOnce({ data: null, error: { code: "P0001" } });
+    expect(await reorderPins("p1", ["w1", "w2"])).toEqual({
+      ok: false,
+      error: "db_error",
+    });
+  });
+});
+
+describe("updateHouseRules", () => {
+  it("persists well-formed rules", async () => {
+    queryMock.mockReturnValueOnce({ data: null, error: null });
+    expect(
+      await updateHouseRules("p1", [
+        { title: "Ship the stack.", body: "Name every tool." },
+      ]),
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects blank-after-trim rules WITHOUT writing (7.3 validation)", async () => {
+    expect(await updateHouseRules("p1", [{ title: "   ", body: "x" }])).toEqual(
+      {
+        ok: false,
+        error: "db_error",
+      },
+    );
+  });
+
+  it("rejects an empty rules list", async () => {
+    expect(await updateHouseRules("p1", [])).toEqual({
+      ok: false,
+      error: "db_error",
+    });
+  });
+});
+
+describe("listPinnableWorkflows", () => {
+  it("returns the profession's published workflows as {id,title}", async () => {
+    queryMock.mockReturnValueOnce({
+      data: [
+        { id: "w1", title: "Alpha" },
+        { id: "w2", title: "Beta" },
+      ],
+      error: null,
+    });
+    expect(await listPinnableWorkflows("p1")).toEqual([
+      { id: "w1", title: "Alpha" },
+      { id: "w2", title: "Beta" },
+    ]);
   });
 });
