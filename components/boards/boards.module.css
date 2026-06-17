@@ -1,0 +1,545 @@
+/*
+ * Story 8.2 — Boards management page. Ports boards-{light,dark}.html (the LOCKED design system)
+ * through the app `:root`/`.dark` tokens (the explore.module.css / lineage.module.css precedent):
+ * structural values verbatim from the mockup; colours routed through tokens so the surface is
+ * dark-aware with no separate dark file. The saved-workflow CARDS reuse explore.module.css's
+ * `.wfcard` family — this module only adds the boards-specific chrome (rail / header / overlays).
+ */
+
+.gradient {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+}
+
+/* ===== Saved page heading ===== */
+.savedhead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 2px 20px;
+  flex-wrap: wrap;
+}
+.savedhead h1 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.savedhead h1 .ic {
+  color: var(--primary);
+  display: flex;
+}
+.sub {
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+}
+.newboardbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--primary-foreground);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 28%, transparent);
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+}
+.newboardbtn:hover {
+  filter: brightness(1.04);
+}
+.newboardbtn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ===== layout: switcher rail + content ===== */
+.layout {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ---- LEFT RAIL: Your boards switcher ---- */
+.railcol {
+  position: sticky;
+  top: 78px;
+}
+.railTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin: 0 4px 12px;
+}
+.boardlist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.boarditem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 11px 12px;
+  color: var(--muted-foreground);
+  font-family: inherit;
+  text-decoration: none;
+}
+.boarditem:hover {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+.boarditem.on {
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--foreground);
+}
+.boarditem:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.biThumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.biBody {
+  flex: 1;
+  min-width: 0;
+}
+.biName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.biMeta {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.lock {
+  display: inline-flex;
+  color: var(--muted-foreground);
+}
+.biCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  flex: 0 0 auto;
+}
+.boarditem.on .biCount {
+  color: var(--primary);
+  background: var(--card);
+  border-color: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.newboardlink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: 14px;
+  padding: 11px 12px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.newboardlink:hover {
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+}
+.newboardlink .plus {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.railMore {
+  margin-top: 8px;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+}
+.railMore:hover {
+  color: var(--foreground);
+}
+
+/* ===== Board header ===== */
+.boardhead {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgb(15 23 42 / 6%));
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+.bhTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.bhTitlewrap {
+  min-width: 0;
+}
+.bhTitle {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+/* segmented public/private toggle */
+.privtoggle {
+  display: inline-flex;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+}
+.privtoggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  border-radius: 999px;
+  padding: 6px 13px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.privtoggle button.on {
+  color: var(--primary-foreground);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+}
+.privtoggle button:not(.on):hover {
+  color: var(--foreground);
+}
+.privtoggle button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.bhOwner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.by {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.by b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+.bhFollowers {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.bhFollowers svg {
+  color: var(--primary);
+}
+.bhFollowers b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.bhActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.bhFoot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.bhCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.bhCount b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.bhCount svg {
+  color: var(--primary);
+}
+.manageLink {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.manageLink:hover {
+  text-decoration: underline;
+}
+.reorderhint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* shared pill buttons (header Share/Follow) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 18px;
+  border-radius: 13px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.btnPrimary {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+  color: var(--primary-foreground);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+.btnPrimary:hover {
+  filter: brightness(1.04);
+}
+.btnGhost {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+.btnGhost:hover {
+  border-color: color-mix(in srgb, var(--foreground) 12%, var(--border));
+}
+.btnPrimary:disabled,
+.btnGhost:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ===== board item card overlays (over the reused explore .wfcard / .wthumb) ===== */
+.draghandle {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  z-index: 4;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgb(15 23 42 / 50%);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgb(255 255 255 / 25%);
+  cursor: grab;
+}
+.draghandle:hover {
+  background: rgb(15 23 42 / 72%);
+}
+.draghandle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.removeMark {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 4;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-foreground);
+  background: color-mix(in srgb, var(--primary) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgb(255 255 255 / 35%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 28%, transparent);
+  cursor: pointer;
+}
+.removeMark:hover {
+  filter: brightness(1.06);
+}
+.removeMark:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.removeMark svg {
+  fill: currentcolor;
+}
+.dragging {
+  z-index: 10;
+  opacity: 0.9;
+}
+
+/* ===== empty / zero states ===== */
+.emptycard {
+  background: var(--card);
+  border: 1px dashed color-mix(in srgb, var(--foreground) 14%, transparent);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgb(15 23 42 / 6%));
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 24px;
+}
+.emptyGlyph {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+.emptycard h3 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+.emptycard p {
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  max-width: 420px;
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+.explorelink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+  border-radius: 12px;
+  padding: 11px 18px;
+  text-decoration: none;
+}
+.explorelink:hover {
+  filter: brightness(1.04);
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .railcol {
+    position: static;
+  }
+  .boardlist {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .boarditem {
+    width: auto;
+  }
+}

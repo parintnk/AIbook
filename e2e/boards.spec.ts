@@ -32,3 +32,28 @@ test("/boards is protected — anon is redirected to sign-in", async ({
   await page.goto("/boards");
   await page.waitForURL(/\/sign-in/, { timeout: 15000 });
 });
+
+// Story 8.2 — the public board permalink + follow surface. Seeded boards (seed.sql): a public
+// "Brand kit starters" + a private "Private drafts", both owned by the founder (not the e2e user).
+const PUBLIC_BOARD = "00000000-0000-0000-0000-0000000b0001";
+const PRIVATE_BOARD = "00000000-0000-0000-0000-0000000b0002";
+
+test("a public board is readable by anon; Follow routes to sign-in", async ({
+  page,
+}) => {
+  await page.goto(`/boards/${PUBLIC_BOARD}`);
+  await expect(page.getByText("Brand kit starters")).toBeVisible();
+  // The board's saved items render as read-only feed cards.
+  await expect(
+    page.getByText("Cohesive 24-icon set in one style pass"),
+  ).toBeVisible();
+  // Follow is a link to sign-in for anon — no follow happens until they return.
+  await page.getByRole("link", { name: /^follow$/i }).click();
+  await page.waitForURL(/\/sign-in/, { timeout: 15000 });
+});
+
+test("a private board is not found for a non-owner", async ({ page }) => {
+  const res = await page.goto(`/boards/${PRIVATE_BOARD}`);
+  expect(res?.status()).toBe(404);
+  await expect(page.getByText("Private drafts")).toHaveCount(0);
+});

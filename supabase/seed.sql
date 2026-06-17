@@ -420,3 +420,21 @@ from (values
 ) as v(slug, wf, pos)
 join public.professions p on p.slug = v.slug
 on conflict (profession_id, workflow_id) do nothing;
+
+-- ── Story 8.2 — boards & saving fixtures ─────────────────────────────────────
+-- A seeded PUBLIC board (so /boards/[id] + the public board viewer render real content on a fresh
+-- DB / e2e) + a PRIVATE board (the not-found-for-a-non-owner case). Owned by the founder profile
+-- (…0001), distinct from the ephemeral e2e user → that user is a NON-owner who sees Follow. The ±1
+-- item_count trigger maintains the count from these saves; follower_count stays 0 until a real
+-- follow. The service-role seed bypasses the column-lock + the published-gate (all targets are
+-- published anyway); sort_order is set explicitly to seed a deterministic order.
+insert into public.boards (id, owner_id, name, is_public) values
+  ('00000000-0000-0000-0000-0000000b0001', '00000000-0000-0000-0000-000000000001', 'Brand kit starters', true),
+  ('00000000-0000-0000-0000-0000000b0002', '00000000-0000-0000-0000-000000000001', 'Private drafts', false)
+on conflict (id) do nothing;
+
+insert into public.board_items (board_id, workflow_id, sort_order) values
+  ('00000000-0000-0000-0000-0000000b0001', '00000000-0000-0000-0000-0000000c0004', 0),
+  ('00000000-0000-0000-0000-0000000b0001', '00000000-0000-0000-0000-0000000c0011', 1),
+  ('00000000-0000-0000-0000-0000000b0001', '00000000-0000-0000-0000-0000000c0001', 2)
+on conflict (board_id, workflow_id) do nothing;

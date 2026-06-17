@@ -51,3 +51,49 @@ test("a feed-card savemark opens the board picker without navigating", async ({
   ).toBeVisible();
   expect(page.url()).toContain("/explore");
 });
+
+// Story 8.2 — the management page: create → rename → toggle visibility → delete. (Drag-reorder is
+// covered by the reorderBoardItems unit + RLS harness; @dnd-kit gestures are flaky to drive in
+// Playwright, so this asserts the management lifecycle, not the drag itself.)
+test("manage a board: create, rename, toggle public, then delete", async ({
+  page,
+}) => {
+  page.on("dialog", (d) => d.accept()); // auto-confirm the delete window.confirm
+
+  await page.goto("/boards");
+  await page
+    .getByRole("button", { name: /new board/i })
+    .first()
+    .click();
+
+  const create = page.getByRole("dialog");
+  const name = `E2E board ${Date.now()}`;
+  await create.getByPlaceholder("Board name").fill(name);
+  await create.getByRole("button", { name: /create board/i }).click();
+
+  // Lands on the new (active, empty) board.
+  await expect(page.getByText(name)).toBeVisible();
+  await expect(page.getByText(/nothing saved here yet/i)).toBeVisible();
+
+  // Rename via the ••• overflow menu.
+  await page.getByRole("button", { name: /board actions/i }).click();
+  await page.getByRole("menuitem", { name: /rename/i }).click();
+  const renamed = `${name} (renamed)`;
+  const rename = page.getByRole("dialog");
+  await rename.getByPlaceholder("Board name").fill(renamed);
+  await rename.getByRole("button", { name: /^save$/i }).click();
+  await expect(page.getByText(renamed)).toBeVisible();
+
+  // Toggle to Public (optimistic segmented control).
+  await page.getByRole("button", { name: /^public$/i }).click();
+  await expect(page.getByRole("button", { name: /^public$/i })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // Delete via ••• → confirm (auto-accepted) → back to /boards, the board gone.
+  await page.getByRole("button", { name: /board actions/i }).click();
+  await page.getByRole("menuitem", { name: /delete board/i }).click();
+  await page.waitForURL(/\/boards(\?|$)/, { timeout: 15000 });
+  await expect(page.getByText(renamed)).toHaveCount(0);
+});

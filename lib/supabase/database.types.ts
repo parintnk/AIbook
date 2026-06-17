@@ -852,6 +852,7 @@ export type Database = {
       boards: {
         Row: {
           created_at: string;
+          follower_count: number;
           id: string;
           is_public: boolean;
           item_count: number;
@@ -860,6 +861,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          follower_count?: number;
           id?: string;
           is_public?: boolean;
           item_count?: number;
@@ -868,6 +870,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          follower_count?: number;
           id?: string;
           is_public?: boolean;
           item_count?: number;
@@ -878,6 +881,39 @@ export type Database = {
           {
             foreignKeyName: "boards_owner_id_fkey";
             columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      board_follows: {
+        Row: {
+          board_id: string;
+          created_at: string;
+          follower_id: string;
+        };
+        Insert: {
+          board_id: string;
+          created_at?: string;
+          follower_id?: string;
+        };
+        Update: {
+          board_id?: string;
+          created_at?: string;
+          follower_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "board_follows_board_id_fkey";
+            columns: ["board_id"];
+            isOneToOne: false;
+            referencedRelation: "boards";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "board_follows_follower_id_fkey";
+            columns: ["follower_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];

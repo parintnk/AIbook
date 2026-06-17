@@ -12,11 +12,15 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/workflows/new",
   "/forked",
-  "/boards",
   "/me",
 ];
 
 function isProtected(pathname: string): boolean {
+  // `/boards` (the management landing) is gated, but `/boards/<id>` is a PUBLIC board view
+  // (Story 8.2 / FR21 — a public board is readable + followable by anyone). Handle it explicitly
+  // before the prefix match so the public permalink isn't swept up by a `/boards` prefix.
+  if (pathname === "/boards") return true;
+  if (pathname.startsWith("/boards/")) return false;
   return PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

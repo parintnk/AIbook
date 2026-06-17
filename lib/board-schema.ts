@@ -19,3 +19,9 @@ export const createBoardSchema = z.object({
 });
 
 export type CreateBoardInput = z.infer<typeof createBoardSchema>;
+
+/** Story 8.2 — rename a board (name only; visibility toggles via its own action). */
+export const renameBoardSchema = z.object({ name: boardNameSchema });
+
+/** Story 8.2 — drag-reorder: the new order of a board's items, as workflow ids. */
+export const reorderBoardItemsSchema = z.array(z.string().uuid());
