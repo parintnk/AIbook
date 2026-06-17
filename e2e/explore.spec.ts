@@ -34,9 +34,7 @@ test("a profession chip filters the trending grid via a shareable URL", async ({
   await page.goto("/explore");
 
   // exact: true → the chip, not the cards that mention "Web Developer".
-  await page
-    .getByRole("link", { name: "Web Developer", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Web Developer", exact: true }).click();
   await expect(page).toHaveURL(/profession=web-developer/);
 
   // Within the trending grid: a web-developer workflow stays; a video one is gone.

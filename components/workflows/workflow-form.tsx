@@ -12,10 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { Tag } from "@/lib/explore";
 import {
   type WorkflowDraftValues,
   workflowDraftSchema,
 } from "@/lib/validation/workflow";
+
+/** Max tags per workflow (mirrors `workflowDraftSchema.tags.max(6)`). */
+const MAX_TAGS = 6;
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
@@ -35,10 +39,12 @@ export type ProfessionOption = { id: string; name: string };
  */
 export function WorkflowForm({
   professions,
+  allTags,
   draftId,
   defaultValues,
 }: {
   professions: ProfessionOption[];
+  allTags: Tag[];
   draftId?: string;
   defaultValues?: WorkflowDraftValues;
 }) {
@@ -49,6 +55,8 @@ export function WorkflowForm({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<WorkflowDraftValues>({
     resolver: standardSchemaResolver(workflowDraftSchema),
@@ -57,8 +65,20 @@ export function WorkflowForm({
       title: "",
       summary: "",
       profession_id: "",
+      tags: [],
     },
   });
+
+  // `tags` is a controlled array field (toggle chips) — RHF tracks it via watch/setValue.
+  const selectedTags = watch("tags") ?? [];
+  function toggleTag(id: string) {
+    const next = selectedTags.includes(id)
+      ? selectedTags.filter((t) => t !== id)
+      : selectedTags.length < MAX_TAGS
+        ? [...selectedTags, id]
+        : selectedTags;
+    setValue("tags", next, { shouldDirty: true });
+  }
 
   function onSubmit(values: WorkflowDraftValues) {
     setServerError(null);
@@ -130,6 +150,42 @@ export function WorkflowForm({
             message={errors.profession_id?.message}
           />
         </div>
+
+        <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
+          <legend className="font-medium text-sm">Tags</legend>
+          <p className="text-sm text-muted-foreground">
+            Add up to {MAX_TAGS} so people can find this in their profession.
+          </p>
+          {allTags.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No tags available yet.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {allTags.map((t) => {
+                const on = selectedTags.includes(t.id);
+                const atMax = !on && selectedTags.length >= MAX_TAGS;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleTag(t.id)}
+                    disabled={atMax}
+                    aria-pressed={on}
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      on
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-input text-muted-foreground hover:border-ring"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <FieldError id="tags-error" message={errors.tags?.message} />
+        </fieldset>
       </section>
 
       {serverError ? (

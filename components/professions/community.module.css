@@ -1,0 +1,402 @@
+/*
+ * Profession community landing — ported from the LOCKED draft `set3-community-light.html`
+ * (Story 6.2). Structural values (radii, blur, shadows, the 292px rail from DESIGN.md) are
+ * verbatim from the mockup; all colours route through the app design tokens (globals.css
+ * :root/.dark) so the surface is dark-aware for free (the explore.module.css precedent).
+ * The feed grid + cards are REUSED from explore.module.css — only the hero, the two-column
+ * shell, the left rail, and the Hot/New segmented control live here.
+ */
+
+/* shared glass tokens (local) — on the page wrapper so every descendant inherits. */
+.community {
+  --c-line: var(--border);
+  --c-line-soft: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --c-hi: inset 0 1px 0 var(--glass-highlight);
+  --c-shadow:
+    0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px
+    color-mix(in srgb, var(--foreground) 4%, transparent);
+  --c-shadow-sm: 0 2px 8px color-mix(in srgb, var(--foreground) 6%, transparent);
+  --c-accent-line: color-mix(in srgb, var(--primary) 22%, transparent);
+  --c-brand: linear-gradient(135deg, #7c6bff, #6d5ef0);
+}
+
+/* ===================== community hero (accent-tinted banner) ===================== */
+.commhero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 14%, transparent),
+    color-mix(in srgb, var(--primary) 4%, transparent)
+  );
+  border: 1px solid var(--c-accent-line);
+  border-radius: 24px;
+  padding: 26px 28px;
+  margin-bottom: 30px;
+  box-shadow:
+    0 18px 44px color-mix(in srgb, var(--primary) 12%, transparent),
+    var(--c-shadow),
+    var(--c-hi);
+}
+.commhero::after {
+  content: "";
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  right: -110px;
+  top: -150px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 22%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.ci {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--c-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow:
+    0 14px 30px color-mix(in srgb, var(--primary) 28%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.htxt {
+  min-width: 0;
+  flex: 1;
+}
+.toprow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.htitle {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.members {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+}
+.members b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.desc {
+  font-size: 14.5px;
+  color: var(--muted-foreground);
+  max-width: 560px;
+  line-height: 1.5;
+}
+.hactions {
+  display: flex;
+  gap: 11px;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+/* ===================== two-column body (DESIGN.md: 292px rail + 22px gutter) ======= */
+.grid {
+  display: grid;
+  grid-template-columns: 292px 1fr;
+  gap: 22px;
+}
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+/* ----- rail cards ----- */
+.card {
+  background: var(--card);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--c-line);
+  border-radius: 20px;
+  box-shadow: var(--c-shadow), var(--c-hi);
+  padding: 20px;
+}
+.ct {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ct svg {
+  color: var(--primary);
+}
+
+/* mods */
+.mod {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+}
+.mod + .mod {
+  border-top: 1px solid var(--c-line-soft);
+}
+.mav {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 2px solid var(--background);
+  box-shadow: var(--c-shadow-sm);
+  font-size: 13px;
+}
+.mn {
+  min-width: 0;
+}
+.mh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.shield {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.shield svg {
+  width: 9px;
+  height: 9px;
+}
+.mr {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+
+/* pinned canon ("Start here") */
+.canon {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.canon a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 13.5px;
+  color: var(--foreground);
+  text-decoration: none;
+  padding: 9px 10px;
+  border-radius: 11px;
+}
+.canon a:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.cnum {
+  flex: 0 0 auto;
+  width: 23px;
+  height: 23px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* house rules */
+.rules {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.rules li {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  line-height: 1.45;
+}
+.rules li b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.rn {
+  flex: 0 0 auto;
+  color: var(--success);
+  margin-top: 1px;
+  display: flex;
+}
+
+/* about / AMA */
+.about {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.amapill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+  padding: 7px 12px;
+  border-radius: var(--radius-full);
+  margin-top: 13px;
+}
+
+/* ===================== feed bar: Hot / New segmented + New workflow ============== */
+.feedbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.seg {
+  display: inline-flex;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border: 1px solid var(--c-line-soft);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 3px;
+  box-shadow: inset 0 1px 3px
+    color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.segBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  padding: 8px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.22s ease;
+}
+.segBtn:hover {
+  color: var(--foreground);
+}
+.segOn {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--c-shadow-sm), var(--c-hi);
+}
+.newbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--c-brand);
+  padding: 10px 16px;
+  border-radius: 13px;
+  text-decoration: none;
+  box-shadow:
+    0 10px 24px color-mix(in srgb, var(--primary) 28%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.newbtn:hover {
+  filter: brightness(1.05);
+}
+
+/* ===================== tag filter chips ===================== */
+.tagchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tagchip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--card) 74%, var(--background));
+  border: 1px solid var(--c-line);
+  padding: 6px 13px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--c-shadow-sm), var(--c-hi);
+  transition: all 0.22s ease;
+}
+.tagchip:hover {
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+.tagchipOn {
+  color: var(--primary-foreground);
+  background: var(--c-brand);
+  border-color: transparent;
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--primary) 26%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.tagchipOn:hover {
+  color: var(--primary-foreground);
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .inner {
+    align-items: flex-start;
+  }
+}

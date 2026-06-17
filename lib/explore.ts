@@ -31,6 +31,13 @@ export type WorkflowCardData = {
 /** Explore feed sort. `trending` = most-forked (recency tiebreak); `new` = recency. */
 export type WorkflowSort = "trending" | "new";
 
+/**
+ * A curated tag (Story 6.2 / FR3 filter facet). Client-safe — the editor tag picker
+ * and the profession landing page's filter-chip row both import it, so (like
+ * `WorkflowCardData`) it lives here, not in the `server-only` service layer.
+ */
+export type Tag = { id: string; slug: string; label: string };
+
 /** Feed page size — offset pagination. (The mockup's literal "6" is illustrative; 12 = 4×3.) */
 export const PAGE_SIZE = 12;
 

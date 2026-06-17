@@ -664,6 +664,57 @@ export type Database = {
           },
         ];
       };
+      tags: {
+        Row: {
+          created_at: string;
+          id: string;
+          label: string;
+          slug: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          label: string;
+          slug: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          label?: string;
+          slug?: string;
+        };
+        Relationships: [];
+      };
+      workflow_tags: {
+        Row: {
+          tag_id: string;
+          workflow_id: string;
+        };
+        Insert: {
+          tag_id: string;
+          workflow_id: string;
+        };
+        Update: {
+          tag_id?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workflow_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workflow_tags_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

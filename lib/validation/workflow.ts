@@ -9,6 +9,10 @@ export const workflowDraftSchema = z.object({
   title: z.string().trim().min(1, "Required").max(120, "Max 120 characters"),
   summary: z.string().trim().max(280, "Max 280 characters"),
   profession_id: z.uuid("Pick a profession"),
+  // Curated tag ids (Story 6.2 / FR3). Up to 6 per workflow; the DB FK is the real
+  // guard that each id is a real tag. The form always supplies this (default []),
+  // so it's required here — keeping the schema's input/output types aligned for RHF.
+  tags: z.array(z.uuid()).max(6),
 });
 
 export type WorkflowDraftValues = z.infer<typeof workflowDraftSchema>;

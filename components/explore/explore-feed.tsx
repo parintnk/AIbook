@@ -21,12 +21,19 @@ export function ExploreFeed({
   sort,
   profession,
   professionName,
+  tag = null,
+  hideCommunityChip = false,
 }: {
   initialItems: WorkflowCardData[];
   total: number;
   sort: WorkflowSort;
   profession: string | null;
   professionName: string | null;
+  /** Active tag slug (Story 6.2 community feed) — preserved across Load more. */
+  tag?: string | null;
+  /** On a profession's community page the profession is implied → drop the per-card
+   *  community chip (Story 6.2 / AC2). Applies to both the SSR + Load-more cards. */
+  hideCommunityChip?: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
@@ -35,9 +42,11 @@ export function ExploreFeed({
     return (
       <div className={styles.empty}>
         <p>
-          {profession
-            ? `No workflows in ${professionName ?? profession} yet.`
-            : "Nothing published yet."}
+          {tag
+            ? "No workflows match this tag yet."
+            : profession
+              ? `No workflows in ${professionName ?? profession} yet. Be the first to publish one.`
+              : "Nothing published yet."}
         </p>
         <Link
           href="/workflows/new"
@@ -56,6 +65,7 @@ export function ExploreFeed({
       const res = await loadMoreWorkflowsAction({
         sort,
         profession,
+        tag,
         offset: items.length,
       });
       setItems((prev) => [...prev, ...res.items]);
@@ -66,7 +76,10 @@ export function ExploreFeed({
     <>
       <div className={styles.feedgrid} data-testid="trending-feed">
         {items.map((w) => (
-          <WorkflowCard key={w.id} data={w} />
+          <WorkflowCard
+            key={w.id}
+            data={hideCommunityChip ? { ...w, professionName: null } : w}
+          />
         ))}
       </div>
       <div className={styles.loadmore}>

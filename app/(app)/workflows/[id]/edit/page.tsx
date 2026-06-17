@@ -4,6 +4,7 @@ import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-su
 import { WorkflowForm } from "@/components/workflows/workflow-form";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { listProfessions } from "@/lib/services/professions";
+import { listTags } from "@/lib/services/tags";
 import { listEdges } from "@/lib/services/workflow-edges";
 import { listDraftNodes } from "@/lib/services/workflow-nodes";
 import { getMyDraft } from "@/lib/services/workflows";
@@ -28,8 +29,9 @@ export default async function EditWorkflowPage({
   const draft = await getMyDraft(id);
   if (!draft) notFound();
 
-  const [professions, nodes, edges, outputs] = await Promise.all([
+  const [professions, allTags, nodes, edges, outputs] = await Promise.all([
     listProfessions(),
+    listTags(),
     listDraftNodes(id),
     listEdges(id),
     listOutputViewsForWorkflow(id),
@@ -55,11 +57,13 @@ export default async function EditWorkflowPage({
       <div className="mt-8">
         <WorkflowForm
           professions={professions.map((p) => ({ id: p.id, name: p.name }))}
+          allTags={allTags}
           draftId={draft.id}
           defaultValues={{
             title: draft.title,
             summary: draft.summary ?? "",
             profession_id: draft.profession_id,
+            tags: draft.tagIds,
           }}
         />
       </div>

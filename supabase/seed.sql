@@ -291,3 +291,82 @@ values
   ('00000000-0000-0000-0000-0000000d0013', 'file',  'seed/0c0013/main.pdf',  null,                                                 'application/pdf', 153600),
   ('00000000-0000-0000-0000-0000000d0014', 'text',  null,                    'A 900-word case study with a results callout.',     null,              null)
 on conflict (node_id) do nothing;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- Story 6.2 — tags + workflow_tags + profession memberships
+-- ───────────────────────────────────────────────────────────────────────────
+
+-- Curated tag set (id range …0e00NN — no collision with …0c/0d/00aa-fc/d1-d3).
+insert into public.tags (id, slug, label) values
+  ('00000000-0000-0000-0000-0000000e0001', 'automation',   'Automation'),
+  ('00000000-0000-0000-0000-0000000e0002', 'design',       'Design'),
+  ('00000000-0000-0000-0000-0000000e0003', 'branding',     'Branding'),
+  ('00000000-0000-0000-0000-0000000e0004', 'copywriting',  'Copywriting'),
+  ('00000000-0000-0000-0000-0000000e0005', 'video',        'Video'),
+  ('00000000-0000-0000-0000-0000000e0006', 'data',         'Data'),
+  ('00000000-0000-0000-0000-0000000e0007', 'seo',          'SEO'),
+  ('00000000-0000-0000-0000-0000000e0008', 'email',        'Email'),
+  ('00000000-0000-0000-0000-0000000e0009', 'icons',        'Icons'),
+  ('00000000-0000-0000-0000-0000000e000a', 'dashboard',    'Dashboard'),
+  ('00000000-0000-0000-0000-0000000e000b', 'landing-page', 'Landing page'),
+  ('00000000-0000-0000-0000-0000000e000c', 'social',       'Social'),
+  ('00000000-0000-0000-0000-0000000e000d', 'pricing',      'Pricing'),
+  ('00000000-0000-0000-0000-0000000e000e', 'newsletter',   'Newsletter')
+on conflict (id) do nothing;
+
+-- Tag the published feed fixtures (1–3 tags each) so every profession has ≥2 distinct
+-- tags present → the landing-page filter-chip row + the tag filter have data to demo.
+-- A (workflow_id, tag_slug) map joined to resolve the tag ids.
+insert into public.workflow_tags (workflow_id, tag_id)
+select m.workflow_id, t.id
+from (values
+  ('00000000-0000-0000-0000-0000000c0001'::uuid, 'landing-page'),
+  ('00000000-0000-0000-0000-0000000c0001'::uuid, 'copywriting'),
+  ('00000000-0000-0000-0000-0000000c0002'::uuid, 'data'),
+  ('00000000-0000-0000-0000-0000000c0002'::uuid, 'dashboard'),
+  ('00000000-0000-0000-0000-0000000c0002'::uuid, 'automation'),
+  ('00000000-0000-0000-0000-0000000c0003'::uuid, 'video'),
+  ('00000000-0000-0000-0000-0000000c0003'::uuid, 'social'),
+  ('00000000-0000-0000-0000-0000000c0004'::uuid, 'icons'),
+  ('00000000-0000-0000-0000-0000000c0004'::uuid, 'design'),
+  ('00000000-0000-0000-0000-0000000c0004'::uuid, 'branding'),
+  ('00000000-0000-0000-0000-0000000c0005'::uuid, 'email'),
+  ('00000000-0000-0000-0000-0000000c0005'::uuid, 'copywriting'),
+  ('00000000-0000-0000-0000-0000000c0006'::uuid, 'seo'),
+  ('00000000-0000-0000-0000-0000000c0006'::uuid, 'copywriting'),
+  ('00000000-0000-0000-0000-0000000c0007'::uuid, 'landing-page'),
+  ('00000000-0000-0000-0000-0000000c0007'::uuid, 'pricing'),
+  ('00000000-0000-0000-0000-0000000c0008'::uuid, 'newsletter'),
+  ('00000000-0000-0000-0000-0000000c0008'::uuid, 'email'),
+  ('00000000-0000-0000-0000-0000000c0009'::uuid, 'data'),
+  ('00000000-0000-0000-0000-0000000c0009'::uuid, 'automation'),
+  ('00000000-0000-0000-0000-0000000c0010'::uuid, 'video'),
+  ('00000000-0000-0000-0000-0000000c0010'::uuid, 'social'),
+  ('00000000-0000-0000-0000-0000000c0011'::uuid, 'icons'),
+  ('00000000-0000-0000-0000-0000000c0011'::uuid, 'design'),
+  ('00000000-0000-0000-0000-0000000c0012'::uuid, 'email'),
+  ('00000000-0000-0000-0000-0000000c0012'::uuid, 'copywriting'),
+  ('00000000-0000-0000-0000-0000000c0013'::uuid, 'design'),
+  ('00000000-0000-0000-0000-0000000c0014'::uuid, 'copywriting'),
+  ('00000000-0000-0000-0000-0000000c0014'::uuid, 'seo')
+) as m(workflow_id, tag_slug)
+join public.tags t on t.slug = m.tag_slug
+on conflict (workflow_id, tag_id) do nothing;
+
+-- Memberships. The migration's founder-as-moderator-of-all seed no-ops locally (it runs
+-- during migration, BEFORE profiles seed), so re-seed it here to mirror prod + populate
+-- the rail Mods card. Plus a few member joins so member_count reads realistically. The
+-- sync_member_count trigger maintains professions.member_count on each insert.
+insert into public.profession_members (profile_id, profession_id, role)
+select '00000000-0000-0000-0000-000000000001', p.id, 'moderator'
+from public.professions p
+on conflict (profile_id, profession_id) do nothing;
+
+insert into public.profession_members (profile_id, profession_id, role) values
+  ('00000000-0000-0000-0000-0000000000d1', (select id from public.professions where slug = 'web-developer'),  'member'),
+  ('00000000-0000-0000-0000-0000000000d1', (select id from public.professions where slug = 'content-writer'), 'member'),
+  ('00000000-0000-0000-0000-0000000000d2', (select id from public.professions where slug = 'ai-automation'),  'member'),
+  ('00000000-0000-0000-0000-0000000000d2', (select id from public.professions where slug = 'content-writer'), 'member'),
+  ('00000000-0000-0000-0000-0000000000d3', (select id from public.professions where slug = 'video-creator'),  'member'),
+  ('00000000-0000-0000-0000-0000000000d3', (select id from public.professions where slug = 'marketer'),       'member')
+on conflict (profile_id, profession_id) do nothing;

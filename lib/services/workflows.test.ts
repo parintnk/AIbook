@@ -54,7 +54,7 @@ import {
 
 const USER = { data: { user: { id: "u1" } } };
 const NO_USER = { data: { user: null } };
-const input = { title: "X", summary: null, profession_id: "p1" };
+const input = { title: "X", summary: null, profession_id: "p1", tags: [] };
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -218,6 +218,17 @@ describe("listPublishedWorkflows", () => {
     expect(inMock).not.toHaveBeenCalled();
     // Public feed: RLS-only, never gates on the session.
     expect(getUserMock).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty feed for an unknown tag (real 'no matches', never the main query)", async () => {
+    // workflowIdsForTag resolves the tag slug → id; an unknown tag → maybeSingle null → [].
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    expect(await listPublishedWorkflows({ tag: "bogus" })).toEqual({
+      items: [],
+      total: 0,
+    });
+    // The empty tag set short-circuits BEFORE the published-workflows query runs.
+    expect(rangeMock).not.toHaveBeenCalled();
   });
 
   it("returns enriched cards with the exact total (2-step .in() thumbnail enrich)", async () => {

@@ -5,11 +5,28 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Professions domain/service layer (DR-1). The only place profession SQL lives.
- * Community join/leave + feeds are Epic 7; this story ships reads + the
- * moderator check (the RLS seam later epics' mod actions reuse).
+ * Story 1.5 shipped reads + the moderator check; Story 6.2 adds the member
+ * join/leave + the moderator roster for the profession landing page. Community
+ * FEEDS (hot/new/top) + mod tooling stay Epic 7.
  */
 
 export type Profession = Tables<"professions">;
+
+/** Per-profession role (`member` | `verified_pro` | `moderator`). */
+export type ProfessionRole = Tables<"profession_members">["role"];
+
+export type MembershipResult =
+  | { ok: true }
+  | { ok: false; error: "not_authenticated" | "not_found" | "db_error" };
+
+/** A moderator / verified-pro of a profession, for the community rail's Mods card. */
+export type ProfessionMod = {
+  profileId: string;
+  role: ProfessionRole;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+};
 
 /** All professions, ordered by name — for the profile picker + landing lists. */
 export const listProfessions = cache(async (): Promise<Profession[]> => {
@@ -21,18 +38,19 @@ export const listProfessions = cache(async (): Promise<Profession[]> => {
   return data ?? [];
 });
 
-/** A single profession by its slug, or null. */
-export async function getProfessionBySlug(
-  slug: string,
-): Promise<Profession | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("professions")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-  return data ?? null;
-}
+/** A single profession by its slug, or null. `cache()`-wrapped so a page + its
+ * `generateMetadata` (Story 6.2) share one query. */
+export const getProfessionBySlug = cache(
+  async (slug: string): Promise<Profession | null> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("professions")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+    return data ?? null;
+  },
+);
 
 /**
  * Whether the current user is a moderator of `professionId` (via the
@@ -58,4 +76,119 @@ export async function isProfessionModerator(
     return false;
   }
   return data === true;
+}
+
+/**
+ * The current user's membership in `professionId`, or null (signed-out / not a member).
+ * Read server-side and passed down as `isMember` so the Join control renders without a
+ * client probe (profession_members is public-select, so prefer not widening that surface).
+ */
+export async function getMyMembership(
+  professionId: string,
+): Promise<{ role: ProfessionRole } | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("profession_members")
+    .select("role")
+    .eq("profile_id", user.id)
+    .eq("profession_id", professionId)
+    .maybeSingle();
+  return data ? { role: (data as { role: ProfessionRole }).role } : null;
+}
+
+/**
+ * Join a profession as a plain `member` (Story 6.2 / FR18). A direct RLS-bound insert —
+ * the self-join policy (`auth.uid() = profile_id and role = 'member'`) is the guard, and
+ * the `sync_member_count()` trigger maintains `member_count` (never written here). A
+ * `23505` (already a member) is a no-op success (idempotent), matching the conflict-code
+ * convention used elsewhere.
+ */
+export async function joinProfession(
+  professionId: string,
+): Promise<MembershipResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { error } = await supabase.from("profession_members").insert({
+    profile_id: user.id,
+    profession_id: professionId,
+    role: "member",
+  });
+  if (error) {
+    if (error.code === "23505") return { ok: true }; // already a member — idempotent
+    return { ok: false, error: "db_error" };
+  }
+  return { ok: true };
+}
+
+/**
+ * Leave a profession (self-leave). The RLS policy only permits deleting your OWN
+ * `member` row — a moderator / verified_pro can't self-leave, so their delete matches
+ * zero rows (no error). `.select().maybeSingle()` turns that zero-row delete into a
+ * typed `not_found` so the UI never shows a false "Left" (the deleteDraft pattern).
+ */
+export async function leaveProfession(
+  professionId: string,
+): Promise<MembershipResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { data, error } = await supabase
+    .from("profession_members")
+    .delete()
+    .eq("profile_id", user.id)
+    .eq("profession_id", professionId)
+    .select("profile_id")
+    .maybeSingle();
+  if (error) return { ok: false, error: "db_error" };
+  if (!data) return { ok: false, error: "not_found" };
+  return { ok: true };
+}
+
+/**
+ * A profession's moderators + verified pros (public read) for the community rail's
+ * Mods card. The founder is a moderator of every profession (the 1.5 seed), so this is
+ * non-empty for all professions in v1. Ordered moderators first, then verified pros.
+ */
+export async function listProfessionMods(
+  professionId: string,
+): Promise<ProfessionMod[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profession_members")
+    .select(
+      "profile_id, role, profile:profiles!profession_members_profile_id_fkey(handle, display_name, avatar_url)",
+    )
+    .eq("profession_id", professionId)
+    .in("role", ["moderator", "verified_pro"])
+    // Enum sorts by definition order (member < verified_pro < moderator), so DESC
+    // lists moderators first; joined_at is the stable tiebreak.
+    .order("role", { ascending: false })
+    .order("joined_at", { ascending: true });
+  const rows = (data ?? []) as Array<{
+    profile_id: string;
+    role: ProfessionRole;
+    profile: {
+      handle: string;
+      display_name: string | null;
+      avatar_url: string | null;
+    } | null;
+  }>;
+  return rows.map((r) => ({
+    profileId: r.profile_id,
+    role: r.role,
+    handle: r.profile?.handle ?? null,
+    displayName: r.profile?.display_name ?? null,
+    avatarUrl: r.profile?.avatar_url ?? null,
+  }));
 }

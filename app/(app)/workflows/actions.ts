@@ -103,6 +103,7 @@ export async function createDraftAction(
     title: v.title,
     summary: v.summary.trim() || null,
     profession_id: v.profession_id,
+    tags: v.tags,
   });
   if (!result.ok) return { error: message(result.error) };
 
@@ -122,6 +123,7 @@ export async function updateDraftAction(
     title: v.title,
     summary: v.summary.trim() || null,
     profession_id: v.profession_id,
+    tags: v.tags,
   });
   if (!result.ok) return { error: message(result.error) };
 

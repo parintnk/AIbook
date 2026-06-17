@@ -6,10 +6,37 @@ describe("workflowDraftSchema", () => {
     title: "My workflow",
     summary: "A short summary",
     profession_id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    tags: [],
   };
 
   it("accepts a valid draft", () => {
     expect(workflowDraftSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("accepts up to 6 tag uuids", () => {
+    const tags = Array.from(
+      { length: 6 },
+      (_, i) => `f47ac10b-58cc-4372-a567-0e02b2c3d4${(70 + i).toString()}`,
+    );
+    expect(workflowDraftSchema.safeParse({ ...valid, tags }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects more than 6 tags", () => {
+    const tags = Array.from(
+      { length: 7 },
+      () => "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    );
+    expect(workflowDraftSchema.safeParse({ ...valid, tags }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects a non-uuid tag", () => {
+    expect(
+      workflowDraftSchema.safeParse({ ...valid, tags: ["nope"] }).success,
+    ).toBe(false);
   });
 
   it("rejects a blank title (after trim)", () => {

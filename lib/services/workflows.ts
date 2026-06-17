@@ -10,6 +10,7 @@ import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { deriveThumbPath } from "./node-outputs";
 import { createSupabaseStorage } from "./storage/supabase-storage";
+import { workflowIdsForTag } from "./tags";
 
 /**
  * Workflows domain/service layer (DR-1) — the ONLY place workflow SQL lives.
@@ -50,7 +51,12 @@ export type DraftInput = {
   title: string;
   summary: string | null;
   profession_id: string;
+  /** Selected tag ids (Story 6.2). Replace-set on save; [] clears all tags. */
+  tags: string[];
 };
+
+/** A single draft with its current tag ids, for the edit form's defaults (Story 6.2). */
+export type DraftDetail = DraftListItem & { tagIds: string[] };
 
 export type WorkflowResult =
   | { ok: true; id: string }
@@ -185,9 +191,10 @@ export const listMyForks = cache(async (): Promise<MyForkListItem[]> => {
   );
 });
 
-/** A single draft the caller owns, or null. RLS + the filters enforce ownership. */
+/** A single draft the caller owns (+ its tag ids for the edit form), or null. RLS +
+ * the filters enforce ownership. */
 export const getMyDraft = cache(
-  async (id: string): Promise<DraftListItem | null> => {
+  async (id: string): Promise<DraftDetail | null> => {
     const supabase = await createClient();
     const {
       data: { user },
@@ -195,12 +202,19 @@ export const getMyDraft = cache(
     if (!user) return null;
     const { data } = await supabase
       .from("workflows")
-      .select(DRAFT_SELECT)
+      .select(`${DRAFT_SELECT}, workflow_tags(tag_id)`)
       .eq("id", id)
       .eq("author_id", user.id)
       .eq("status", "draft")
       .maybeSingle();
-    return (data as DraftListItem | null) ?? null;
+    if (!data) return null;
+    const { workflow_tags, ...rest } = data as DraftListItem & {
+      workflow_tags: { tag_id: string }[] | null;
+    };
+    return {
+      ...(rest as DraftListItem),
+      tagIds: (workflow_tags ?? []).map((t) => t.tag_id),
+    };
   },
 );
 
@@ -371,12 +385,14 @@ async function resolveThumbs(
  */
 export async function listPublishedWorkflows(opts: {
   profession?: string | null;
+  tag?: string | null;
   sort?: WorkflowSort;
   limit?: number;
   offset?: number;
 }): Promise<{ items: WorkflowCardData[]; total: number }> {
   const {
     profession = null,
+    tag = null,
     sort = "trending",
     limit = PAGE_SIZE,
     offset = 0,
@@ -394,11 +410,22 @@ export async function listPublishedWorkflows(opts: {
     professionId = (prof as { id: string } | null)?.id ?? null;
   }
 
+  // Resolve the tag slug → the published-workflow ids carrying it. Unlike an
+  // unknown profession (→ no filter), an unknown tag (or a tag with zero
+  // workflows) is a real "no matches" → an empty feed, not the unfiltered one.
+  let tagWorkflowIds: string[] | null = null;
+  if (tag) {
+    tagWorkflowIds = await workflowIdsForTag(supabase, tag);
+    if (tagWorkflowIds.length === 0) return { items: [], total: 0 };
+  }
+
   let query = supabase
     .from("workflows")
     .select(CARD_SELECT, { count: "exact" })
     .eq("status", "published");
   if (professionId) query = query.eq("profession_id", professionId);
+  // `.in()` chains BEFORE the sort/range terminal (the mock-terminal rule).
+  if (tagWorkflowIds) query = query.in("id", tagWorkflowIds);
   // A unique `id` tiebreak terminates every sort so offset pagination is deterministic across
   // the SSR page + the Load-more page (colliding fork_count/published_at would otherwise let a
   // card duplicate or get skipped at the page boundary).
@@ -441,6 +468,25 @@ export async function listNewThisWeek(limit = 10): Promise<WorkflowCardData[]> {
   return items;
 }
 
+/**
+ * Replace a workflow's tag set (Story 6.2): delete the existing join rows, insert the
+ * selected ones. Author-scoped by the `workflow_tags` RLS (insert/delete check the
+ * workflow's author). Best-effort — a tag-write failure leaves the workflow saved (a
+ * re-save fixes it); the workflow row is the primary write, tags are secondary metadata.
+ */
+async function replaceWorkflowTags(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  workflowId: string,
+  tagIds: string[],
+): Promise<void> {
+  await supabase.from("workflow_tags").delete().eq("workflow_id", workflowId);
+  const unique = [...new Set(tagIds)];
+  if (unique.length === 0) return;
+  await supabase
+    .from("workflow_tags")
+    .insert(unique.map((tag_id) => ({ workflow_id: workflowId, tag_id })));
+}
+
 /** Create a draft owned by the caller (status defaults to 'draft'). */
 export async function createDraft(input: DraftInput): Promise<WorkflowResult> {
   const supabase = await createClient();
@@ -465,6 +511,7 @@ export async function createDraft(input: DraftInput): Promise<WorkflowResult> {
       return { ok: false, error: "invalid_profession" };
     return { ok: false, error: "db_error" };
   }
+  await replaceWorkflowTags(supabase, data.id, input.tags);
   return { ok: true, id: data.id };
 }
 
@@ -500,6 +547,7 @@ export async function updateDraft(
     return { ok: false, error: "db_error" };
   }
   if (!data) return { ok: false, error: "not_found" };
+  await replaceWorkflowTags(supabase, data.id, input.tags);
   return { ok: true, id: data.id };
 }
 

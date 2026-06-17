@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { WorkflowForm } from "@/components/workflows/workflow-form";
 import { listProfessions } from "@/lib/services/professions";
+import { listTags } from "@/lib/services/tags";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "New workflow — idea" };
@@ -12,7 +13,10 @@ export default async function NewWorkflowPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in?next=/workflows/new");
 
-  const professions = await listProfessions();
+  const [professions, allTags] = await Promise.all([
+    listProfessions(),
+    listTags(),
+  ]);
 
   return (
     <div>
@@ -25,6 +29,7 @@ export default async function NewWorkflowPage() {
       <div className="mt-8">
         <WorkflowForm
           professions={professions.map((p) => ({ id: p.id, name: p.name }))}
+          allTags={allTags}
         />
       </div>
     </div>

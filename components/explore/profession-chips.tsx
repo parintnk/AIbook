@@ -1,26 +1,6 @@
-import {
-  Code,
-  type LucideIcon,
-  Megaphone,
-  Palette,
-  PenLine,
-  Sparkles,
-  Video,
-  Workflow,
-} from "lucide-react";
 import Link from "next/link";
 import styles from "@/components/workflows/explore.module.css";
-
-// The professions table has no icon column → map the seeded slugs to a lucide glyph
-// (matches the mockup's per-chip icons). Unknown slug → Sparkles.
-const ICONS: Record<string, LucideIcon> = {
-  "graphic-designer": Palette,
-  "web-developer": Code,
-  "video-creator": Video,
-  "content-writer": PenLine,
-  marketer: Megaphone,
-  "ai-automation": Workflow,
-};
+import { professionIcon } from "@/lib/profession-icons";
 
 /**
  * Profession filter chips (FR3): "All" + each profession. Selecting a chip filters the
@@ -44,7 +24,7 @@ export function ProfessionChips({
         All
       </Link>
       {professions.map((p) => {
-        const Icon = ICONS[p.slug] ?? Sparkles;
+        const Icon = professionIcon(p.slug);
         const on = active === p.slug;
         return (
           <Link

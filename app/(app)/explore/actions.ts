@@ -8,18 +8,20 @@ import {
 import { listPublishedWorkflows } from "@/lib/services/workflows";
 
 /**
- * Fetch the next page of the Explore feed for the in-place "Load more" append (UX-DR17).
- * Preserves the active `sort` + `profession` so pagination stays within the current view.
- * Public — `listPublishedWorkflows` is RLS-only (no auth gate).
+ * Fetch the next page of the Explore / community feed for the in-place "Load more" append
+ * (UX-DR17). Preserves the active `sort` + `profession` + `tag` so pagination stays within
+ * the current view. Public — `listPublishedWorkflows` is RLS-only (no auth gate).
  */
 export async function loadMoreWorkflowsAction(input: {
   sort: WorkflowSort;
   profession: string | null;
+  tag?: string | null;
   offset: number;
 }): Promise<{ items: WorkflowCardData[]; total: number }> {
   return listPublishedWorkflows({
     sort: input.sort,
     profession: input.profession,
+    tag: input.tag ?? null,
     offset: input.offset,
     limit: PAGE_SIZE,
   });
