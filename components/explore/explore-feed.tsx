@@ -23,6 +23,8 @@ export function ExploreFeed({
   professionName,
   tag = null,
   hideCommunityChip = false,
+  hotBlend = false,
+  asOf,
 }: {
   initialItems: WorkflowCardData[];
   total: number;
@@ -34,6 +36,10 @@ export function ExploreFeed({
   /** On a profession's community page the profession is implied → drop the per-card
    *  community chip (Story 6.2 / AC2). Applies to both the SSR + Load-more cards. */
   hideCommunityChip?: boolean;
+  /** Community Hot blend (Story 7.1): forward the recency-weighted ranking + its reference time
+   *  through Load more so paginated pages stay consistent. Off (column sort) on /explore. */
+  hotBlend?: boolean;
+  asOf?: string;
 }) {
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
@@ -67,6 +73,8 @@ export function ExploreFeed({
         profession,
         tag,
         offset: items.length,
+        hotBlend,
+        asOf,
       });
       setItems((prev) => [...prev, ...res.items]);
     });

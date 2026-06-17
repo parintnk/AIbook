@@ -56,6 +56,32 @@ test("an anon visitor's Join routes to sign-in", async ({ page }) => {
   ).toHaveAttribute("href", "/sign-in?next=/communities/web-developer");
 });
 
+test("the Top sort tab re-ranks the feed via a shareable URL (Story 7.1)", async ({
+  page,
+}) => {
+  await page.goto("/communities/web-developer");
+
+  // Hot is the default active sort.
+  await expect(
+    page.getByRole("link", { name: "Hot", exact: true }),
+  ).toHaveAttribute("aria-current", "true");
+
+  // Switch to Top → the sort lands in the URL and the active tab moves off Hot.
+  await page.getByRole("link", { name: "Top", exact: true }).click();
+  await expect(page).toHaveURL(/sort=top/);
+  await expect(
+    page.getByRole("link", { name: "Top", exact: true }),
+  ).toHaveAttribute("aria-current", "true");
+  await expect(
+    page.getByRole("link", { name: "Hot", exact: true }),
+  ).not.toHaveAttribute("aria-current", "true");
+
+  // The feed still renders the profession's published cards.
+  await expect(
+    page.getByTestId("trending-feed").locator("a[href^='/workflows/']").first(),
+  ).toBeVisible();
+});
+
 test("an unknown profession slug 404s", async ({ page }) => {
   const res = await page.goto("/communities/not-a-real-profession");
   expect(res?.status()).toBe(404);

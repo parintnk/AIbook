@@ -375,12 +375,102 @@ export async function resolveThumbs(
   return result;
 }
 
+/** Hot blend (Story 7.1): recency-decay exponent — HN-gravity convention; tunable. */
+const HOT_GRAVITY = 1.5;
+/** Hot blend candidate cap: the most-recent N published rows are ranked in-service. At v1 a
+ *  profession's published count ≪ this, so the blend ranks the full set; the cap bounds scale. */
+const HOT_BLEND_CAP = 250;
+
+/**
+ * Rank rows by a recency-weighted engagement blend (Story 7.1 / AC1 "Hot"): an HN-gravity score
+ * `(fork_count + 0.5*tried_count) / (ageHours + 2)^HOT_GRAVITY`, highest first, with a unique `id`
+ * desc tiebreak (the same deterministic order the column sorts use). A row with no `published_at`
+ * sorts last. Pure + exported for unit testing (`asOf` = the reference time in ms).
+ */
+export function rankHotBlend(
+  rows: PublishedCardRow[],
+  asOf: number,
+): PublishedCardRow[] {
+  const scored = rows.map((r) => {
+    const ageHours = r.published_at
+      ? Math.max(0, (asOf - Date.parse(r.published_at)) / 3_600_000)
+      : null;
+    const score =
+      ageHours === null
+        ? -1
+        : (r.fork_count + 0.5 * r.tried_count) / (ageHours + 2) ** HOT_GRAVITY;
+    return { r, score };
+  });
+  scored.sort((a, b) => {
+    const diff = b.score - a.score;
+    if (diff !== 0) return diff;
+    return a.r.id < b.r.id ? 1 : a.r.id > b.r.id ? -1 : 0; // `id` desc tiebreak
+  });
+  return scored.map((s) => s.r);
+}
+
+/**
+ * The Hot-blend feed path (Story 7.1) — community-scoped. Fetches a bounded window of the most-
+ * recent published candidates (the recency decay crushes older rows, so capping by recency rarely
+ * drops a true top-scorer), ranks them with `rankHotBlend`, slices the page, then enriches with
+ * thumbnails. Reuses the same filter chain + `CARD_SELECT`/`toCardData`/`resolveThumbs` as the
+ * column-sort path; `total` stays the exact published count for "Showing X of Y".
+ */
+async function listHotBlendFeed(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  opts: {
+    professionId: string | null;
+    tagWorkflowIds: string[] | null;
+    limit: number;
+    offset: number;
+    asOf?: string;
+  },
+): Promise<{ items: WorkflowCardData[]; total: number }> {
+  const { professionId, tagWorkflowIds, limit, offset, asOf } = opts;
+  let query = supabase
+    .from("workflows")
+    .select(CARD_SELECT, { count: "exact" })
+    .eq("status", "published");
+  if (professionId) query = query.eq("profession_id", professionId);
+  if (tagWorkflowIds) query = query.in("id", tagWorkflowIds);
+  const { data, count } = await query
+    .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(0, HOT_BLEND_CAP - 1);
+  const total = count ?? 0;
+  if (total > HOT_BLEND_CAP) {
+    console.warn(
+      `listPublishedWorkflows: Hot blend ranked only the ${HOT_BLEND_CAP} most-recent of ${total} candidates`,
+    );
+  }
+  // Report a total the feed can actually page to: the blend only ranks the most-recent CAP
+  // candidates, so reporting the full published count would let `ExploreFeed`'s
+  // `items.length >= total` never trip past the cap → "Load more" strands (slicing past the
+  // ranked window appends nothing). Capping makes the Hot feed honestly reach "all caught up".
+  const reachableTotal = Math.min(total, HOT_BLEND_CAP);
+  const asOfMs = asOf ? Date.parse(asOf) : Date.now();
+  const ranked = rankHotBlend((data ?? []) as PublishedCardRow[], asOfMs).slice(
+    offset,
+    offset + limit,
+  );
+  if (ranked.length === 0) return { items: [], total: reachableTotal };
+  const thumbs = await resolveThumbs(
+    supabase,
+    ranked.map((r) => r.id),
+  );
+  const items = ranked.map((r) =>
+    toCardData(r, thumbs.get(r.id) ?? { kind: null, url: null }),
+  );
+  return { items, total: reachableTotal };
+}
+
 /**
  * A page of PUBLISHED workflows for the Explore feed (Story 6.1 / FR3). Public —
  * NO `auth.getUser` gate; RLS (`status='published' OR author`) is the boundary, so a
  * signed-out visitor reads the same published rows (mirrors `getPublishedWorkflow`).
- * Offset pagination with an exact `total` ("Showing X of Y"). `sort`: `trending` =
- * most-forked (recency tiebreak), `new` = recency. `profession` is a slug; an unknown
+ * Offset pagination with an exact `total` ("Showing X of Y"). `sort`: `trending` = Hot
+ * (most-forked, recency tiebreak; or a recency-weighted engagement blend when `hotBlend`),
+ * `new` = recency, `top` = all-time worked-%/forks. `profession` is a slug; an unknown
  * slug falls back to no filter (never 404). Not cached (varying object args defeat it).
  */
 export async function listPublishedWorkflows(opts: {
@@ -389,6 +479,12 @@ export async function listPublishedWorkflows(opts: {
   sort?: WorkflowSort;
   limit?: number;
   offset?: number;
+  /** Community-only (Story 7.1): rank `trending` as a recency-weighted engagement blend instead
+   *  of the column sort. /explore never sets this, so its `trending` is byte-for-byte unchanged. */
+  hotBlend?: boolean;
+  /** Reference time (ISO) for the Hot blend's recency decay — captured once at SSR and threaded
+   *  through Load more so pagination stays deterministic across pages. Defaults to now. */
+  asOf?: string;
 }): Promise<{ items: WorkflowCardData[]; total: number }> {
   const {
     profession = null,
@@ -396,6 +492,8 @@ export async function listPublishedWorkflows(opts: {
     sort = "trending",
     limit = PAGE_SIZE,
     offset = 0,
+    hotBlend = false,
+    asOf,
   } = opts;
   const supabase = await createClient();
 
@@ -419,6 +517,20 @@ export async function listPublishedWorkflows(opts: {
     if (tagWorkflowIds.length === 0) return { items: [], total: 0 };
   }
 
+  // Community Hot blend (Story 7.1): a recency-weighted engagement blend can't be expressed as
+  // PostgREST column ordering, so rank it in-service over a bounded candidate window. Only a
+  // community feed opts in (`hotBlend`); /explore never does, so its `trending` stays the
+  // deterministic column sort below. The at-scale SQL-side blend is a documented post-launch path.
+  if (hotBlend && sort === "trending") {
+    return listHotBlendFeed(supabase, {
+      professionId,
+      tagWorkflowIds,
+      limit,
+      offset,
+      asOf,
+    });
+  }
+
   let query = supabase
     .from("workflows")
     .select(CARD_SELECT, { count: "exact" })
@@ -427,17 +539,23 @@ export async function listPublishedWorkflows(opts: {
   // `.in()` chains BEFORE the sort/range terminal (the mock-terminal rule).
   if (tagWorkflowIds) query = query.in("id", tagWorkflowIds);
   // A unique `id` tiebreak terminates every sort so offset pagination is deterministic across
-  // the SSR page + the Load-more page (colliding fork_count/published_at would otherwise let a
-  // card duplicate or get skipped at the page boundary).
+  // the SSR page + the Load-more page (colliding sort keys would otherwise let a card duplicate
+  // or get skipped at the page boundary). Top = all-time worked-%/forks with forks PRIMARY, so
+  // the Epic-4 `worked_score` count/ratio blocker stays a secondary key only (see explore.ts).
   query =
     sort === "new"
       ? query
           .order("published_at", { ascending: false })
           .order("id", { ascending: false })
-      : query
-          .order("fork_count", { ascending: false })
-          .order("published_at", { ascending: false })
-          .order("id", { ascending: false });
+      : sort === "top"
+        ? query
+            .order("fork_count", { ascending: false })
+            .order("worked_score", { ascending: false })
+            .order("id", { ascending: false })
+        : query
+            .order("fork_count", { ascending: false })
+            .order("published_at", { ascending: false })
+            .order("id", { ascending: false });
 
   // `.range()` is the awaitable terminal — every filter/order is chained BEFORE it.
   const { data, count } = await query.range(offset, offset + limit - 1);

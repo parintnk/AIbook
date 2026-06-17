@@ -1,14 +1,14 @@
-import { Flame, Plus, Sparkles } from "lucide-react";
+import { Flame, Plus, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { communityHref } from "@/lib/community-href";
 import type { WorkflowSort } from "@/lib/explore";
 import styles from "./community.module.css";
 
 /**
- * The feed's segmented sort (Story 6.2) — "Hot" (trending / most-forked) + "New" (recency),
- * the two sorts that exist (the Hot/New/Top community blend is Epic 7). State lives in
- * `?sort=`, preserving the active `?tag=`. The "New workflow" primary button routes to the
- * editor (it also doubles as the empty-state CTA).
+ * The feed's segmented sort (Story 6.2 + 7.1) — "Hot" (trending / a recency-weighted engagement
+ * blend), "New" (recency), and "Top" (all-time worked-%/forks). State lives in `?sort=`,
+ * preserving the active `?tag=`. The "New workflow" primary button routes to the editor (it also
+ * doubles as the empty-state CTA).
  */
 export function FeedSortTabs({
   slug,
@@ -43,6 +43,16 @@ export function FeedSortTabs({
         >
           <Sparkles width={14} height={14} aria-hidden="true" />
           New
+        </Link>
+        <Link
+          href={communityHref(slug, "top", tag)}
+          className={
+            sort === "top" ? `${styles.segBtn} ${styles.segOn}` : styles.segBtn
+          }
+          aria-current={sort === "top" ? "true" : undefined}
+        >
+          <TrendingUp width={14} height={14} aria-hidden="true" />
+          Top
         </Link>
       </div>
       <Link href="/workflows/new" className={styles.newbtn}>

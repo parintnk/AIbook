@@ -28,8 +28,11 @@ export type WorkflowCardData = {
   thumb: { kind: ThumbKind | null; url: string | null };
 };
 
-/** Explore feed sort. `trending` = most-forked (recency tiebreak); `new` = recency. */
-export type WorkflowSort = "trending" | "new";
+/**
+ * Feed sort. `trending` = Hot (most-forked, recency tiebreak — or, on a community feed that opts in
+ * via `hotBlend`, a recency-weighted engagement blend); `new` = recency; `top` = all-time worked-%/forks.
+ */
+export type WorkflowSort = "trending" | "new" | "top";
 
 /**
  * A curated tag (Story 6.2 / FR3 filter facet). Client-safe — the editor tag picker

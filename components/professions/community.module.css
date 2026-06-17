@@ -120,11 +120,11 @@
   align-items: center;
 }
 
-/* ===================== two-column body (DESIGN.md: 292px rail + 22px gutter) ======= */
+/* ===================== two-column body (DESIGN.md: 300px rail + 24px gutter) ======= */
 .grid {
   display: grid;
-  grid-template-columns: 292px 1fr;
-  gap: 22px;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
 }
 .rail {
   display: flex;

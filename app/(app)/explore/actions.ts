@@ -17,6 +17,10 @@ export async function loadMoreWorkflowsAction(input: {
   profession: string | null;
   tag?: string | null;
   offset: number;
+  /** Community Hot blend (Story 7.1) — forwarded so a community feed's Load more keeps the
+   *  recency-weighted ranking + its SSR reference time. Omitted by /explore (column sort). */
+  hotBlend?: boolean;
+  asOf?: string;
 }): Promise<{ items: WorkflowCardData[]; total: number }> {
   return listPublishedWorkflows({
     sort: input.sort,
@@ -24,5 +28,7 @@ export async function loadMoreWorkflowsAction(input: {
     tag: input.tag ?? null,
     offset: input.offset,
     limit: PAGE_SIZE,
+    hotBlend: input.hotBlend,
+    asOf: input.asOf,
   });
 }

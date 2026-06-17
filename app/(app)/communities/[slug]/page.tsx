@@ -47,8 +47,12 @@ export default async function CommunityPage({
 }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const sort: WorkflowSort = sp.sort === "new" ? "new" : "trending";
+  const sort: WorkflowSort =
+    sp.sort === "new" ? "new" : sp.sort === "top" ? "top" : "trending";
   const tag = sp.tag ?? null;
+  // One reference time for the Hot blend's recency decay (Story 7.1), shared by the SSR page +
+  // every Load-more page so pagination stays deterministic across the browse session.
+  const asOf = new Date().toISOString();
 
   const profession = await getProfessionBySlug(slug);
   if (!profession) notFound();
@@ -72,6 +76,9 @@ export default async function CommunityPage({
       tag: activeTag,
       sort,
       limit: PAGE_SIZE,
+      // Hot = the community recency-weighted engagement blend (Story 7.1); New/Top stay column sorts.
+      hotBlend: sort === "trending",
+      asOf,
     }),
     listProfessionMods(profession.id),
     // "Start here" interim proxy = the profession's most-forked published workflows.
@@ -121,6 +128,8 @@ export default async function CommunityPage({
             profession={slug}
             professionName={profession.name}
             tag={activeTag}
+            hotBlend={sort === "trending"}
+            asOf={asOf}
             hideCommunityChip
           />
         </section>

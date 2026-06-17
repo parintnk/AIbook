@@ -13,6 +13,7 @@ export function communityHref(
   const params = new URLSearchParams();
   if (tag) params.set("tag", tag);
   if (sort === "new") params.set("sort", "new");
+  if (sort === "top") params.set("sort", "top");
   const qs = params.toString();
   return `/communities/${slug}${qs ? `?${qs}` : ""}`;
 }

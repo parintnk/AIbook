@@ -49,6 +49,7 @@ import {
   listNewThisWeek,
   listPublishedWorkflows,
   publishWorkflow,
+  rankHotBlend,
   updateDraft,
 } from "./workflows";
 
@@ -287,6 +288,111 @@ describe("listPublishedWorkflows", () => {
     inMock.mockResolvedValueOnce({ data: [], error: null }); // no outputs
     const { items } = await listPublishedWorkflows({});
     expect(items[0].thumb).toEqual({ kind: null, url: null });
+  });
+
+  it("sorts `top` by worked-%/forks — fork_count, then worked_score, then id (Story 7.1)", async () => {
+    rangeMock.mockResolvedValueOnce({ data: [], count: 0, error: null });
+    await listPublishedWorkflows({ sort: "top" });
+    expect(orderMock.mock.calls.map((c) => c[0])).toEqual([
+      "fork_count",
+      "worked_score",
+      "id",
+    ]);
+  });
+
+  it("sorts `new` by recency — published_at, then id", async () => {
+    rangeMock.mockResolvedValueOnce({ data: [], count: 0, error: null });
+    await listPublishedWorkflows({ sort: "new" });
+    expect(orderMock.mock.calls.map((c) => c[0])).toEqual([
+      "published_at",
+      "id",
+    ]);
+  });
+
+  it("sorts column `trending` — fork_count, then published_at, then id", async () => {
+    rangeMock.mockResolvedValueOnce({ data: [], count: 0, error: null });
+    await listPublishedWorkflows({ sort: "trending" });
+    expect(orderMock.mock.calls.map((c) => c[0])).toEqual([
+      "fork_count",
+      "published_at",
+      "id",
+    ]);
+  });
+
+  it("Hot blend (hotBlend) fetches a recency-bounded window, not the column trending ladder (Story 7.1)", async () => {
+    rangeMock.mockResolvedValueOnce({ data: [], count: 0, error: null });
+    await listPublishedWorkflows({ sort: "trending", hotBlend: true });
+    // The blend orders the candidate fetch by recency (published_at, id) then ranks in JS —
+    // it must NOT lead with fork_count like the column trending sort.
+    expect(orderMock.mock.calls.map((c) => c[0])).toEqual([
+      "published_at",
+      "id",
+    ]);
+  });
+
+  it("caps the Hot-blend total at the candidate window so Load more can't strand past the cap (Story 7.1)", async () => {
+    // 300 published but the blend only ranks/slices the most-recent 250 → report a reachable total.
+    rangeMock.mockResolvedValueOnce({
+      data: [cardRow],
+      count: 300,
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [{ id: "n1", workflow_id: "w1" }],
+      error: null,
+    });
+    inMock.mockResolvedValueOnce({
+      data: [{ node_id: "n1", kind: "text", storage_path: null }],
+      error: null,
+    });
+    const { total } = await listPublishedWorkflows({
+      sort: "trending",
+      hotBlend: true,
+    });
+    expect(total).toBe(250); // = HOT_BLEND_CAP
+  });
+});
+
+describe("rankHotBlend", () => {
+  const row = (
+    id: string,
+    fork_count: number,
+    tried_count: number,
+    published_at: string | null,
+  ) => ({
+    id,
+    title: id,
+    fork_count,
+    worked_score: 0,
+    tried_count,
+    published_at,
+    profession: null,
+    author: null,
+  });
+  const NOW = Date.parse("2026-06-17T00:00:00.000Z");
+
+  it("ranks a recent, forked workflow above an older, more-forked one (recency decay)", () => {
+    const recent = row("recent", 30, 0, "2026-06-16T00:00:00.000Z");
+    const old = row("old", 200, 0, "2026-04-01T00:00:00.000Z");
+    expect(rankHotBlend([old, recent], NOW).map((r) => r.id)).toEqual([
+      "recent",
+      "old",
+    ]);
+  });
+
+  it("breaks score ties by id descending (deterministic pagination)", () => {
+    const a = row("a", 10, 0, "2026-06-16T00:00:00.000Z");
+    const b = row("b", 10, 0, "2026-06-16T00:00:00.000Z");
+    expect(rankHotBlend([a, b], NOW).map((r) => r.id)).toEqual(["b", "a"]);
+  });
+
+  it("sorts a row with no published_at last", () => {
+    const dated = row("dated", 1, 0, "2026-06-10T00:00:00.000Z");
+    const undated = row("undated", 999, 0, null);
+    expect(rankHotBlend([undated, dated], NOW).map((r) => r.id)).toEqual([
+      "dated",
+      "undated",
+    ]);
   });
 });
 
