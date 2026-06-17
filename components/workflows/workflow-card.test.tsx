@@ -21,7 +21,10 @@ const base: WorkflowCardData = {
 describe("WorkflowCard", () => {
   it("renders content and links the WHOLE card to the detail page", () => {
     render(<WorkflowCard data={base} />);
-    const link = screen.getByRole("link");
+    // The card link (the savemark overlay is a separate sibling link — Story 8.1); scope by the title.
+    const link = screen.getByRole("link", {
+      name: /SaaS landing page from a one-line brief/i,
+    });
     expect(link).toHaveAttribute("href", `/workflows/${base.id}`);
     expect(
       screen.getByText("SaaS landing page from a one-line brief"),
@@ -58,5 +61,18 @@ describe("WorkflowCard", () => {
     expect(screen.queryByText("@devjun")).not.toBeInTheDocument();
     // the title + community chip still render
     expect(screen.getByText("Web Developer")).toBeInTheDocument();
+  });
+
+  it("renders the Save bookmark overlay — a sign-in link for anon, a picker button when signed in (Story 8.1)", () => {
+    const { rerender } = render(<WorkflowCard data={base} />);
+    // Anon: the savemark is a SIBLING link to sign-in (never nested inside the card link).
+    expect(
+      screen.getByRole("link", { name: /sign in to save/i }),
+    ).toBeInTheDocument();
+    // Signed in: a button that opens the board picker.
+    rerender(<WorkflowCard data={base} signedIn />);
+    expect(
+      screen.getByRole("button", { name: /save to board/i }),
+    ).toBeInTheDocument();
   });
 });

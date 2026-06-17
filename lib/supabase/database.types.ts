@@ -813,6 +813,77 @@ export type Database = {
           },
         ];
       };
+      board_items: {
+        Row: {
+          board_id: string;
+          saved_at: string;
+          sort_order: number;
+          workflow_id: string;
+        };
+        Insert: {
+          board_id: string;
+          saved_at?: string;
+          sort_order?: number;
+          workflow_id: string;
+        };
+        Update: {
+          board_id?: string;
+          saved_at?: string;
+          sort_order?: number;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "board_items_board_id_fkey";
+            columns: ["board_id"];
+            isOneToOne: false;
+            referencedRelation: "boards";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "board_items_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      boards: {
+        Row: {
+          created_at: string;
+          id: string;
+          is_public: boolean;
+          item_count: number;
+          name: string;
+          owner_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          is_public?: boolean;
+          item_count?: number;
+          name: string;
+          owner_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          is_public?: boolean;
+          item_count?: number;
+          name?: string;
+          owner_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "boards_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

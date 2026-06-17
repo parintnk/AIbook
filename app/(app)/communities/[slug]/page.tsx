@@ -7,6 +7,7 @@ import { FeedSortTabs } from "@/components/professions/feed-sort-tabs";
 import { ProfessionHero } from "@/components/professions/profession-hero";
 import { ProfessionTagChips } from "@/components/professions/profession-tag-chips";
 import { PAGE_SIZE, type WorkflowSort } from "@/lib/explore";
+import { getSavedWorkflowIds } from "@/lib/services/boards";
 import { getWorkflowOfTheDay } from "@/lib/services/featured";
 import {
   getMyMembership,
@@ -106,6 +107,17 @@ export default async function CommunityPage({
     ? await listPinnableWorkflows(profession.id)
     : [];
 
+  // Saved-state (Story 8.1) for the feed cards + the WOTD hero — empty for anon.
+  const savedIds = await getSavedWorkflowIds(
+    wotd
+      ? [...feed.items.map((i) => i.id), wotd.id]
+      : feed.items.map((i) => i.id),
+  );
+  const feedItems = feed.items.map((i) => ({
+    ...i,
+    saved: savedIds.has(i.id),
+  }));
+
   return (
     <div
       className={`${styles.community} mx-auto w-full max-w-[1180px] px-6 py-8`}
@@ -127,7 +139,13 @@ export default async function CommunityPage({
           pinnable={pinnable}
         />
         <section className={styles.main}>
-          {wotd ? <WorkflowOfTheDay data={wotd} /> : null}
+          {wotd ? (
+            <WorkflowOfTheDay
+              data={wotd}
+              signedIn={Boolean(user)}
+              initialSaved={savedIds.has(wotd.id)}
+            />
+          ) : null}
           <FeedSortTabs slug={slug} sort={sort} tag={activeTag} />
           <ProfessionTagChips
             slug={slug}
@@ -137,7 +155,7 @@ export default async function CommunityPage({
           />
           <ExploreFeed
             key={`${sort}:${activeTag ?? "all"}`}
-            initialItems={feed.items}
+            initialItems={feedItems}
             total={feed.total}
             sort={sort}
             profession={slug}
@@ -146,6 +164,7 @@ export default async function CommunityPage({
             hotBlend={sort === "trending"}
             asOf={asOf}
             hideCommunityChip
+            signedIn={Boolean(user)}
           />
         </section>
       </div>

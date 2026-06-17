@@ -5,8 +5,10 @@ import { CommentThread } from "@/components/workflows/comment-thread";
 import { ForkButton } from "@/components/workflows/fork-button";
 import { OutcomeVote } from "@/components/workflows/outcome-vote";
 import { ReportMenu } from "@/components/workflows/report-menu";
+import { SaveButton } from "@/components/workflows/save-button";
 import { TrustRow } from "@/components/workflows/trust-row";
 import { WorkflowViewerSurface } from "@/components/workflows/workflow-viewer-surface";
+import { getSavedWorkflowIds } from "@/lib/services/boards";
 import { countComments, listCommentPage } from "@/lib/services/comments";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { getMyOutcomeVote } from "@/lib/services/outcome-votes";
@@ -47,7 +49,7 @@ export default async function WorkflowDetailPage({ params }: Params) {
   const wf = await getPublishedWorkflow(id);
   if (!wf) notFound();
 
-  const [nodes, edges, outputs, myVote, commentPage, commentCount] =
+  const [nodes, edges, outputs, myVote, commentPage, commentCount, savedIds] =
     await Promise.all([
       listPublishedNodes(id),
       listPublishedEdges(id),
@@ -55,6 +57,7 @@ export default async function WorkflowDetailPage({ params }: Params) {
       getMyOutcomeVote(id),
       listCommentPage(id, { sort: "top" }),
       countComments(id),
+      getSavedWorkflowIds([id]),
     ]);
 
   // Voting + commenting are auth-gated (anon sees the counts + a sign-in affordance).
@@ -116,6 +119,11 @@ export default async function WorkflowDetailPage({ params }: Params) {
             ) : null}
           </div>
           <div className="mt-1 flex shrink-0 items-center gap-2">
+            <SaveButton
+              workflowId={wf.id}
+              signedIn={user != null}
+              initialSaved={savedIds.has(wf.id)}
+            />
             <ForkButton workflowId={wf.id} signedIn={user != null} />
             {user ? (
               <ReportMenu targetType="workflow" targetId={wf.id} />

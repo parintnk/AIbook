@@ -25,6 +25,7 @@ export function ExploreFeed({
   hideCommunityChip = false,
   hotBlend = false,
   asOf,
+  signedIn = false,
 }: {
   initialItems: WorkflowCardData[];
   total: number;
@@ -40,6 +41,8 @@ export function ExploreFeed({
    *  through Load more so paginated pages stay consistent. Off (column sort) on /explore. */
   hotBlend?: boolean;
   asOf?: string;
+  /** Whether the viewer is signed in (Story 8.1) — threaded to each card's save affordance. */
+  signedIn?: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
@@ -87,6 +90,7 @@ export function ExploreFeed({
           <WorkflowCard
             key={w.id}
             data={hideCommunityChip ? { ...w, professionName: null } : w}
+            signedIn={signedIn}
           />
         ))}
       </div>

@@ -6,12 +6,14 @@ import { SectionHead } from "@/components/explore/section-head";
 import { WorkflowOfTheDay } from "@/components/explore/workflow-of-the-day";
 import styles from "@/components/workflows/explore.module.css";
 import { PAGE_SIZE, type WorkflowSort } from "@/lib/explore";
+import { getSavedWorkflowIds } from "@/lib/services/boards";
 import { getWorkflowOfTheDay } from "@/lib/services/featured";
 import { listProfessions } from "@/lib/services/professions";
 import {
   listNewThisWeek,
   listPublishedWorkflows,
 } from "@/lib/services/workflows";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Explore — idea" };
 
@@ -48,6 +50,23 @@ export default async function ExplorePage({
     ? (professions.find((p) => p.slug === activeProfession)?.name ?? null)
     : null;
 
+  // Saved-state (Story 8.1) for the feed cards + the WOTD hero — empty for anon (the feed itself
+  // stays RLS-only public; this is the only auth read on the page).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const signedIn = user != null;
+  const savedIds = await getSavedWorkflowIds(
+    wotd
+      ? [...feed.items.map((i) => i.id), wotd.id]
+      : feed.items.map((i) => i.id),
+  );
+  const feedItems = feed.items.map((i) => ({
+    ...i,
+    saved: savedIds.has(i.id),
+  }));
+
   return (
     <div
       className={`${styles.explore} mx-auto w-full max-w-[1180px] px-6 py-8`}
@@ -55,7 +74,11 @@ export default async function ExplorePage({
       <h1 className="sr-only">Explore — discover AI workflows</h1>
       {wotd ? (
         <div className="mb-[34px]">
-          <WorkflowOfTheDay data={wotd} />
+          <WorkflowOfTheDay
+            data={wotd}
+            signedIn={signedIn}
+            initialSaved={savedIds.has(wotd.id)}
+          />
         </div>
       ) : null}
       <ProfessionChips professions={professions} active={activeProfession} />
@@ -74,11 +97,12 @@ export default async function ExplorePage({
       />
       <ExploreFeed
         key={`${sort}:${activeProfession ?? "all"}`}
-        initialItems={feed.items}
+        initialItems={feedItems}
         total={feed.total}
         sort={sort}
         profession={activeProfession}
         professionName={professionName}
+        signedIn={signedIn}
       />
       {sort === "new" ? null : <NewThisWeekRail items={newThisWeek} />}
     </div>

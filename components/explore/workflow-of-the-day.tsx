@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { SaveButton } from "@/components/workflows/save-button";
 import { WorkflowThumb } from "@/components/workflows/workflow-thumb";
 import { thumbLabel, workedPct } from "@/lib/explore";
 import type { WotdData } from "@/lib/services/featured";
@@ -19,10 +20,19 @@ import styles from "./featured.module.css";
  * rotation. Server component (static card + links; no client JS). Ports the LOCKED
  * `explore-{light,dark}.html` `.featured` composition; the thumbnail reuses the shared
  * WorkflowThumb (real output preview, else a deterministic wash). Trust row = worked-% +
- * fork + step stats. The "Save" affordance is Epic 8 (Boards & Saving) — intentionally
- * omitted (no fake affordance). Render this only when `getWorkflowOfTheDay` returns data.
+ * fork + step stats. The Save affordance (Story 8.1) sits beside "Open workflow" — a ghost button
+ * that opens the board picker (anon → sign-in). Render this only when `getWorkflowOfTheDay`
+ * returns data.
  */
-export function WorkflowOfTheDay({ data }: { data: WotdData }) {
+export function WorkflowOfTheDay({
+  data,
+  signedIn = false,
+  initialSaved = false,
+}: {
+  data: WotdData;
+  signedIn?: boolean;
+  initialSaved?: boolean;
+}) {
   const pct = workedPct(data.workedScore, data.triedCount);
   return (
     <section className={styles.featured} aria-label="Workflow of the day">
@@ -101,6 +111,11 @@ export function WorkflowOfTheDay({ data }: { data: WotdData }) {
             <ArrowRight width={16} height={16} aria-hidden="true" />
             Open workflow
           </Link>
+          <SaveButton
+            workflowId={data.id}
+            signedIn={signedIn}
+            initialSaved={initialSaved}
+          />
         </div>
       </div>
     </section>

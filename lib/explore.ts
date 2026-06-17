@@ -26,6 +26,9 @@ export type WorkflowCardData = {
   publishedAt: string | null;
   /** The card thumbnail: a real image when available, else a kind for the wash/kit fallback. */
   thumb: { kind: ThumbKind | null; url: string | null };
+  /** Whether the signed-in viewer has this workflow in ≥1 of their boards (Story 8.1 savemark
+   *  fill). Set by the page / Load-more action via getSavedWorkflowIds; absent/false for anon. */
+  saved?: boolean;
 };
 
 /**
