@@ -162,3 +162,19 @@ export async function replaceAiStack(
   if (error) return { ok: false, error: "db_error" };
   return { ok: true };
 }
+
+/**
+ * True when the user is a `verified_pro` in ANY profession — drives the verified badge on the profile
+ * hero (Story 9.1). DERIVED (a `profession_members` read), NOT a profiles column. Public-read.
+ */
+export async function isVerifiedCreator(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profession_members")
+    .select("profession_id")
+    .eq("profile_id", userId)
+    .eq("role", "verified_pro")
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
+}

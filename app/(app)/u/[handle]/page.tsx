@@ -1,10 +1,15 @@
+import { Check } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import styles from "@/components/profile/profile.module.css";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import { buttonVariants } from "@/components/ui/button";
-import { getMyProfile, getProfileByHandle } from "@/lib/services/profiles";
-import { cn } from "@/lib/utils";
+import { ProfileSocial } from "@/components/profile/profile-social";
+import { getFollowState } from "@/lib/services/follows";
+import {
+  getMyProfile,
+  getProfileByHandle,
+  isVerifiedCreator,
+} from "@/lib/services/profiles";
 
 type Params = { params: Promise<{ handle: string }> };
 
@@ -32,55 +37,67 @@ export default async function PublicProfilePage({ params }: Params) {
 
   const me = await getMyProfile();
   const isOwner = me?.id === profile.id;
+  // Verified badge (derived — a verified_pro in any profession) + my follow-state, in parallel.
+  const [verified, following] = await Promise.all([
+    isVerifiedCreator(profile.id),
+    me && !isOwner ? getFollowState(profile.id) : Promise.resolve(false),
+  ]);
+
+  const joinedLabel = new Date(profile.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
-      <header className="glass flex flex-col gap-4 rounded-card p-6 sm:flex-row sm:items-start">
-        <ProfileAvatar
-          avatarUrl={profile.avatar_url}
-          displayName={profile.display_name}
-          handle={profile.handle}
-          className="size-20 text-xl"
-        />
-        <div className="flex flex-1 flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="font-heading text-2xl font-extrabold tracking-tight">
-              {profile.display_name ?? `@${profile.handle}`}
-            </h1>
-            <span className="font-mono text-sm text-muted-foreground">
-              @{profile.handle}
-            </span>
+      {/* Hero (Story 9.1 — 100% fidelity to profile-{light,dark}.html) */}
+      <header className={styles.cover}>
+        <div className={styles.phead}>
+          <div className={styles.pavatar}>
+            <ProfileAvatar
+              avatarUrl={profile.avatar_url}
+              displayName={profile.display_name}
+              handle={profile.handle}
+              className="size-full rounded-[30px] text-4xl"
+            />
+            {verified ? (
+              <span className={styles.verified}>
+                <Check
+                  width={16}
+                  height={16}
+                  strokeWidth={2.6}
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Verified pro</span>
+              </span>
+            ) : null}
           </div>
-          {profile.primary_profession ? (
-            <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
-              {profile.primary_profession.name}
-            </span>
-          ) : null}
-          {profile.bio ? (
-            <p className="text-pretty text-muted-foreground">{profile.bio}</p>
-          ) : null}
-          <div className="mt-1 flex flex-wrap items-center gap-3">
-            {profile.hire_me_visible && profile.hire_me_url ? (
-              <a
-                href={profile.hire_me_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(buttonVariants({ size: "sm" }), "rounded-full")}
-              >
-                Hire me
-              </a>
-            ) : null}
-            {isOwner ? (
-              <Link
-                href="/settings/profile"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "sm" }),
-                  "rounded-full",
-                )}
-              >
-                Edit profile
-              </Link>
-            ) : null}
+          <div className={styles.pinfo}>
+            <div className={styles.pnameRow}>
+              <h1 className={styles.pname}>
+                {profile.display_name ?? `@${profile.handle}`}
+              </h1>
+              <span className={styles.phandle}>@{profile.handle}</span>
+              {profile.primary_profession ? (
+                <span className={styles.profession}>
+                  {profile.primary_profession.name}
+                </span>
+              ) : null}
+            </div>
+            {profile.bio ? <p className={styles.pbio}>{profile.bio}</p> : null}
+            <ProfileSocial
+              targetId={profile.id}
+              targetHandle={profile.handle}
+              isOwner={isOwner}
+              signedIn={Boolean(me)}
+              viewerId={me?.id ?? null}
+              initialFollowing={following}
+              followerCount={profile.follower_count}
+              followingCount={profile.following_count}
+              joinedLabel={joinedLabel}
+              hireMeUrl={profile.hire_me_url}
+              hireMeVisible={profile.hire_me_visible}
+            />
           </div>
         </div>
       </header>

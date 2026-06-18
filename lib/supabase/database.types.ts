@@ -398,6 +398,8 @@ export type Database = {
           bio: string | null;
           created_at: string;
           display_name: string | null;
+          follower_count: number;
+          following_count: number;
           handle: string;
           hire_me_url: string | null;
           hire_me_visible: boolean;
@@ -410,6 +412,8 @@ export type Database = {
           bio?: string | null;
           created_at?: string;
           display_name?: string | null;
+          follower_count?: number;
+          following_count?: number;
           handle: string;
           hire_me_url?: string | null;
           hire_me_visible?: boolean;
@@ -422,6 +426,8 @@ export type Database = {
           bio?: string | null;
           created_at?: string;
           display_name?: string | null;
+          follower_count?: number;
+          following_count?: number;
           handle?: string;
           hire_me_url?: string | null;
           hire_me_visible?: boolean;
@@ -914,6 +920,39 @@ export type Database = {
           {
             foreignKeyName: "board_follows_follower_id_fkey";
             columns: ["follower_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      follows: {
+        Row: {
+          created_at: string;
+          follower_id: string;
+          following_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          follower_id?: string;
+          following_id: string;
+        };
+        Update: {
+          created_at?: string;
+          follower_id?: string;
+          following_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey";
+            columns: ["follower_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey";
+            columns: ["following_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];

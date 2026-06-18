@@ -234,6 +234,17 @@ update public.profiles set display_name = 'Maris',
   primary_profession_id = (select id from public.professions where slug = 'video-creator')
   where handle = 'maris';
 
+-- Story 9.1 — a few follow edges so a profile shows non-zero Followers/Following + the lists render.
+-- The seed runs as the service role (bypasses the column-lock), so follower_id is set explicitly;
+-- the ±1 follows_sync_counts trigger maintains profiles.follower_count / following_count (never hand-set).
+insert into public.follows (follower_id, following_id) values
+  ('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-0000000000d1'),  -- priya → devjun
+  ('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000d1'),  -- maris → devjun
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000d1'),  -- founder → devjun
+  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2'),  -- devjun → priya
+  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d3')   -- devjun → maris
+on conflict (follower_id, following_id) do nothing;
+
 insert into public.workflows
   (id, author_id, profession_id, title, summary, status, published_at, fork_count, tried_count, worked_score)
 values

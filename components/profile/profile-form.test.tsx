@@ -20,6 +20,8 @@ const profile: ProfileWithStack = {
   avatar_url: null,
   hire_me_url: null,
   hire_me_visible: false,
+  follower_count: 0,
+  following_count: 0,
   primary_profession_id: null,
   created_at: "2026-06-12T00:00:00Z",
   updated_at: "2026-06-12T00:00:00Z",
