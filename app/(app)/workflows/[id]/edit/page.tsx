@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { PublishBar } from "@/components/workflows/publish-bar";
 import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-surface";
 import { WorkflowForm } from "@/components/workflows/workflow-form";
+import { getAiUsageToday } from "@/lib/services/ai/rate-limit";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { listProfessions } from "@/lib/services/professions";
 import { listTags } from "@/lib/services/tags";
@@ -29,13 +30,15 @@ export default async function EditWorkflowPage({
   const draft = await getMyDraft(id);
   if (!draft) notFound();
 
-  const [professions, allTags, nodes, edges, outputs] = await Promise.all([
-    listProfessions(),
-    listTags(),
-    listDraftNodes(id),
-    listEdges(id),
-    listOutputViewsForWorkflow(id),
-  ]);
+  const [professions, allTags, nodes, edges, outputs, skeletonUsed] =
+    await Promise.all([
+      listProfessions(),
+      listTags(),
+      listDraftNodes(id),
+      listEdges(id),
+      listOutputViewsForWorkflow(id),
+      getAiUsageToday("skeleton"),
+    ]);
 
   return (
     <div>
@@ -72,6 +75,8 @@ export default async function EditWorkflowPage({
         nodes={nodes}
         edges={edges}
         outputsByNodeId={outputs}
+        professionName={draft.profession?.name ?? null}
+        skeletonUsedToday={skeletonUsed}
       />
     </div>
   );

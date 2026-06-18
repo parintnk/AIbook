@@ -1,0 +1,137 @@
+/*
+ * Story 11.2 — the AI Skeleton intake panel, ported from the LOCKED mockup `workflow-editor-{light,dark}.html`
+ * (`.skeleton-intake`, lines 359-369). Structural values verbatim; colours route through the app design
+ * tokens (globals.css :root/.dark) via color-mix so it's dark-aware (the search/explore module precedent).
+ * Mounted as a block in the editor surface (the mockup's absolute bottom-left float is a later polish).
+ */
+
+.intake {
+  width: 100%;
+  max-width: 340px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 15px;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.spark {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 55%, #8b7cff)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.usage {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.sub {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--primary) 80%, var(--foreground));
+  background: color-mix(in srgb, var(--primary) 12%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  padding: 7px 11px;
+  border-radius: 10px;
+  margin-bottom: 9px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 11px;
+  margin-bottom: 11px;
+}
+
+.lead {
+  color: var(--muted-foreground);
+  font-weight: 600;
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+.field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.generate {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease;
+}
+
+.generate:active {
+  transform: scale(0.96);
+}
+
+.generate:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .generate {
+    transition: none;
+  }
+  .generate:active {
+    transform: none;
+  }
+}

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { SkeletonIntake } from "@/components/ai/skeleton-intake";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
@@ -37,11 +38,15 @@ export function WorkflowEditorSurface({
   nodes,
   edges,
   outputsByNodeId,
+  professionName,
+  skeletonUsedToday,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   outputsByNodeId: Record<string, NodeOutputView>;
+  professionName: string | null;
+  skeletonUsedToday: number;
 }) {
   const [view, setView] = useState<View>("list");
 
@@ -76,6 +81,14 @@ export function WorkflowEditorSurface({
             Canvas
           </ToggleButton>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <SkeletonIntake
+          workflowId={workflowId}
+          professionName={professionName}
+          usedToday={skeletonUsedToday}
+        />
       </div>
 
       {view === "canvas" ? (

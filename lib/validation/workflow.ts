@@ -73,3 +73,24 @@ export type WorkflowFormState = {
   // stale-client rejection can re-paint the amber blocked treatment.
   missingNodeIds?: string[];
 };
+
+/** AI Skeleton intake (Story 11.2 / FR8). The profession comes from the draft (server-resolved);
+ * the user supplies only the one-sentence goal. */
+export const skeletonIntakeSchema = z.object({
+  goal: z
+    .string()
+    .trim()
+    .min(1, "Add a one-sentence goal")
+    .max(200, "Keep it to one sentence"),
+});
+
+/** State returned by generateSkeletonAction (Story 11.2). `rateLimited` drives the UX-DR21 disabled
+ * state; `nodeIds` are the appended skeleton nodes (the canvas re-seeds on router.refresh()). */
+export type SkeletonActionState = {
+  success?: boolean;
+  error?: string;
+  nodeIds?: string[];
+  rateLimited?: boolean;
+  used?: number;
+  limit?: number;
+};

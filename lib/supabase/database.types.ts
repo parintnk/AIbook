@@ -1074,6 +1074,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      append_skeleton: {
+        Args: { p_nodes: Json; p_workflow_id: string };
+        Returns: { node_id: string; node_idx: number }[];
+      };
       append_workflow_node: {
         Args: {
           p_est_cost: string;

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { checkAndConsumeQuota } from "@/lib/services/ai/rate-limit";
+import { generateSkeleton } from "@/lib/services/ai/skeleton";
 import {
   type CommentPage,
   type CommentSort,
@@ -36,6 +38,7 @@ import {
   createDraft,
   deleteDraft,
   forkWorkflow,
+  getMyDraft,
   publishWorkflow,
   updateDraft,
 } from "@/lib/services/workflows";
@@ -46,6 +49,8 @@ import {
   edgeEndpointsSchema,
   nodeIdsSchema,
   nodePositionsSchema,
+  type SkeletonActionState,
+  skeletonIntakeSchema,
   type WorkflowFormState,
   type WorkflowNodeValues,
   workflowDraftSchema,
@@ -205,6 +210,52 @@ export async function createNodeAction(
   revalidatePath(`/workflows/${workflowId}/edit`);
   // Return the new id so the canvas can chain/splice the node (Story 2.3).
   return { success: true, nodeId: result.id };
+}
+
+// ── AI Skeleton (Story 11.2 / FR8) ──────────────────────────────────────────
+// Profession (from the draft) + a one-sentence goal → Gemini generateObject (rate-limited via the
+// 11.1 quota) → the atomic append_skeleton RPC drops the 3–5 node chain onto the draft. The canvas
+// re-seeds on the client's router.refresh(). No new route — the intake lives in the edit page.
+export async function generateSkeletonAction(
+  workflowId: string,
+  values: unknown,
+): Promise<SkeletonActionState> {
+  const parsed = skeletonIntakeSchema.safeParse(values);
+  if (!parsed.success) return { error: "Add a one-sentence goal." };
+
+  // Owner + draft gate FIRST (so a non-owner never burns quota); also yields the profession.
+  const draft = await getMyDraft(workflowId);
+  if (!draft) return { error: message("not_found") };
+
+  // Rate limit (consume-on-attempt) — the Story 11.1 primitive.
+  const quota = await checkAndConsumeQuota({ feature: "skeleton" });
+  if (quota.error === "not_authenticated")
+    return { error: message("not_authenticated") };
+  if (!quota.allowed)
+    return { rateLimited: true, used: quota.used, limit: quota.limit };
+
+  let nodes: Awaited<ReturnType<typeof generateSkeleton>>;
+  try {
+    nodes = await generateSkeleton({
+      profession: draft.profession?.name ?? "creator",
+      goal: parsed.data.goal,
+    });
+  } catch {
+    return { error: "Couldn't draft a skeleton. Please try again." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("append_skeleton", {
+    p_workflow_id: workflowId,
+    p_nodes: nodes,
+  });
+  if (error) {
+    if (error.code === "42501") return { error: message("not_found") };
+    return { error: message("db_error") };
+  }
+
+  revalidatePath(`/workflows/${workflowId}/edit`);
+  return { success: true, nodeIds: (data ?? []).map((r) => r.node_id) };
 }
 
 export async function updateNodeAction(
