@@ -1010,6 +1010,35 @@ export type Database = {
           },
         ];
       };
+      workflow_embeddings: {
+        Row: {
+          content_hash: string;
+          embedding: string;
+          updated_at: string;
+          workflow_id: string;
+        };
+        Insert: {
+          content_hash: string;
+          embedding: string;
+          updated_at?: string;
+          workflow_id: string;
+        };
+        Update: {
+          content_hash?: string;
+          embedding?: string;
+          updated_at?: string;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workflow_embeddings_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: true;
+            referencedRelation: "workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
