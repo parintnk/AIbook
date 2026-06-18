@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { DoctorActionState } from "@/lib/ai";
+import { reviewWorkflow } from "@/lib/services/ai/doctor";
 import { checkAndConsumeQuota } from "@/lib/services/ai/rate-limit";
 import { generateSkeleton } from "@/lib/services/ai/skeleton";
 import {
@@ -17,6 +19,7 @@ import {
   deleteNodeOutput,
   deriveThumbPath,
   getNodeOutput,
+  listOutputViewsForWorkflow,
   upsertTextOutput,
 } from "@/lib/services/node-outputs";
 import {
@@ -29,6 +32,7 @@ import { createEdge, deleteEdge } from "@/lib/services/workflow-edges";
 import {
   createNode,
   deleteNode,
+  listDraftNodes,
   type NodeInput,
   reorderNodes,
   updateNode,
@@ -256,6 +260,52 @@ export async function generateSkeletonAction(
 
   revalidatePath(`/workflows/${workflowId}/edit`);
   return { success: true, nodeIds: (data ?? []).map((r) => r.node_id) };
+}
+
+// ── AI Workflow Doctor (Story 11.3 / FR12) ──────────────────────────────────
+// An advisory per-node pre-publish review (4 checks) via Gemini, rate-limited by the 11.1 quota
+// (cap 10). READ-ONLY + transient: it reads the draft (nodes + outputs via the RLS client — the owner
+// reads their own draft, no RPC/admin) and returns the verdict to the client. No DB write, no
+// revalidatePath (the panel owns the result client-side). Advisory ONLY — it never gates publish
+// (only FR10 / publishWorkflow does); the deterministic missing_output flag is merged for fidelity.
+export async function reviewWorkflowAction(
+  workflowId: string,
+): Promise<DoctorActionState> {
+  // Owner + draft gate FIRST (so a non-owner never burns quota).
+  const draft = await getMyDraft(workflowId);
+  if (!draft) return { ok: false, error: message("not_found") };
+
+  // Read the draft nodes BEFORE consuming quota so an empty draft never burns a run (the owner gate
+  // above already blocks non-owners). A real review attempt is still consume-on-attempt (Story 11.1).
+  const nodes = await listDraftNodes(workflowId);
+  if (nodes.length === 0)
+    return { ok: false, error: "Add a step before reviewing." };
+
+  // Rate limit (consume-on-attempt) — the Story 11.1 primitive.
+  const quota = await checkAndConsumeQuota({ feature: "doctor" });
+  if (quota.error === "not_authenticated")
+    return { ok: false, error: message("not_authenticated") };
+  if (!quota.allowed)
+    return {
+      ok: false,
+      rateLimited: true,
+      used: quota.used,
+      limit: quota.limit,
+    };
+
+  // Outputs (signed URLs) only after passing quota. The FR10 real-output rule, computed
+  // deterministically from the SAME publish-gate data.
+  const outputs = await listOutputViewsForWorkflow(workflowId);
+  const missingOutputNodeIds = nodes
+    .filter((n) => !outputs[n.id])
+    .map((n) => n.id);
+
+  try {
+    const review = await reviewWorkflow({ nodes, missingOutputNodeIds });
+    return { ok: true, review };
+  } catch {
+    return { ok: false, error: "Couldn't run the review. Please try again." };
+  }
 }
 
 export async function updateNodeAction(

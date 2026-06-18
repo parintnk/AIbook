@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { DoctorPanel } from "@/components/ai/doctor-panel";
 import { SkeletonIntake } from "@/components/ai/skeleton-intake";
+import { AI_FEATURE_CAPS } from "@/lib/ai";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
@@ -40,6 +42,7 @@ export function WorkflowEditorSurface({
   outputsByNodeId,
   professionName,
   skeletonUsedToday,
+  doctorUsedToday,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
@@ -47,6 +50,7 @@ export function WorkflowEditorSurface({
   outputsByNodeId: Record<string, NodeOutputView>;
   professionName: string | null;
   skeletonUsedToday: number;
+  doctorUsedToday: number;
 }) {
   const [view, setView] = useState<View>("list");
 
@@ -113,6 +117,17 @@ export function WorkflowEditorSurface({
           </p>
         </>
       )}
+
+      {/* Workflow Doctor (Story 11.3) — advisory pre-publish review. A block in the
+          surface (the mockup's fixed right sidebar is later editor polish); it sits
+          after the steps since you build first, then review. */}
+      <div className="mt-6 flex justify-end">
+        <DoctorPanel
+          workflowId={workflowId}
+          usedToday={doctorUsedToday}
+          limit={AI_FEATURE_CAPS.doctor}
+        />
+      </div>
     </section>
   );
 }

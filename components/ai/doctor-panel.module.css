@@ -1,0 +1,328 @@
+/*
+ * Story 11.3 — the Workflow Doctor panel, ported from the LOCKED mockup `workflow-editor-{light,dark}.html`
+ * (`.doctor` + children, lines 374-410). The mockup's `.doctor` is a fixed right sidebar (border-left,
+ * hidden <1180px); v1 mounts the panel as a BLOCK card in the editor surface (the 11.2 skeleton-intake
+ * precedent — the fixed right-sidebar grid is later editor polish). Structural values verbatim; colours
+ * route through the app design tokens (globals.css :root/.dark) via color-mix so it's dark-aware. The
+ * ok/warn/bad pills map to --success/--warning/--destructive (the 3.3 trust-row + publish-blocked amber).
+ */
+
+.doctor {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+/* ── Head (title + score) ── */
+.head {
+  padding: 16px 17px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 55%, #8b7cff)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.usage {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  flex-wrap: wrap;
+}
+
+.pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--success) 75%, var(--foreground));
+  background: color-mix(in srgb, var(--success) 14%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.pill.warn {
+  color: color-mix(in srgb, var(--warning) 80%, var(--foreground));
+  background: color-mix(in srgb, var(--warning) 14%, var(--background));
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+
+/* ── Per-node list ── */
+.list {
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dnode {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.dnode.flag {
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+  background: color-mix(in srgb, var(--warning) 6%, var(--background));
+}
+
+.dnTop {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.badgeOk {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+}
+
+.badgeWarn {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+}
+
+.dnName {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--foreground);
+  min-width: 0;
+}
+
+.num {
+  color: var(--primary);
+}
+
+.dnStatus {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.statusOk {
+  color: color-mix(in srgb, var(--success) 75%, var(--foreground));
+}
+
+.statusWarn {
+  color: color-mix(in srgb, var(--warning) 80%, var(--foreground));
+}
+
+.dnFlags {
+  margin-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dnFlag {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  line-height: 1.45;
+}
+
+.dnFlag b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.fdot {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--warning) 14%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  color: var(--warning);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.dnFlag.req .fdot {
+  background: color-mix(in srgb, var(--destructive) 14%, var(--background));
+  border-color: color-mix(in srgb, var(--destructive) 30%, transparent);
+  color: var(--destructive);
+}
+
+.dnLink {
+  margin-top: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.dnLink:hover {
+  text-decoration: underline;
+}
+
+/* ── Action (trigger) ── */
+.actions {
+  padding: 0 13px 13px;
+}
+
+.list + .actions {
+  padding-top: 0;
+}
+
+.review {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease;
+}
+
+.review:active {
+  transform: scale(0.96);
+}
+
+.review:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Footer (advisory) ── */
+.foot {
+  padding: 13px;
+  border-top: 1px solid var(--border);
+}
+
+.advisory {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px;
+}
+
+.advisory .advIc {
+  flex: 0 0 auto;
+  color: var(--primary);
+  margin-top: 1px;
+}
+
+.advisory b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* ── Pending shimmer (re-run over existing rows) — UX-DR23 ── */
+.shimmer {
+  animation: doctorPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes doctorPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.reviewing {
+  margin: 0 13px 13px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review {
+    transition: none;
+  }
+  .review:active {
+    transform: none;
+  }
+  /* Skip the shimmer — rows resolve straight to their end state. */
+  .shimmer {
+    animation: none;
+  }
+}

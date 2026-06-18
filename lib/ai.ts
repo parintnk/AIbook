@@ -47,3 +47,82 @@ export function rateLimitCopy(opts: {
 }): string {
   return `You've used today's ${opts.limit} ${featureLabel(opts.feature)} runs. Resets at midnight.`;
 }
+
+// ── Workflow Doctor (Story 11.3 / FR12) ─────────────────────────────────────
+// The advisory pre-publish review. These client-safe types + labels back the
+// `.doctor` panel; the review itself is produced server-side (Gemini, the 11.2
+// pattern) by `lib/services/ai/doctor.ts`. Advisory only — never gates publish.
+
+/** The 4 advisory dimensions the Doctor scores per node (FR12). */
+export type DoctorCheck =
+  | "thin_context"
+  | "tool_mismatch"
+  | "single_point_of_failure"
+  | "output_quality";
+
+/** The bold lead for each AI check (the `.dn-flag b` label; the message follows). */
+export const DOCTOR_CHECK_LABELS: Record<DoctorCheck, string> = {
+  thin_context: "Step context is thin",
+  tool_mismatch: "Tool doesn't fit the step",
+  single_point_of_failure: "No fallback if this step fails",
+  output_quality: "Output quality concern",
+};
+
+/**
+ * One advisory flag on a node. `check` is one of the 4 AI dimensions OR the
+ * deterministic `missing_output` (the FR10 real-output rule, merged from the
+ * publish-gate data — `required`, NOT an AI verdict).
+ */
+export type DoctorFlag = {
+  check: DoctorCheck | "missing_output";
+  message: string;
+  required?: boolean;
+};
+
+/** The bold lead for any flag kind (the 4 AI checks + the deterministic req-flag). */
+export function flagLabel(check: DoctorFlag["check"]): string {
+  return check === "missing_output"
+    ? "Missing required output"
+    : DOCTOR_CHECK_LABELS[check];
+}
+
+/** Per-node advisory verdict, keyed back to the canvas node via `nodeId`. */
+export type DoctorNodeVerdict = {
+  nodeId: string;
+  idx: number;
+  stepTitle: string | null;
+  status: "pass" | "flag";
+  flags: DoctorFlag[];
+};
+
+/** A full advisory review (transient — returned to the client, never persisted). */
+export type DoctorReview = {
+  nodes: DoctorNodeVerdict[];
+  pass: number;
+  flag: number;
+};
+
+/** Count pass/flag across verdicts (the `.doc-score` pills). Pure — shared by the service + tests. */
+export function summarizeVerdicts(nodes: Pick<DoctorNodeVerdict, "status">[]): {
+  pass: number;
+  flag: number;
+} {
+  let pass = 0;
+  let flag = 0;
+  for (const n of nodes) {
+    if (n.status === "flag") flag += 1;
+    else pass += 1;
+  }
+  return { pass, flag };
+}
+
+/** The `reviewWorkflowAction` result (advisory; rate-limit-aware, the 11.2 shape). */
+export type DoctorActionState =
+  | { ok: true; review: DoctorReview }
+  | {
+      ok: false;
+      rateLimited?: boolean;
+      used?: number;
+      limit?: number;
+      error?: string;
+    };

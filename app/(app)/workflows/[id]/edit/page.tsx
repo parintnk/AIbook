@@ -30,15 +30,23 @@ export default async function EditWorkflowPage({
   const draft = await getMyDraft(id);
   if (!draft) notFound();
 
-  const [professions, allTags, nodes, edges, outputs, skeletonUsed] =
-    await Promise.all([
-      listProfessions(),
-      listTags(),
-      listDraftNodes(id),
-      listEdges(id),
-      listOutputViewsForWorkflow(id),
-      getAiUsageToday("skeleton"),
-    ]);
+  const [
+    professions,
+    allTags,
+    nodes,
+    edges,
+    outputs,
+    skeletonUsed,
+    doctorUsed,
+  ] = await Promise.all([
+    listProfessions(),
+    listTags(),
+    listDraftNodes(id),
+    listEdges(id),
+    listOutputViewsForWorkflow(id),
+    getAiUsageToday("skeleton"),
+    getAiUsageToday("doctor"),
+  ]);
 
   return (
     <div>
@@ -77,6 +85,7 @@ export default async function EditWorkflowPage({
         outputsByNodeId={outputs}
         professionName={draft.profession?.name ?? null}
         skeletonUsedToday={skeletonUsed}
+        doctorUsedToday={doctorUsed}
       />
     </div>
   );
