@@ -959,6 +959,57 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          actor_id: string | null;
+          created_at: string;
+          data: Json;
+          id: string;
+          read_at: string | null;
+          recipient_id: string;
+          target_id: string;
+          target_type: string;
+          type: Database["public"]["Enums"]["notification_type"];
+        };
+        Insert: {
+          actor_id?: string | null;
+          created_at?: string;
+          data?: Json;
+          id?: string;
+          read_at?: string | null;
+          recipient_id: string;
+          target_id: string;
+          target_type: string;
+          type: Database["public"]["Enums"]["notification_type"];
+        };
+        Update: {
+          actor_id?: string | null;
+          created_at?: string;
+          data?: Json;
+          id?: string;
+          read_at?: string | null;
+          recipient_id?: string;
+          target_id?: string;
+          target_type?: string;
+          type?: Database["public"]["Enums"]["notification_type"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1001,6 +1052,14 @@ export type Database = {
     };
     Enums: {
       node_output_kind: "image" | "video" | "text" | "file";
+      notification_type:
+        | "fork"
+        | "comment"
+        | "follow"
+        | "mention"
+        | "featured"
+        | "worked"
+        | "pin";
       outcome_verdict: "worked" | "tweaked" | "failed" | "untried";
       profession_role: "member" | "verified_pro" | "moderator";
       report_reason:
@@ -1144,6 +1203,15 @@ export const Constants = {
   public: {
     Enums: {
       node_output_kind: ["image", "video", "text", "file"],
+      notification_type: [
+        "fork",
+        "comment",
+        "follow",
+        "mention",
+        "featured",
+        "worked",
+        "pin",
+      ],
       outcome_verdict: ["worked", "tweaked", "failed", "untried"],
       profession_role: ["member", "verified_pro", "moderator"],
       report_reason: [
