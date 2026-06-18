@@ -49,6 +49,35 @@ export type Database = {
           },
         ];
       };
+      ai_usage: {
+        Row: {
+          count: number;
+          day: string;
+          feature: Database["public"]["Enums"]["ai_feature"];
+          profile_id: string;
+        };
+        Insert: {
+          count?: number;
+          day?: string;
+          feature: Database["public"]["Enums"]["ai_feature"];
+          profile_id: string;
+        };
+        Update: {
+          count?: number;
+          day?: string;
+          feature?: Database["public"]["Enums"]["ai_feature"];
+          profile_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       comment_likes: {
         Row: {
           comment_id: string;
@@ -1063,6 +1092,18 @@ export type Database = {
         };
         Returns: string;
       };
+      consume_ai_quota: {
+        Args: {
+          p_feature: Database["public"]["Enums"]["ai_feature"];
+          p_limit: number;
+          p_profile_id: string;
+        };
+        Returns: {
+          allowed: boolean;
+          used: number;
+          quota: number;
+        }[];
+      };
       fork_workflow: { Args: { p_source_id: string }; Returns: string };
       generate_unique_handle: { Args: { seed: string }; Returns: string };
       is_profession_moderator: {
@@ -1096,6 +1137,7 @@ export type Database = {
       };
     };
     Enums: {
+      ai_feature: "skeleton" | "doctor" | "export" | "embed";
       node_output_kind: "image" | "video" | "text" | "file";
       notification_type:
         | "fork"
@@ -1247,6 +1289,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_feature: ["skeleton", "doctor", "export", "embed"],
       node_output_kind: ["image", "video", "text", "file"],
       notification_type: [
         "fork",

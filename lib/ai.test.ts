@@ -1,0 +1,27 @@
+import { describe, expect, it } from "vitest";
+import { AI_FEATURE_CAPS, featureLabel, rateLimitCopy } from "./ai";
+
+describe("AI caps + copy (Story 11.1)", () => {
+  it("exposes the v1 free-tier caps (skeleton 5, doctor 10; export/embed uncapped)", () => {
+    expect(AI_FEATURE_CAPS.skeleton).toBe(5);
+    expect(AI_FEATURE_CAPS.doctor).toBe(10);
+    expect(AI_FEATURE_CAPS.export).toBe(0);
+    expect(AI_FEATURE_CAPS.embed).toBe(0);
+  });
+
+  it("builds the UX-DR21 rate-limited copy verbatim", () => {
+    expect(rateLimitCopy({ feature: "skeleton", limit: 5 })).toBe(
+      "You've used today's 5 skeleton runs. Resets at midnight.",
+    );
+    expect(rateLimitCopy({ feature: "doctor", limit: 10 })).toBe(
+      "You've used today's 10 Doctor runs. Resets at midnight.",
+    );
+  });
+
+  it("labels each feature", () => {
+    expect(featureLabel("skeleton")).toBe("skeleton");
+    expect(featureLabel("doctor")).toBe("Doctor");
+    expect(featureLabel("export")).toBe("export");
+    expect(featureLabel("embed")).toBe("embedding");
+  });
+});

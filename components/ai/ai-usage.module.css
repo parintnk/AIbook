@@ -1,0 +1,26 @@
+/*
+ * Story 11.1 — the rate-limited disabled-state affordance (UX-DR21). A quiet amber notice (NOT an
+ * error), reused by the 11.2 Skeleton / 11.3 Doctor triggers when the daily cap is hit. Colours route
+ * through the app design tokens (globals.css :root/.dark) via color-mix so it's dark-aware (the
+ * search.module.css / explore.module.css precedent); amber follows the 3.3 trust-row / publish-blocked
+ * precedent. Static (no motion) → reduced-motion-compliant by construction.
+ */
+
+.rateLimit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: color-mix(in srgb, #b45309 80%, var(--foreground));
+  background: color-mix(in srgb, #d97706 10%, var(--card));
+  border: 1px solid color-mix(in srgb, #d97706 30%, transparent);
+}
+
+.rateLimit svg {
+  flex: 0 0 auto;
+  color: #d97706;
+}
