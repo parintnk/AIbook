@@ -1,0 +1,567 @@
+/*
+ * Semantic search surface — ported from the LOCKED mockup `search-{light,dark}.html` (Story 10.2 /
+ * FR2). Structural values (radii, blur, shadows, sizes) are verbatim from the mockup; all colours
+ * route through the app design tokens (globals.css :root/.dark) via color-mix so the surface is
+ * dark-aware for free (the explore.module.css / lineage.module.css precedent). The result CARDS reuse
+ * the shared WorkflowCard/WorkflowThumb (explore.module.css) for app-wide consistency; this module
+ * styles only the search-specific chrome (active header, query line, filter chips, result bar, the
+ * relevance badge, and the FTS keyword-fallback panel).
+ */
+
+.search {
+  --s-line: var(--border);
+  --s-line-soft: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --s-hi: inset 0 1px 0 var(--glass-highlight);
+  --s-shadow:
+    0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px
+    color-mix(in srgb, var(--foreground) 4%, transparent);
+  --s-shadow-sm: 0 2px 8px color-mix(in srgb, var(--foreground) 6%, transparent);
+  --s-shadow-lg:
+    0 24px 60px color-mix(in srgb, var(--foreground) 14%, transparent), 0 2px
+    6px color-mix(in srgb, var(--foreground) 5%, transparent);
+  --s-chip: color-mix(in srgb, var(--primary) 14%, var(--background));
+  --s-ring: color-mix(in srgb, var(--primary) 45%, transparent);
+  /* the "resting" fallback uses an amber accent; color-mix with transparent keeps the hue legible in
+   * both themes (the 3.3 trust-row amber precedent). */
+  --s-amber: #d97706;
+  --s-amber-ink: color-mix(in srgb, #b45309 80%, var(--foreground));
+}
+
+/* ── active search header (relocated from nav · FR2) ───────────────────────── */
+.bodysearch {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--s-ring);
+  border-radius: 18px;
+  padding: 14px 14px 14px 18px;
+  color: var(--foreground);
+  font-size: 15px;
+  margin-bottom: 18px;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent),
+    0 10px 28px color-mix(in srgb, var(--foreground) 10%, transparent),
+    var(--s-hi);
+}
+.bodysearch .si {
+  color: var(--primary);
+  flex: 0 0 auto;
+  display: flex;
+}
+.bodysearch input {
+  flex: 1;
+  min-width: 0;
+  color: var(--foreground);
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 15px;
+}
+.bodysearch input::placeholder {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.bodysearch .modepill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  background: var(--s-chip);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  padding: 6px 11px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.bodysearch .clr {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  border: 1px solid var(--s-line-soft);
+}
+.bodysearch .clr:hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
+/* ── search header zone ────────────────────────────────────────────────────── */
+.shead {
+  margin-bottom: 20px;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 13px;
+}
+.queryline {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.queryline .lead {
+  font-size: 15px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+.queryline h1 {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  color: var(--foreground);
+}
+.queryline h1 .qtext {
+  background: linear-gradient(
+    180deg,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 78%, black)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subline {
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+}
+
+/* ── filter row ────────────────────────────────────────────────────────────── */
+.filterrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.fgroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.flabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+  margin-right: 2px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: var(--s-hi);
+  text-decoration: none;
+}
+.chip:hover {
+  color: var(--foreground);
+  background: var(--card);
+  border-color: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+.chipOn {
+  color: var(--primary);
+  background: var(--s-chip);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 10%, transparent),
+    var(--s-hi);
+}
+.chipOn .dotmk {
+  background: var(--primary);
+}
+.chip .dotmk {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
+}
+.chip .x {
+  display: inline-flex;
+  color: inherit;
+  opacity: 0.75;
+}
+.tag {
+  font-weight: 500;
+}
+.tag::before {
+  content: "#";
+  color: var(--primary);
+  font-weight: 700;
+  margin-right: -3px;
+}
+.fdivider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+/* ── result count + sort bar ───────────────────────────────────────────────── */
+.resbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 22px 0 18px;
+  flex-wrap: wrap;
+}
+.rescount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.rescount b {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+.pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #059669;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #059669 15%, transparent);
+  flex: 0 0 auto;
+}
+.sortgroup {
+  display: inline-flex;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border: 1px solid var(--s-line-soft);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 3px;
+  box-shadow: inset 0 1px 2px
+    color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.sortgroup a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  padding: 8px 15px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+}
+.sortgroup a:hover {
+  color: var(--foreground);
+}
+.sortOn {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow:
+    var(--s-shadow-sm),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+/* ── results grid ──────────────────────────────────────────────────────────── */
+.results {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 980px) {
+  .results {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .results {
+    grid-template-columns: 1fr;
+  }
+  .queryline h1 {
+    font-size: 22px;
+  }
+}
+
+/* the relevance % affordance — an overlay sibling on the reused WorkflowCard (top-LEFT so it never
+ * collides with the top-right Save bookmark; the 8.1 sibling-overlay rule). */
+.cardWrap {
+  position: relative;
+}
+.relevance {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  padding: 4px 9px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--s-shadow-sm);
+  pointer-events: none;
+}
+.relevance svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* ── load more ─────────────────────────────────────────────────────────────── */
+.loadwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+  margin-top: 26px;
+}
+.showing {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.loadbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 11px 20px;
+  box-shadow: var(--s-shadow-sm), var(--s-hi);
+}
+.loadbtn:hover {
+  background: var(--card);
+}
+.loadbtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── empty state (AC2 — never a dead end) ──────────────────────────────────── */
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  border: 1px dashed var(--border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--card) 50%, transparent);
+}
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 6px;
+}
+.emptySub {
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  margin-bottom: 16px;
+}
+.emptyLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* ── FTS keyword fallback panel (semantic-unavailable · Story 10.3 absorbed) ── */
+.fallback {
+  margin-top: 30px;
+  border: 1px dashed color-mix(in srgb, var(--s-amber) 40%, transparent);
+  border-radius: 22px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--s-amber) 5%, transparent),
+    color-mix(in srgb, var(--card) 50%, transparent)
+  );
+  box-shadow: var(--s-shadow), var(--s-hi);
+  overflow: hidden;
+}
+.fbStatebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  background: color-mix(in srgb, var(--s-amber) 7%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--s-amber) 22%, transparent);
+}
+.fbTag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--s-amber-ink);
+  background: color-mix(in srgb, var(--s-amber) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--s-amber) 35%, transparent);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.fbMeta {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.fbBody {
+  padding: 20px;
+}
+.restnote {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  border: 1px solid var(--border);
+  margin-bottom: 18px;
+  box-shadow: var(--s-hi);
+}
+.restnote .zi {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--s-amber) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--s-amber) 35%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--s-amber);
+}
+.restnote .rt {
+  font-size: 13.5px;
+  color: var(--foreground);
+  font-weight: 600;
+}
+.restnote .rt span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.fbCount {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.fbCount b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.fbCount .kw {
+  color: var(--s-amber-ink);
+  font-weight: 600;
+}
+.fbResults {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.kwrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--s-hi);
+  transition: all 0.22s ease;
+  text-decoration: none;
+}
+.kwrow:hover {
+  background: var(--card);
+  transform: translateY(-1px);
+}
+.kwthumb {
+  flex: 0 0 64px;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid var(--s-line-soft);
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--primary) 70%, var(--foreground));
+}
+.km {
+  min-width: 0;
+  flex: 1;
+}
+.km h5 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.3;
+  margin-bottom: 3px;
+}
+.km h5 mark {
+  background: color-mix(in srgb, var(--s-amber) 18%, transparent);
+  color: var(--s-amber-ink);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.km .ksub {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.kscore {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.kscore svg {
+  color: #059669;
+}

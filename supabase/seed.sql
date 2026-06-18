@@ -449,3 +449,18 @@ insert into public.board_items (board_id, workflow_id, sort_order) values
   ('00000000-0000-0000-0000-0000000b0001', '00000000-0000-0000-0000-0000000c0011', 1),
   ('00000000-0000-0000-0000-0000000b0001', '00000000-0000-0000-0000-0000000c0001', 2)
 on conflict (board_id, workflow_id) do nothing;
+
+-- ── Story 10.2 — semantic-search stub embeddings ────────────────────────────────
+-- A deterministic 1536-dim stub embedding per PUBLISHED workflow so /search returns rows on a fresh
+-- DB / e2e WITHOUT a live embedding key (the JS embedder stub's SQL equivalent for seed data). All
+-- stubs share one constant vector → similarities are uniform and results order by the workflow_id
+-- tiebreak (plumbing-only; real semantic ranking arrives once the prod Cron embeds with the real key).
+-- The service-role seed bypasses the client lock (workflow_embeddings is RLS-locked to clients).
+insert into public.workflow_embeddings (workflow_id, embedding, content_hash)
+select
+  w.id,
+  ('[' || array_to_string(array_fill(0.1::float4, array[1536]), ',') || ']')::vector,
+  'seed-stub'
+from public.workflows w
+where w.status = 'published'
+on conflict (workflow_id) do nothing;

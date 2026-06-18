@@ -648,6 +648,7 @@ export type Database = {
           parent_id: string | null;
           profession_id: string;
           published_at: string | null;
+          search_vector: string | null;
           status: Database["public"]["Enums"]["workflow_status"];
           summary: string | null;
           title: string;
@@ -1067,6 +1068,21 @@ export type Database = {
       is_profession_moderator: {
         Args: { prof_id: string; uid: string };
         Returns: boolean;
+      };
+      match_workflows: {
+        Args: {
+          query_embedding: string;
+          match_limit?: number;
+          match_offset?: number;
+          p_profession_id?: string;
+          p_tag_ids?: string[];
+          similarity_threshold?: number;
+        };
+        Returns: {
+          workflow_id: string;
+          similarity: number;
+          total_count: number;
+        }[];
       };
       publish_workflow: { Args: { p_workflow_id: string }; Returns: Json };
       reorder_workflow_nodes: {
