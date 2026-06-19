@@ -57,6 +57,10 @@
 }
 
 :root {
+  /* Native form controls (<select> option popups, scrollbars, etc.) follow the
+     active theme. Without this a dark-mode <select> dropdown renders as a light
+     OS popup → unreadable. */
+  color-scheme: light;
   --radius: 0.75rem; /* 12px base */
 
   /* Canvas + ink */
@@ -107,6 +111,8 @@
 }
 
 .dark {
+  /* Dark-aware native form controls (<select> option popups, scrollbars). */
+  color-scheme: dark;
   /* Canvas + ink */
   --background: #070b16;
   --foreground: #e6eaf3;
