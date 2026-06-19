@@ -119,7 +119,9 @@ export async function createDraftAction(
   if (!result.ok) return { error: message(result.error) };
 
   revalidatePath("/workflows");
-  redirect("/workflows");
+  // Drop straight into the editor for the new draft (the "fill the details modal,
+  // then build the recipe on the canvas" flow), not back to the drafts list.
+  redirect(`/workflows/${result.id}/edit`);
 }
 
 /**

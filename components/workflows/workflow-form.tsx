@@ -30,10 +30,10 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 export type ProfessionOption = { id: string; name: string };
 
 /**
- * Create a new workflow draft (Story 2.1) — the /new page's labelled card form.
- * On success `createDraftAction` redirects to /workflows (a fresh draft has no
- * canvas yet). Editing an existing draft's metadata happens in the editor's
- * "Workflow details" disclosure (`WorkflowDetailsForm`), not here.
+ * Create a new workflow draft (Story 2.1) — the fields for the /new "New workflow"
+ * dialog (`NewWorkflowDialog`). On success `createDraftAction` redirects straight into
+ * the editor for the new draft. Renders bare (no card) since it lives inside the modal;
+ * editing an existing draft's metadata happens in the editor's Details dialog.
  */
 export function WorkflowForm({
   professions,
@@ -84,9 +84,9 @@ export function WorkflowForm({
     <form
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-5"
     >
-      <section className="glass flex flex-col gap-4 rounded-card p-6">
+      <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="title">Title</Label>
           <Input
