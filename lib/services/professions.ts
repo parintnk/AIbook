@@ -3,6 +3,7 @@ import { cache } from "react";
 import { houseRulesSchema } from "@/lib/profession-rules";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Professions domain/service layer (DR-1). The only place profession SQL lives.
@@ -62,9 +63,7 @@ export async function isProfessionModerator(
   professionId: string,
 ): Promise<boolean> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return false;
   const { data, error } = await supabase.rpc("is_profession_moderator", {
     uid: user.id,
@@ -88,9 +87,7 @@ export async function getMyMembership(
   professionId: string,
 ): Promise<{ role: ProfessionRole } | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return null;
   const { data } = await supabase
     .from("profession_members")
@@ -112,9 +109,7 @@ export async function joinProfession(
   professionId: string,
 ): Promise<MembershipResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase.from("profession_members").insert({
@@ -139,9 +134,7 @@ export async function leaveProfession(
   professionId: string,
 ): Promise<MembershipResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase

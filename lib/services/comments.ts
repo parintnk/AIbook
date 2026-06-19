@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Comments domain/service layer (Story 4.2 / FR19) — the ONLY place comments +
@@ -75,9 +76,7 @@ export const listCommentPage = cache(
     const limit = opts?.limit ?? COMMENTS_PAGE_SIZE;
     const offset = opts?.offset ?? 0;
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     // 1) top-level page ("top" = most-liked w/ created_at tiebreak; "new" = most-recent)
     const base = supabase
@@ -157,9 +156,7 @@ export async function postComment(
   parentCommentId?: string | null,
 ): Promise<PostCommentResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   // Server-side trim/guard (the action is the trust boundary — a direct call bypasses
@@ -191,9 +188,7 @@ export async function toggleCommentLike(
   commentId: string,
 ): Promise<ToggleLikeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data: existing } = await supabase

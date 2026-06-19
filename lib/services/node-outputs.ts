@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 import { createSupabaseStorage } from "./storage/supabase-storage";
 
 /**
@@ -117,9 +118,7 @@ async function writeOutput(
   },
 ): Promise<NodeOutputResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   if (!(await ownsDraftForNode(supabase, user.id, nodeId))) {
@@ -191,9 +190,7 @@ export async function deleteNodeOutput(
   nodeId: string,
 ): Promise<NodeOutputDeleteResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase

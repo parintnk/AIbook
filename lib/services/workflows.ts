@@ -8,6 +8,7 @@ import {
 } from "@/lib/explore";
 import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 import { deriveThumbPath } from "./node-outputs";
 import { createSupabaseStorage } from "./storage/supabase-storage";
 import { workflowIdsForTag } from "./tags";
@@ -107,9 +108,7 @@ const FORK_LIST_SELECT =
 /** The caller's own draft workflows, newest-updated first. RLS scopes to author. */
 export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return [];
   const { data } = await supabase
     .from("workflows")
@@ -128,9 +127,7 @@ export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {
  */
 export const listMyForks = cache(async (): Promise<MyForkListItem[]> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return [];
 
   // My forks (draft + published), newest-updated first.
@@ -196,9 +193,7 @@ export const listMyForks = cache(async (): Promise<MyForkListItem[]> => {
 export const getMyDraft = cache(
   async (id: string): Promise<DraftDetail | null> => {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return null;
     const { data } = await supabase
       .from("workflows")
@@ -608,9 +603,7 @@ async function replaceWorkflowTags(
 /** Create a draft owned by the caller (status defaults to 'draft'). */
 export async function createDraft(input: DraftInput): Promise<WorkflowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -639,9 +632,7 @@ export async function updateDraft(
   input: DraftInput,
 ): Promise<WorkflowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const patch: TablesUpdate<"workflows"> = {
@@ -678,9 +669,7 @@ export async function renameDraft(
   title: string,
 ): Promise<WorkflowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -706,9 +695,7 @@ export async function updateDraftDetails(
   input: { summary: string | null; profession_id: string; tags: string[] },
 ): Promise<WorkflowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const patch: TablesUpdate<"workflows"> = {
@@ -744,9 +731,7 @@ export async function publishWorkflow(
   workflowId: string,
 ): Promise<PublishResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase.rpc("publish_workflow", {
@@ -786,9 +771,7 @@ export async function publishWorkflow(
  */
 export async function forkWorkflow(sourceId: string): Promise<ForkResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase.rpc("fork_workflow", {
@@ -809,9 +792,7 @@ export async function forkWorkflow(sourceId: string): Promise<ForkResult> {
 /** Delete a draft the caller owns. Zero-row delete → not_found. */
 export async function deleteDraft(id: string): Promise<WorkflowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase

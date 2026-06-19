@@ -12,6 +12,7 @@ import {
   toCardData,
 } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Boards domain/service layer (DR-1, Story 8.1 / FR4) — the only place board SQL lives.
@@ -52,9 +53,7 @@ export async function listMyBoardsForWorkflow(
   workflowId: string,
 ): Promise<BoardForPicker[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return [];
 
   const { data: boards } = await supabase
@@ -92,9 +91,7 @@ export async function getSavedWorkflowIds(
 ): Promise<Set<string>> {
   if (workflowIds.length === 0) return new Set();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return new Set();
 
   const { data: boards } = await supabase
@@ -122,9 +119,7 @@ export async function saveToBoard(
   workflowId: string,
 ): Promise<SaveResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase
@@ -143,9 +138,7 @@ export async function removeFromBoard(
   workflowId: string,
 ): Promise<RemoveResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -174,9 +167,7 @@ export async function createBoardAndSave(
   if (!parsed.success) return { ok: false, error: "invalid" };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data: board, error: boardErr } = await supabase
@@ -240,9 +231,7 @@ export async function listMyBoards(
   limit = BOARDS_PAGE_SIZE,
 ): Promise<{ items: BoardSummary[]; total: number }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { items: [], total: 0 };
 
   const { data, count } = await supabase
@@ -294,9 +283,7 @@ export async function getBoard(
   { ok: true; board: BoardDetail } | { ok: false; error: "not_found" }
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   const { data: board } = await supabase
     .from("boards")
@@ -395,9 +382,7 @@ export async function createBoard(
   if (!parsed.success) return { ok: false, error: "invalid" };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data: board, error } = await supabase
@@ -418,9 +403,7 @@ export async function renameBoard(
   if (!parsed.success) return { ok: false, error: "invalid" };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -440,9 +423,7 @@ export async function setBoardVisibility(
   isPublic: boolean,
 ): Promise<MutateResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -462,9 +443,7 @@ export async function setBoardVisibility(
  */
 export async function deleteBoard(boardId: string): Promise<MutateResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -493,9 +472,7 @@ export async function reorderBoardItems(
     return { ok: false, error: "db_error" };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   for (let i = 0; i < orderedWorkflowIds.length; i++) {
@@ -517,9 +494,7 @@ export async function reorderBoardItems(
  */
 export async function followBoard(boardId: string): Promise<SaveResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase
@@ -535,9 +510,7 @@ export async function followBoard(boardId: string): Promise<SaveResult> {
 /** Unfollow a board (delete the viewer's own follow row). Zero rows → not_found (idempotent). */
 export async function unfollowBoard(boardId: string): Promise<RemoveResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase

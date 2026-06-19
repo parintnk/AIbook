@@ -2,6 +2,7 @@ import "server-only";
 import { AI_FEATURE_CAPS, type AiFeature } from "@/lib/ai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * The per-user AI rate-limit primitive (Story 11.1). 11.2 (Skeleton) / 11.3 (Doctor) call
@@ -31,10 +32,7 @@ function todayUtc(): string {
 export async function checkAndConsumeQuota(opts: {
   feature: AiFeature;
 }): Promise<QuotaResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     return { allowed: false, used: 0, limit: 0, error: "not_authenticated" };
   }
@@ -62,9 +60,7 @@ export async function checkAndConsumeQuota(opts: {
  */
 export async function getAiUsageToday(feature: AiFeature): Promise<number> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return 0;
   const { data } = await supabase
     .from("ai_usage")

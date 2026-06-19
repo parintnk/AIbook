@@ -6,6 +6,7 @@ import type {
   TablesUpdate,
 } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Workflow-nodes domain/service layer (DR-1) — the ONLY place node SQL lives.
@@ -75,9 +76,7 @@ export async function ownsDraft(
 export const listDraftNodes = cache(
   async (workflowId: string): Promise<WorkflowNode[]> => {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return [];
     const { data } = await supabase
       .from("workflow_nodes")
@@ -120,9 +119,7 @@ export async function createNode(
   input: NodeInput,
 ): Promise<WorkflowNodeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase.rpc("append_workflow_node", {
@@ -153,9 +150,7 @@ export async function updateNode(
   input: NodeInput,
 ): Promise<WorkflowNodeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   // Only the editable field columns. We deliberately omit idx/pos_x/pos_y (the
@@ -190,9 +185,7 @@ export async function updateNode(
 /** Delete a node. RLS enforces parent-draft ownership; zero rows → not_found. */
 export async function deleteNode(nodeId: string): Promise<WorkflowNodeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -219,9 +212,7 @@ export async function updateNodePositions(
   positions: NodePosition[],
 ): Promise<WorkflowNodeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase.rpc("update_node_positions", {
@@ -247,9 +238,7 @@ export async function reorderNodes(
   nodeIds: string[],
 ): Promise<WorkflowNodeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase.rpc("reorder_workflow_nodes", {

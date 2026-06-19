@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Outcome-votes domain/service layer (DR-1, Story 4.1 / FR11) — the ONLY place
@@ -26,9 +27,7 @@ export type OutcomeVoteResult =
 export const getMyOutcomeVote = cache(
   async (workflowId: string): Promise<OutcomeVote | null> => {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return null;
     const { data } = await supabase
       .from("outcome_votes")
@@ -52,9 +51,7 @@ export async function castOutcomeVote(
   note?: string | null,
 ): Promise<OutcomeVoteResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase.from("outcome_votes").upsert(

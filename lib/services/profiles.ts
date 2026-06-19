@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Profiles domain/service layer (architecture DR-1 — extract-later guardrail).
@@ -75,9 +76,7 @@ export const getProfileByHandle = cache(
 /** The signed-in user's own profile (+ AI Stack), or null if unauthenticated. */
 export async function getMyProfile(): Promise<ProfileWithStack | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return null;
   const { data } = await supabase
     .from("profiles")
@@ -108,9 +107,7 @@ export async function updateProfile(
   input: UpdateProfileInput,
 ): Promise<ServiceResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const patch: TablesUpdate<"profiles"> = {

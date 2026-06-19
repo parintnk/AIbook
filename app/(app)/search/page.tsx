@@ -71,37 +71,36 @@ export default async function SearchPage({
   }
 
   const supabase = await createClient();
-  const professions = await listProfessions();
 
-  // Validate the profession slug → "All" when unknown (the 6.1/6.2 lesson); resolve its id for the RPC.
+  // Validate the filters up front, in PARALLEL. listProfessions already carries every
+  // profession's id, so the active profession's id comes from that list — no extra query
+  // (the old separate `professions.select("id")` round-trip is gone). The tag slug→id
+  // lookup is independent, so it runs alongside listProfessions.
+  const [professions, tagRow] = await Promise.all([
+    listProfessions(),
+    sp.tag
+      ? supabase
+          .from("tags")
+          .select("id, slug")
+          .eq("slug", sp.tag)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
   const activeProfession =
     sp.profession && professions.some((p) => p.slug === sp.profession)
       ? sp.profession
       : null;
-  let professionId: string | null = null;
-  if (activeProfession) {
-    const { data: prof } = await supabase
-      .from("professions")
-      .select("id")
-      .eq("slug", activeProfession)
-      .maybeSingle();
-    professionId = (prof as { id: string } | null)?.id ?? null;
-  }
+  const professionId = activeProfession
+    ? (professions.find((p) => p.slug === activeProfession)?.id ?? null)
+    : null;
 
-  // Validate the tag slug → its id (unknown → no tag filter).
   let activeTag: string | null = null;
   let tagIds: string[] | null = null;
-  if (sp.tag) {
-    const { data: tag } = await supabase
-      .from("tags")
-      .select("id, slug")
-      .eq("slug", sp.tag)
-      .maybeSingle();
-    if (tag) {
-      const t = tag as { id: string; slug: string };
-      activeTag = t.slug;
-      tagIds = [t.id];
-    }
+  if (tagRow.data) {
+    const t = tagRow.data as { id: string; slug: string };
+    activeTag = t.slug;
+    tagIds = [t.id];
   }
 
   const result = await searchWorkflows({
@@ -112,15 +111,16 @@ export default async function SearchPage({
     offset: 0,
   });
 
-  // Saved-state for the cards (Story 8.1) + tag chips derived from the result set (so they're relevant).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const signedIn = user != null;
+  // Saved-state (Story 8.1), result-set tag chips, and the signed-in flag are all keyed
+  // off the result ids — fetch them in PARALLEL instead of three serial round-trips.
   const resultIds = result.items.map((i) => i.id);
-  const savedIds = await getSavedWorkflowIds(resultIds);
+  const [{ data: userData }, savedIds, tags] = await Promise.all([
+    supabase.auth.getUser(),
+    getSavedWorkflowIds(resultIds),
+    resultTags(supabase, resultIds),
+  ]);
+  const signedIn = userData.user != null;
   const items = result.items.map((i) => ({ ...i, saved: savedIds.has(i.id) }));
-  const tags = await resultTags(supabase, resultIds);
 
   let body: React.ReactNode;
   if (result.degraded) {

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Database, Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 /**
  * Reports domain/service layer (Story 4.3 / FR14) — the ONLY place reports SQL lives.
@@ -68,9 +69,7 @@ export async function createReport(
   detail?: string | null,
 ): Promise<CreateReportResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase.from("reports").insert({
@@ -90,9 +89,7 @@ export async function createReport(
 /** Whether the caller moderates ANY profession (the founder mods all in v1). Gates the /admin/reports page. */
 export async function isModeratorAnywhere(): Promise<boolean> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return false;
   const { count } = await supabase
     .from("profession_members")
@@ -204,9 +201,7 @@ export async function resolveReport(
   resolution?: string | null,
 ): Promise<ModerationResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -230,9 +225,7 @@ export async function removeReportedComment(
   resolution?: string | null,
 ): Promise<ModerationResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data: hidden, error: hideError } = await supabase

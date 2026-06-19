@@ -1,6 +1,7 @@
 import "server-only";
 import type { ProfileCardData } from "@/lib/follows";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -29,9 +30,7 @@ export type UnfollowResult =
  */
 export async function followUser(targetId: string): Promise<FollowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { error } = await supabase
@@ -47,9 +46,7 @@ export async function followUser(targetId: string): Promise<FollowResult> {
 /** Unfollow a user. Zero rows deleted → `not_found` (idempotent — Undo / 2-tabs, the 8.1 lesson). */
 export async function unfollowUser(targetId: string): Promise<UnfollowResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
@@ -67,9 +64,7 @@ export async function unfollowUser(targetId: string): Promise<UnfollowResult> {
 /** Does the signed-in viewer follow `targetId`? False for anon. Powers the Follow button's initial state. */
 export async function getFollowState(targetId: string): Promise<boolean> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return false;
   const { data } = await supabase
     .from("follows")
@@ -89,9 +84,7 @@ export async function getFollowingIds(
 ): Promise<Set<string>> {
   if (targetUserIds.length === 0) return new Set();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return new Set();
   const { data } = await supabase
     .from("follows")

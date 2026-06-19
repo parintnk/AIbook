@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/user";
 import { ownsDraft } from "./workflow-nodes";
 
 /**
@@ -35,9 +36,7 @@ export type EdgeResult =
 export const listEdges = cache(
   async (workflowId: string): Promise<WorkflowEdge[]> => {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return [];
     const { data } = await supabase
       .from("workflow_edges")
@@ -71,9 +70,7 @@ export async function createEdge(
   targetNodeId: string,
 ): Promise<EdgeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
   if (sourceNodeId === targetNodeId) return { ok: false, error: "self_edge" };
 
@@ -113,9 +110,7 @@ export async function createEdge(
 /** Delete an edge. RLS enforces parent-draft ownership; zero rows → not_found. */
 export async function deleteEdge(edgeId: string): Promise<EdgeResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
 
   const { data, error } = await supabase
