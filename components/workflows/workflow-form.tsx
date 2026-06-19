@@ -199,7 +199,12 @@ export function WorkflowForm({
       ) : null}
 
       <div className="flex items-center gap-3">
-        <Button type="submit" size="lg" className="h-11" disabled={isPending}>
+        <Button
+          type="submit"
+          size="lg"
+          className="h-11 bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] shadow-[0_8px_20px_rgba(109,94,240,0.28)] hover:brightness-[1.04]"
+          disabled={isPending}
+        >
           {isPending ? "Saving…" : isEdit ? "Save changes" : "Create draft"}
         </Button>
       </div>
