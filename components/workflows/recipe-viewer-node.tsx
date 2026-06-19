@@ -11,9 +11,10 @@ export type ViewerFlowNode = Node<
   "recipe"
 >;
 
-// Non-connectable handles still render so edges anchor; match the editor accent ring.
+// Non-connectable handles still render so edges anchor; match the mockup's accent dot
+// (11px, white fill, 2px accent ring, soft glow).
 const HANDLE_CLASS =
-  "!size-3 !border-2 !border-accent-foreground !bg-background";
+  "!size-[11px] !border-2 !border-primary !bg-background !shadow-[0_0_8px_rgba(109,94,240,0.3)]";
 
 /**
  * The public viewer's React Flow node (Story 3.1 / FR6) — wraps the shared
@@ -25,7 +26,7 @@ const HANDLE_CLASS =
 export function RecipeViewerNode({ data }: NodeProps<ViewerFlowNode>) {
   const { node, output } = data;
   return (
-    <div className="w-[280px]">
+    <div className="w-[240px]">
       <Handle
         type="target"
         position={Position.Left}

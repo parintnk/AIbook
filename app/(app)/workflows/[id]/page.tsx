@@ -109,7 +109,7 @@ export default async function WorkflowDetailPage({ params }: Params) {
 
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-bold font-heading text-2xl tracking-tight">
+            <h1 className="font-extrabold font-heading text-[31px] leading-[1.14] tracking-[-0.025em]">
               {wf.title}
             </h1>
             {wf.summary ? (
@@ -140,7 +140,7 @@ export default async function WorkflowDetailPage({ params }: Params) {
               avatarUrl={author.avatar_url}
               displayName={author.display_name}
               handle={author.handle}
-              className="size-8 text-xs"
+              className="size-[38px] text-sm"
             />
             <span className="flex flex-col leading-tight">
               <span className="font-medium text-sm">{authorName}</span>

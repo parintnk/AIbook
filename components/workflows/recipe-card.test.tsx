@@ -122,9 +122,11 @@ describe("RecipeCard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows neutral 'No sample output yet' when not blocked and outputless", () => {
+  it("shows the prompt preview (no blocked CTA) when not blocked and outputless", () => {
     render(<RecipeCard node={node} mode="editor" />);
-    expect(screen.getByText("No sample output yet")).toBeInTheDocument();
+    // The mockup node face shows the output thumbnail, or — with no output — a text
+    // preview of the prompt (no separate "no output" status line).
+    expect(screen.getByText(node.prompt)).toBeInTheDocument();
     expect(
       screen.queryByText("Add a sample output to publish"),
     ).not.toBeInTheDocument();

@@ -115,7 +115,7 @@ export function OutcomeVote({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-medium text-[12px] text-muted-foreground uppercase tracking-wide">
+        <p className="font-bold text-[12px] text-muted-foreground uppercase tracking-[0.10em]">
           Did this work for you?
         </p>
         {canVote ? null : (

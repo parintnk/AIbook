@@ -19,13 +19,6 @@ import { OutputPreview } from "./output-preview";
  * is an empty stub here; Story 2.4 fills it from `node_outputs`.
  */
 
-const OUTPUT_KIND_LABEL: Record<string, string> = {
-  image: "Image",
-  video: "Video",
-  text: "Text",
-  file: "File",
-};
-
 export type RecipeCardProps = {
   node: WorkflowNode;
   /** The node's sample output (Story 2.4) — drives the compact indicator. */
@@ -148,7 +141,7 @@ export function RecipeCard({
         {/* Header: step number + title (left), est. time (right) */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 text-sm font-semibold tracking-tight">
-            <span className="text-accent-foreground">{node.idx + 1}</span>
+            <span className="text-primary">{node.idx + 1}</span>
             {node.step_title ? (
               <span className="text-foreground"> · {node.step_title}</span>
             ) : null}
@@ -164,54 +157,36 @@ export function RecipeCard({
         <span className="mt-2.5 inline-flex items-center gap-1.5 self-start rounded-md border border-accent-foreground/20 bg-accent px-2.5 py-1 font-mono text-[11px] font-semibold text-accent-foreground">
           <span
             aria-hidden="true"
-            className="size-3 shrink-0 rounded-[5px] bg-gradient-to-br from-accent-foreground to-accent-foreground/40"
+            className="size-3 shrink-0 rounded-[5px] bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0]"
           />
           {node.tool_name}
         </span>
 
-        {/* Collapsed content: a prompt preview + a compact sample-output indicator
-            (Story 2.4). Hidden once details open. */}
+        {/* Collapsed face: the output thumbnail (image) or a text preview — matching the
+            mockup node's `.thumb` (Story 2.4 / UX-DR5). Hidden once details open. */}
         {!detailsOpen ? (
-          <>
-            <span className="mt-2.5 line-clamp-2 rounded-lg border border-border/60 bg-foreground/[0.02] px-2.5 py-2 font-mono text-[11.5px] leading-relaxed text-muted-foreground">
-              {node.prompt}
+          output?.kind === "image" && output.thumbUrl ? (
+            <div className="relative mt-2.5 h-[104px] overflow-hidden rounded-xl border border-border/60">
+              {/* biome-ignore lint/performance/noImgElement: signed CDN thumbnail, not a static asset */}
+              <img
+                src={output.thumbUrl}
+                alt=""
+                className="size-full object-cover"
+              />
+              <span className="absolute bottom-1.5 left-1.5 rounded-md bg-foreground/55 px-2 py-0.5 font-mono text-[9px] font-semibold text-background uppercase tracking-wide backdrop-blur-sm">
+                Output
+              </span>
+            </div>
+          ) : blocked && !output ? (
+            <span className="mt-2.5 inline-flex items-center gap-1.5 self-start text-[11px] text-warning">
+              <WarningTriangle className="size-3.5" />
+              Sample output required
             </span>
-            <span className="mt-2 inline-flex items-center gap-1.5 self-start text-[11px] text-muted-foreground">
-              {output ? (
-                <>
-                  {output.kind === "image" && output.thumbUrl ? (
-                    // biome-ignore lint/performance/noImgElement: signed CDN thumbnail, not a static asset
-                    <img
-                      src={output.thumbUrl}
-                      alt=""
-                      className="size-6 rounded border border-border/60 object-cover"
-                    />
-                  ) : (
-                    <span
-                      aria-hidden="true"
-                      className="size-2 rounded-full bg-success"
-                    />
-                  )}
-                  <span>
-                    {OUTPUT_KIND_LABEL[output.kind] ?? "Output"} attached
-                  </span>
-                </>
-              ) : blocked ? (
-                <span className="inline-flex items-center gap-1.5 text-warning">
-                  <WarningTriangle className="size-3.5" />
-                  <span>Sample output required</span>
-                </span>
-              ) : (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="size-2 rounded-full bg-foreground/20"
-                  />
-                  <span>No sample output yet</span>
-                </>
-              )}
-            </span>
-          </>
+          ) : (
+            <p className="mt-2.5 line-clamp-3 rounded-lg border border-border/60 bg-foreground/[0.02] px-2.5 py-2 font-mono text-[11.5px] text-muted-foreground leading-relaxed">
+              {output?.text_content ?? node.prompt}
+            </p>
+          )
         ) : null}
       </button>
 

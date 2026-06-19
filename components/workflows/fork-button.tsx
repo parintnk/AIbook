@@ -51,7 +51,11 @@ export function ForkButton({
   }
 
   return (
-    <Button onClick={fork} disabled={isPending} className="shrink-0">
+    <Button
+      onClick={fork}
+      disabled={isPending}
+      className="shrink-0 bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] shadow-[0_8px_20px_rgba(109,94,240,0.28)] hover:brightness-[1.04]"
+    >
       <GitFork className="size-4" aria-hidden />
       {isPending ? "Forking…" : "Fork"}
     </Button>

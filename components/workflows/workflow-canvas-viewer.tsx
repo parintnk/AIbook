@@ -10,6 +10,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
 } from "@xyflow/react";
+import { LayoutGrid, Search } from "lucide-react";
 import { useMemo } from "react";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
@@ -17,9 +18,9 @@ import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { RecipeViewerNode, type ViewerFlowNode } from "./recipe-viewer-node";
 
 const nodeTypes = { recipe: RecipeViewerNode };
-// Accent-tinted bezier edges to match the mockup (no splice "+", static).
+// Accent bezier edges — matches the mockup (#6D5EF0, 2.2px, 85% opacity).
 const defaultEdgeOptions = {
-  style: { stroke: "var(--accent-foreground)", strokeWidth: 1.5 },
+  style: { stroke: "var(--primary)", strokeWidth: 2.2, opacity: 0.85 },
 } as const;
 
 /**
@@ -60,7 +61,30 @@ export function WorkflowCanvasViewer({
 
   return (
     <ReactFlowProvider>
-      <div className="relative h-[70vh] w-full overflow-hidden rounded-card ring-1 ring-foreground/10">
+      <div className="relative h-[570px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent">
+        {/* Accent glow pooling in the canvas (mockup `.rfglow`). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1]"
+          style={{
+            background:
+              "radial-gradient(620px 380px at 38% 32%, rgba(109,94,240,0.07), transparent 70%)",
+          }}
+        />
+        {/* Canvas bar (mockup `.canvas-bar`) — pointer-events-none so pan/zoom passes through. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-foreground/[0.05] border-b bg-background/65 px-[17px] py-[13px] backdrop-blur-xl">
+          <div className="flex items-center gap-2.5 font-semibold text-[13px] text-foreground">
+            <LayoutGrid width={16} height={16} aria-hidden="true" />
+            Workflow canvas
+            <span className="rounded-full bg-accent px-2.5 py-1 font-semibold text-[11px] text-accent-foreground">
+              {nodes.length} steps
+            </span>
+          </div>
+          <div className="hidden items-center gap-2 text-[12px] text-muted-foreground sm:flex">
+            <Search width={14} height={14} aria-hidden="true" />
+            Drag to pan · scroll to zoom
+          </div>
+        </div>
         <ReactFlow
           nodes={rfNodes}
           edges={rfEdges}
@@ -76,9 +100,15 @@ export function WorkflowCanvasViewer({
           edgesFocusable={false}
           deleteKeyCode={null}
           fitView
+          fitViewOptions={{ padding: 0.2 }}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={24} size={1.1} />
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={24}
+            size={1.1}
+            color="rgba(15,23,42,0.06)"
+          />
           <Controls showInteractive={false} />
           <MiniMap pannable zoomable />
         </ReactFlow>
