@@ -1,9 +1,7 @@
 "use client";
 
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { createDraftAction } from "@/app/(app)/workflows/actions";
 import { Button } from "@/components/ui/button";
@@ -11,10 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tag } from "@/lib/explore";
-import {
-  type WorkflowDraftValues,
-  workflowDraftSchema,
-} from "@/lib/validation/workflow";
+import { workflowDraftSchema } from "@/lib/validation/workflow";
 
 /** Max tags per workflow (mirrors `workflowDraftSchema.tags.max(6)`). */
 const MAX_TAGS = 6;
@@ -32,9 +27,13 @@ export type ProfessionOption = { id: string; name: string };
 
 /**
  * Create a new workflow draft (Story 2.1) — the fields for the /new "New workflow"
- * dialog (`NewWorkflowDialog`). On success `createDraftAction` redirects straight into
- * the editor for the new draft. Renders bare (no card) since it lives inside the modal;
- * editing an existing draft's metadata happens in the editor's Details dialog.
+ * dialog (`NewWorkflowDialog`). On success `createDraftAction` returns the id and the
+ * client navigates into the new draft's editor.
+ *
+ * NOTE: controlled `useState` + an onClick submit (NOT react-hook-form + a native
+ * `<form>` submit). base-ui Dialog renders its content in a portal that doesn't fire
+ * native form submission, so the proven in-dialog pattern (ReportDialog / NewBoardButton)
+ * is local state + a button onClick — see [[base-ui-dialog-submit-gotcha]].
  */
 export function WorkflowForm({
   professions,
@@ -47,42 +46,46 @@ export function WorkflowForm({
   onCreated?: (id: string) => void;
 }) {
   const router = useRouter();
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
+  const [professionId, setProfessionId] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<WorkflowDraftValues>({
-    resolver: standardSchemaResolver(workflowDraftSchema),
-    mode: "onBlur",
-    defaultValues: { title: "", summary: "", profession_id: "", tags: [] },
-  });
-
-  // `tags` is a controlled array field (toggle chips) — RHF tracks it via watch/setValue.
-  const selectedTags = watch("tags") ?? [];
   function toggleTag(id: string) {
-    const next = selectedTags.includes(id)
-      ? selectedTags.filter((t) => t !== id)
-      : selectedTags.length < MAX_TAGS
-        ? [...selectedTags, id]
-        : selectedTags;
-    setValue("tags", next, { shouldDirty: true });
+    setTags((prev) =>
+      prev.includes(id)
+        ? prev.filter((t) => t !== id)
+        : prev.length < MAX_TAGS
+          ? [...prev, id]
+          : prev,
+    );
   }
 
-  function onSubmit(values: WorkflowDraftValues) {
-    setServerError(null);
+  function submit() {
+    if (isPending) return;
+    const parsed = workflowDraftSchema.safeParse({
+      title,
+      summary,
+      profession_id: professionId,
+      tags,
+    });
+    if (!parsed.success) {
+      const next: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? "");
+        if (key && !next[key]) next[key] = issue.message;
+      }
+      setErrors(next);
+      return;
+    }
+    setErrors({});
     startTransition(async () => {
-      const result = await createDraftAction(values);
+      const result = await createDraftAction(parsed.data);
       if (result?.error) {
-        setServerError(result.error);
         toast.error(result.error);
       } else if (result?.success && result.id) {
-        // Navigate client-side into the new draft's editor (the action no longer
-        // redirects — see createDraftAction; dialogs need a client-driven nav).
         if (onCreated) onCreated(result.id);
         else router.push(`/workflows/${result.id}/edit`);
       }
@@ -90,22 +93,19 @@ export function WorkflowForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="flex flex-col gap-5"
-    >
-      <section className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="title">Title</Label>
           <Input
             id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Product launch carousel"
             aria-invalid={errors.title ? true : undefined}
             aria-describedby={errors.title ? "title-error" : undefined}
-            {...register("title")}
           />
-          <FieldError id="title-error" message={errors.title?.message} />
+          <FieldError id="title-error" message={errors.title} />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -113,24 +113,26 @@ export function WorkflowForm({
           <Textarea
             id="summary"
             rows={3}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
             placeholder="A sentence on what this workflow does."
             aria-invalid={errors.summary ? true : undefined}
             aria-describedby={errors.summary ? "summary-error" : undefined}
-            {...register("summary")}
           />
-          <FieldError id="summary-error" message={errors.summary?.message} />
+          <FieldError id="summary-error" message={errors.summary} />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="profession_id">Profession</Label>
           <select
             id="profession_id"
+            value={professionId}
+            onChange={(e) => setProfessionId(e.target.value)}
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             aria-invalid={errors.profession_id ? true : undefined}
             aria-describedby={
               errors.profession_id ? "profession_id-error" : undefined
             }
-            {...register("profession_id")}
           >
             <option value="">Pick a profession…</option>
             {professions.map((p) => (
@@ -139,10 +141,7 @@ export function WorkflowForm({
               </option>
             ))}
           </select>
-          <FieldError
-            id="profession_id-error"
-            message={errors.profession_id?.message}
-          />
+          <FieldError id="profession_id-error" message={errors.profession_id} />
         </div>
 
         <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
@@ -157,8 +156,8 @@ export function WorkflowForm({
           ) : (
             <div className="flex flex-wrap gap-2">
               {allTags.map((t) => {
-                const on = selectedTags.includes(t.id);
-                const atMax = !on && selectedTags.length >= MAX_TAGS;
+                const on = tags.includes(t.id);
+                const atMax = !on && tags.length >= MAX_TAGS;
                 return (
                   <button
                     key={t.id}
@@ -178,33 +177,21 @@ export function WorkflowForm({
               })}
             </div>
           )}
-          <FieldError id="tags-error" message={errors.tags?.message} />
+          <FieldError id="tags-error" message={errors.tags} />
         </fieldset>
-      </section>
-
-      {serverError ? (
-        <p
-          className="text-sm text-destructive"
-          role="alert"
-          aria-live="assertive"
-        >
-          {serverError}
-        </p>
-      ) : null}
+      </div>
 
       <div className="flex items-center gap-3">
-        {/* onClick (not a native submit): base-ui Dialog's portal doesn't fire form
-            submits — the proven dialog pattern (ReportDialog) drives via onClick. */}
         <Button
           type="button"
           size="lg"
-          onClick={handleSubmit(onSubmit)}
+          onClick={submit}
           className="h-11 bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] shadow-[0_8px_20px_rgba(109,94,240,0.28)] hover:brightness-[1.04]"
           disabled={isPending}
         >
           {isPending ? "Saving…" : "Create draft"}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }

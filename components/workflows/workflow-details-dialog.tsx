@@ -1,10 +1,8 @@
 "use client";
 
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { updateDraftDetailsAction } from "@/app/(app)/workflows/actions";
 import { Button } from "@/components/ui/button";
@@ -38,10 +36,12 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 /**
  * "Workflow details" as an editbar Dialog (summary / profession / tags) — the mockup
- * keeps metadata OFF the full-screen canvas surface, so it lives behind a Details
- * button instead of a below-the-fold disclosure. Title is autosaved separately in the
- * editbar, so this never carries it. Saves via `updateDraftDetailsAction` (no redirect),
- * then closes + refreshes so the breadcrumb/skeleton profession re-sync.
+ * keeps metadata OFF the full-screen canvas surface. Title is autosaved separately in
+ * the editbar, so this never carries it.
+ *
+ * NOTE: controlled `useState` + onClick (NOT react-hook-form + a native form submit) —
+ * base-ui Dialog's portal doesn't fire form submits, so this follows the proven dialog
+ * pattern. See [[base-ui-dialog-submit-gotcha]].
  */
 export function WorkflowDetailsDialog({
   workflowId,
@@ -56,37 +56,42 @@ export function WorkflowDetailsDialog({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [summary, setSummary] = useState(defaultValues.summary);
+  const [professionId, setProfessionId] = useState(defaultValues.profession_id);
+  const [tags, setTags] = useState<string[]>(defaultValues.tags);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<WorkflowDetailsValues>({
-    resolver: standardSchemaResolver(workflowDetailsSchema),
-    mode: "onBlur",
-    defaultValues,
-  });
-
-  const selectedTags = watch("tags") ?? [];
   function toggleTag(id: string) {
-    const next = selectedTags.includes(id)
-      ? selectedTags.filter((t) => t !== id)
-      : selectedTags.length < MAX_TAGS
-        ? [...selectedTags, id]
-        : selectedTags;
-    setValue("tags", next, { shouldDirty: true });
+    setTags((prev) =>
+      prev.includes(id)
+        ? prev.filter((t) => t !== id)
+        : prev.length < MAX_TAGS
+          ? [...prev, id]
+          : prev,
+    );
   }
 
-  function onSubmit(values: WorkflowDetailsValues) {
-    setServerError(null);
+  function submit() {
+    if (isPending) return;
+    const parsed = workflowDetailsSchema.safeParse({
+      summary,
+      profession_id: professionId,
+      tags,
+    });
+    if (!parsed.success) {
+      const next: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? "");
+        if (key && !next[key]) next[key] = issue.message;
+      }
+      setErrors(next);
+      return;
+    }
+    setErrors({});
     startTransition(async () => {
-      const result = await updateDraftDetailsAction(workflowId, values);
+      const result = await updateDraftDetailsAction(workflowId, parsed.data);
       if (result?.error) {
-        setServerError(result.error);
         toast.error(result.error);
       } else if (result?.success) {
         toast.success("Details saved.");
@@ -111,34 +116,32 @@ export function WorkflowDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          className="flex flex-col gap-4 p-4 pt-1"
-        >
+        <div className="flex flex-col gap-4 p-4 pt-1">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="summary">Summary</Label>
             <Textarea
               id="summary"
               rows={3}
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
               placeholder="A sentence on what this workflow does."
               aria-invalid={errors.summary ? true : undefined}
               aria-describedby={errors.summary ? "summary-error" : undefined}
-              {...register("summary")}
             />
-            <FieldError id="summary-error" message={errors.summary?.message} />
+            <FieldError id="summary-error" message={errors.summary} />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="profession_id">Profession</Label>
             <select
               id="profession_id"
+              value={professionId}
+              onChange={(e) => setProfessionId(e.target.value)}
               className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
               aria-invalid={errors.profession_id ? true : undefined}
               aria-describedby={
                 errors.profession_id ? "profession_id-error" : undefined
               }
-              {...register("profession_id")}
             >
               <option value="">Pick a profession…</option>
               {professions.map((p) => (
@@ -149,7 +152,7 @@ export function WorkflowDetailsDialog({
             </select>
             <FieldError
               id="profession_id-error"
-              message={errors.profession_id?.message}
+              message={errors.profession_id}
             />
           </div>
 
@@ -165,8 +168,8 @@ export function WorkflowDetailsDialog({
             ) : (
               <div className="flex flex-wrap gap-2">
                 {allTags.map((t) => {
-                  const on = selectedTags.includes(t.id);
-                  const atMax = !on && selectedTags.length >= MAX_TAGS;
+                  const on = tags.includes(t.id);
+                  const atMax = !on && tags.length >= MAX_TAGS;
                   return (
                     <button
                       key={t.id}
@@ -186,31 +189,15 @@ export function WorkflowDetailsDialog({
                 })}
               </div>
             )}
-            <FieldError id="tags-error" message={errors.tags?.message} />
+            <FieldError id="tags-error" message={errors.tags} />
           </fieldset>
 
-          {serverError ? (
-            <p
-              className="text-sm text-destructive"
-              role="alert"
-              aria-live="assertive"
-            >
-              {serverError}
-            </p>
-          ) : null}
-
           <div className="flex justify-end gap-2 pt-1">
-            {/* onClick (not a native submit): base-ui Dialog's portal doesn't fire
-                form submits — drive via onClick like the proven ReportDialog. */}
-            <Button
-              type="button"
-              onClick={handleSubmit(onSubmit)}
-              disabled={isPending}
-            >
+            <Button type="button" onClick={submit} disabled={isPending}>
               {isPending ? "Saving…" : "Save details"}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
