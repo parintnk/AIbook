@@ -670,6 +670,70 @@ export async function updateDraft(
 }
 
 /**
+ * Rename a draft (title only) — the editor's inline-title autosave (no redirect).
+ * Owner+draft scoped; `.select()` makes a zero-row update a typed not_found.
+ */
+export async function renameDraft(
+  id: string,
+  title: string,
+): Promise<WorkflowResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { data, error } = await supabase
+    .from("workflows")
+    .update({ title })
+    .eq("id", id)
+    .eq("author_id", user.id)
+    .eq("status", "draft")
+    .select("id")
+    .maybeSingle();
+  if (error) return { ok: false, error: "db_error" };
+  if (!data) return { ok: false, error: "not_found" };
+  return { ok: true, id: data.id };
+}
+
+/**
+ * Update a draft's metadata EXCEPT the title (summary/profession/tags) — the editor's
+ * "Workflow details" disclosure. The title has its own inline autosave (`renameDraft`),
+ * so this never touches it (no overwrite race between the two). Owner+draft scoped.
+ */
+export async function updateDraftDetails(
+  id: string,
+  input: { summary: string | null; profession_id: string; tags: string[] },
+): Promise<WorkflowResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const patch: TablesUpdate<"workflows"> = {
+    summary: input.summary,
+    profession_id: input.profession_id,
+  };
+  const { data, error } = await supabase
+    .from("workflows")
+    .update(patch)
+    .eq("id", id)
+    .eq("author_id", user.id)
+    .eq("status", "draft")
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    if (error.code === "23503")
+      return { ok: false, error: "invalid_profession" };
+    return { ok: false, error: "db_error" };
+  }
+  if (!data) return { ok: false, error: "not_found" };
+  await replaceWorkflowTags(supabase, data.id, input.tags);
+  return { ok: true, id: data.id };
+}
+
+/**
  * Publish a draft (FR9/FR10 MOAT gate). Delegates to the `publish_workflow`
  * SECURITY DEFINER RPC — the ONLY path that may flip status→'published', since
  * the 2.1 column lock keeps status/published_at revoked from `authenticated` for

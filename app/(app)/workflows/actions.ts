@@ -44,7 +44,8 @@ import {
   forkWorkflow,
   getMyDraft,
   publishWorkflow,
-  updateDraft,
+  renameDraft,
+  updateDraftDetails,
 } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
 import { textOutputSchema } from "@/lib/validation/output";
@@ -57,6 +58,7 @@ import {
   skeletonIntakeSchema,
   type WorkflowFormState,
   type WorkflowNodeValues,
+  workflowDetailsSchema,
   workflowDraftSchema,
   workflowNodeSchema,
 } from "@/lib/validation/workflow";
@@ -120,16 +122,38 @@ export async function createDraftAction(
   redirect("/workflows");
 }
 
-export async function updateDraftAction(
+/**
+ * Inline-title autosave (editor editbar). Title only, no redirect — the editor
+ * stays put. `renameDraft` is owner+draft scoped; the title schema is the trust check.
+ */
+export async function renameDraftAction(
+  id: string,
+  title: unknown,
+): Promise<WorkflowFormState> {
+  const parsed = workflowDraftSchema.shape.title.safeParse(title);
+  if (!parsed.success) return { error: "Add a title." };
+
+  const result = await renameDraft(id, parsed.data);
+  if (!result.ok) return { error: message(result.error) };
+
+  revalidatePath("/workflows");
+  revalidatePath(`/workflows/${id}/edit`);
+  return { success: true };
+}
+
+/**
+ * Save the "Workflow details" disclosure (summary/profession/tags — never the title).
+ * No redirect; the editor stays put and the client toasts + refreshes.
+ */
+export async function updateDraftDetailsAction(
   id: string,
   values: unknown,
 ): Promise<WorkflowFormState> {
-  const parsed = workflowDraftSchema.safeParse(values);
+  const parsed = workflowDetailsSchema.safeParse(values);
   if (!parsed.success) return { error: "Please fix the highlighted fields." };
   const v = parsed.data;
 
-  const result = await updateDraft(id, {
-    title: v.title,
+  const result = await updateDraftDetails(id, {
     summary: v.summary.trim() || null,
     profession_id: v.profession_id,
     tags: v.tags,
@@ -138,10 +162,6 @@ export async function updateDraftAction(
 
   revalidatePath("/workflows");
   revalidatePath(`/workflows/${id}/edit`);
-  // No redirect — the editor stays put (mockup: keep editing the canvas after a
-  // metadata save). The client toasts "Saved" + router.refresh()es to re-sync the
-  // breadcrumb/skeleton profession. (createDraftAction still redirects: a fresh
-  // draft has no canvas yet, so /workflows is the right landing.)
   return { success: true };
 }
 

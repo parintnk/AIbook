@@ -1,8 +1,6 @@
-import { ShieldCheck } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
-import { PublishBar } from "@/components/workflows/publish-bar";
+import { WorkflowDetailsForm } from "@/components/workflows/workflow-details-form";
 import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-surface";
-import { WorkflowForm } from "@/components/workflows/workflow-form";
 import { getAiUsageToday } from "@/lib/services/ai/rate-limit";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
 import { listProfessions } from "@/lib/services/professions";
@@ -51,46 +49,27 @@ export default async function EditWorkflowPage({
 
   return (
     <div>
-      {/* Editor shell (workflow-editor mockup): the editbar carries the inline title,
-          autosave indicator, and the publish cluster; metadata tucks into a disclosure;
-          the canvas + Doctor own the page below. */}
-      <WorkflowForm
-        variant="editor"
-        professions={professions.map((p) => ({ id: p.id, name: p.name }))}
-        allTags={allTags}
-        draftId={draft.id}
-        professionName={draft.profession?.name ?? null}
-        defaultValues={{
-          title: draft.title,
-          summary: draft.summary ?? "",
-          profession_id: draft.profession_id,
-          tags: draft.tagIds,
-        }}
-        actionsSlot={
-          <>
-            <a
-              href="#doctor"
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 font-medium text-sm transition-colors hover:bg-accent"
-            >
-              <ShieldCheck width={15} height={15} aria-hidden="true" />
-              <span className="hidden sm:inline">Review with Doctor</span>
-            </a>
-            <PublishBar
-              workflowId={draft.id}
-              nodes={nodes}
-              outputsByNodeId={outputs}
-            />
-          </>
-        }
-      />
+      {/* The fused editor surface (workflow-editor mockup): editbar + tool rail +
+          canvas + Doctor in one container. Metadata lives in the disclosure below. */}
       <WorkflowEditorSurface
         workflowId={draft.id}
+        title={draft.title}
         nodes={nodes}
         edges={edges}
         outputsByNodeId={outputs}
         professionName={draft.profession?.name ?? null}
         skeletonUsedToday={skeletonUsed}
         doctorUsedToday={doctorUsed}
+      />
+      <WorkflowDetailsForm
+        workflowId={draft.id}
+        professions={professions.map((p) => ({ id: p.id, name: p.name }))}
+        allTags={allTags}
+        defaultValues={{
+          summary: draft.summary ?? "",
+          profession_id: draft.profession_id,
+          tags: draft.tagIds,
+        }}
       />
     </div>
   );

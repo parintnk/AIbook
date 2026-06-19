@@ -18,6 +18,15 @@ export const workflowDraftSchema = z.object({
 export type WorkflowDraftValues = z.infer<typeof workflowDraftSchema>;
 
 /**
+ * Draft metadata WITHOUT the title (the editor's "Workflow details" disclosure).
+ * The title is autosaved separately via `renameDraft`, so the details form never
+ * carries it — keeping the two saves from racing on the title column.
+ */
+export const workflowDetailsSchema = workflowDraftSchema.omit({ title: true });
+
+export type WorkflowDetailsValues = z.infer<typeof workflowDetailsSchema>;
+
+/**
  * A recipe-card node (Story 2.2 / FR6). `tool_name`, `prompt`, and `purpose` are
  * the required spine of a step; everything else is optional. `est_time`/`est_cost`
  * are free-text ("~5 min" / "$0.02"), never numeric. Optional text fields are

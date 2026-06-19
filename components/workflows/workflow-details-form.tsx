@@ -1,21 +1,21 @@
 "use client";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { createDraftAction } from "@/app/(app)/workflows/actions";
+import { updateDraftDetailsAction } from "@/app/(app)/workflows/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tag } from "@/lib/explore";
 import {
-  type WorkflowDraftValues,
-  workflowDraftSchema,
+  type WorkflowDetailsValues,
+  workflowDetailsSchema,
 } from "@/lib/validation/workflow";
+import type { ProfessionOption } from "./workflow-form";
 
-/** Max tags per workflow (mirrors `workflowDraftSchema.tags.max(6)`). */
 const MAX_TAGS = 6;
 
 function FieldError({ id, message }: { id: string; message?: string }) {
@@ -27,21 +27,24 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   );
 }
 
-export type ProfessionOption = { id: string; name: string };
-
 /**
- * Create a new workflow draft (Story 2.1) — the /new page's labelled card form.
- * On success `createDraftAction` redirects to /workflows (a fresh draft has no
- * canvas yet). Editing an existing draft's metadata happens in the editor's
- * "Workflow details" disclosure (`WorkflowDetailsForm`), not here.
+ * The editor's "Workflow details" disclosure (mockup keeps metadata OFF the canvas
+ * surface). Summary / profession / tags only — the title autosaves in the editbar.
+ * Collapsed by default below the fused editor; saves via `updateDraftDetailsAction`
+ * (no redirect) then toasts + refreshes so the breadcrumb/skeleton profession re-sync.
  */
-export function WorkflowForm({
+export function WorkflowDetailsForm({
+  workflowId,
   professions,
   allTags,
+  defaultValues,
 }: {
+  workflowId: string;
   professions: ProfessionOption[];
   allTags: Tag[];
+  defaultValues: WorkflowDetailsValues;
 }) {
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -50,14 +53,13 @@ export function WorkflowForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
-  } = useForm<WorkflowDraftValues>({
-    resolver: standardSchemaResolver(workflowDraftSchema),
+    formState: { errors, isDirty },
+  } = useForm<WorkflowDetailsValues>({
+    resolver: standardSchemaResolver(workflowDetailsSchema),
     mode: "onBlur",
-    defaultValues: { title: "", summary: "", profession_id: "", tags: [] },
+    defaultValues,
   });
 
-  // `tags` is a controlled array field (toggle chips) — RHF tracks it via watch/setValue.
   const selectedTags = watch("tags") ?? [];
   function toggleTag(id: string) {
     const next = selectedTags.includes(id)
@@ -68,37 +70,50 @@ export function WorkflowForm({
     setValue("tags", next, { shouldDirty: true });
   }
 
-  function onSubmit(values: WorkflowDraftValues) {
+  function onSubmit(values: WorkflowDetailsValues) {
     setServerError(null);
     startTransition(async () => {
-      const result = await createDraftAction(values);
-      // On success the action redirects; only errors come back here.
+      const result = await updateDraftDetailsAction(workflowId, values);
       if (result?.error) {
         setServerError(result.error);
         toast.error(result.error);
+      } else if (result?.success) {
+        toast.success("Details saved.");
+        router.refresh();
       }
     });
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="flex flex-col gap-6"
-    >
-      <section className="glass flex flex-col gap-4 rounded-card p-6">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            placeholder="e.g. Product launch carousel"
-            aria-invalid={errors.title ? true : undefined}
-            aria-describedby={errors.title ? "title-error" : undefined}
-            {...register("title")}
-          />
-          <FieldError id="title-error" message={errors.title?.message} />
-        </div>
+    <details className="group mt-4 overflow-hidden rounded-card border border-border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 font-medium text-sm transition-colors hover:bg-foreground/[0.02]">
+        <span className="flex items-center gap-2">
+          Workflow details
+          <span className="font-normal text-muted-foreground text-xs">
+            summary · profession · tags
+          </span>
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className="text-muted-foreground transition-transform group-open:rotate-180"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </summary>
 
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="flex flex-col gap-4 border-border border-t px-5 py-5"
+      >
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="summary">Summary</Label>
           <Textarea
@@ -171,28 +186,23 @@ export function WorkflowForm({
           )}
           <FieldError id="tags-error" message={errors.tags?.message} />
         </fieldset>
-      </section>
 
-      {serverError ? (
-        <p
-          className="text-sm text-destructive"
-          role="alert"
-          aria-live="assertive"
-        >
-          {serverError}
-        </p>
-      ) : null}
+        {serverError ? (
+          <p
+            className="text-sm text-destructive"
+            role="alert"
+            aria-live="assertive"
+          >
+            {serverError}
+          </p>
+        ) : null}
 
-      <div className="flex items-center gap-3">
-        <Button
-          type="submit"
-          size="lg"
-          className="h-11 bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] shadow-[0_8px_20px_rgba(109,94,240,0.28)] hover:brightness-[1.04]"
-          disabled={isPending}
-        >
-          {isPending ? "Saving…" : "Create draft"}
-        </Button>
-      </div>
-    </form>
+        <div>
+          <Button type="submit" size="sm" disabled={isPending || !isDirty}>
+            {isPending ? "Saving…" : "Save details"}
+          </Button>
+        </div>
+      </form>
+    </details>
   );
 }

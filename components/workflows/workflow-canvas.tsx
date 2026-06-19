@@ -428,7 +428,7 @@ function CanvasInner({
         : "Add a step";
 
   return (
-    <div className="relative flex h-[72vh] min-h-[560px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent">
+    <div className="relative flex h-[72vh] min-h-[560px] w-full overflow-hidden bg-[#f7f9fd] dark:bg-transparent">
       {/* LEFT TOOL RAIL (mockup `.toolrail`, 64px glass column) */}
       <aside className="z-20 flex w-16 shrink-0 flex-col items-center gap-2.5 border-foreground/[0.06] border-r bg-background/45 py-4 backdrop-blur-xl">
         <RailButton

@@ -7,16 +7,15 @@
  * ok/warn/bad pills map to --success/--warning/--destructive (the 3.3 trust-row + publish-blocked amber).
  */
 
+/* Fused right column of the editor grid (mockup `.doctor`): no own border/radius
+ * — the editor container draws the frame, the aside wrapper the divider. Grows with
+ * its content; the wrapper scrolls it on xl. */
 .doctor {
   width: 100%;
-  max-width: 340px;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
 /* ── Head (title + score) ── */
@@ -89,14 +88,12 @@
   border-color: color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
-/* ── Per-node list ── */
+/* ── Per-node list ── (flows; the aside wrapper scrolls the column on xl) */
 .list {
   padding: 13px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 420px;
-  overflow-y: auto;
 }
 
 .dnode {

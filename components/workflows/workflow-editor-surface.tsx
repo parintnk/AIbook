@@ -6,6 +6,7 @@ import { AI_FEATURE_CAPS } from "@/lib/ai";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
+import { WorkflowEditbar } from "./workflow-editbar";
 
 // The React Flow canvas is client-only + heavy → lazy-load with ssr:false. This
 // is legal ONLY inside a Client Component (Next 16 forbids ssr:false in an RSC),
@@ -16,7 +17,7 @@ const WorkflowCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[72vh] min-h-[560px] items-center justify-center rounded-card text-muted-foreground text-sm ring-1 ring-foreground/10">
+      <div className="flex h-[72vh] min-h-[560px] items-center justify-center text-muted-foreground text-sm">
         Loading canvas…
       </div>
     ),
@@ -24,13 +25,14 @@ const WorkflowCanvas = dynamic(
 );
 
 /**
- * Story 2.3 — the draft editor surface. Canvas-only: the linear list view was
- * removed (matching workflow-editor-light.html), so the React Flow canvas is the
- * single editing surface — best on desktop. The editor is auth-gated (no crawler /
- * SEO need for an SSR list, unlike the public viewer).
+ * Story 2.3 — the draft editor surface, fused into ONE bordered container to match
+ * `workflow-editor-{light,dark}.html`: the editbar sits on top (border-b); the body
+ * is the `1fr · doctor` grid (the tool rail lives INSIDE the canvas). Canvas-only —
+ * the linear list view was removed; metadata tucks into a disclosure below.
  */
 export function WorkflowEditorSurface({
   workflowId,
+  title,
   nodes,
   edges,
   outputsByNodeId,
@@ -39,6 +41,7 @@ export function WorkflowEditorSurface({
   doctorUsedToday,
 }: {
   workflowId: string;
+  title: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   outputsByNodeId: Record<string, NodeOutputView>;
@@ -47,8 +50,16 @@ export function WorkflowEditorSurface({
   doctorUsedToday: number;
 }) {
   return (
-    <section className="mt-6">
-      <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_30px_color-mix(in_srgb,var(--foreground)_8%,transparent)]">
+      <WorkflowEditbar
+        workflowId={workflowId}
+        initialTitle={title}
+        professionName={professionName}
+        nodes={nodes}
+        outputsByNodeId={outputsByNodeId}
+      />
+
+      <div className="grid xl:grid-cols-[1fr_320px]">
         <div className="min-w-0">
           <WorkflowCanvas
             workflowId={workflowId}
@@ -58,18 +69,13 @@ export function WorkflowEditorSurface({
             professionName={professionName}
             skeletonUsedToday={skeletonUsedToday}
           />
-          <p className="mt-3 text-muted-foreground text-xs md:hidden">
-            Tip: the visual canvas editor is best on a larger screen. The tool
-            rail (left) adds steps, seeds an AI skeleton, and fits the view.
-          </p>
         </div>
-        {/* Workflow Doctor (Story 11.3) — advisory pre-publish review. The mockup's
-            fixed right sidebar: sticks beside the canvas on xl, stacks below otherwise.
-            `id="doctor"` is the editbar "Review with Doctor" scroll target (scroll-mt
-            clears the sticky app nav). */}
+        {/* Workflow Doctor (Story 11.3) — the fused right column (mockup `.doctor`,
+            border-left). `id="doctor"` is the editbar "Review with Doctor" scroll
+            target; scroll-mt clears the sticky app nav. Scrolls internally on xl. */}
         <aside
           id="doctor"
-          className="scroll-mt-24 xl:sticky xl:top-20 xl:self-start"
+          className="scroll-mt-24 border-border max-xl:border-t xl:h-[72vh] xl:overflow-y-auto xl:border-l"
         >
           <DoctorPanel
             workflowId={workflowId}
@@ -78,6 +84,6 @@ export function WorkflowEditorSurface({
           />
         </aside>
       </div>
-    </section>
+    </div>
   );
 }
