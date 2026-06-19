@@ -64,25 +64,27 @@ export function WorkflowEditorSurface({
         />
       </div>
 
-      <div className="mt-6">
-        <WorkflowCanvas
-          workflowId={workflowId}
-          nodes={nodes}
-          edges={edges}
-          outputsByNodeId={outputsByNodeId}
-        />
-      </div>
-      <p className="mt-3 text-muted-foreground text-xs md:hidden">
-        Tip: the visual canvas editor is best on a larger screen.
-      </p>
-
-      {/* Workflow Doctor (Story 11.3) — advisory pre-publish review. */}
-      <div className="mt-6 flex justify-end">
-        <DoctorPanel
-          workflowId={workflowId}
-          usedToday={doctorUsedToday}
-          limit={AI_FEATURE_CAPS.doctor}
-        />
+      <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_340px]">
+        <div className="min-w-0">
+          <WorkflowCanvas
+            workflowId={workflowId}
+            nodes={nodes}
+            edges={edges}
+            outputsByNodeId={outputsByNodeId}
+          />
+          <p className="mt-3 text-muted-foreground text-xs md:hidden">
+            Tip: the visual canvas editor is best on a larger screen.
+          </p>
+        </div>
+        {/* Workflow Doctor (Story 11.3) — advisory pre-publish review. The mockup's
+            fixed right sidebar: sticks beside the canvas on xl, stacks below otherwise. */}
+        <aside className="xl:sticky xl:top-20 xl:self-start">
+          <DoctorPanel
+            workflowId={workflowId}
+            usedToday={doctorUsedToday}
+            limit={AI_FEATURE_CAPS.doctor}
+          />
+        </aside>
       </div>
     </section>
   );
