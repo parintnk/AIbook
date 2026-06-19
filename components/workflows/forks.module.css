@@ -1,0 +1,208 @@
+/*
+ * "My forks" cards — ported from the LOCKED mockup `myforks-light.html` (Story 5.2 / FR15).
+ * Structural values (radii, padding, sizes, shadows) are verbatim from the mockup; colours route
+ * through the app design tokens (globals.css :root/.dark) so the surface is dark-aware for free
+ * (the explore.module.css precedent). The thumbnail art is the shared `WorkflowThumb` (its own
+ * `.wthumb` + kit washes), so this module styles only the card chrome around it.
+ */
+
+/* Local glass-card chrome tokens (mirror explore.module.css) — defined on the page wrapper. */
+.forks {
+  --fk-line: var(--border);
+  --fk-line-soft: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --fk-hi: inset 0 1px 0 var(--glass-highlight);
+  --fk-shadow:
+    0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px
+    color-mix(in srgb, var(--foreground) 4%, transparent);
+  --fk-shadow-lg:
+    0 24px 60px color-mix(in srgb, var(--foreground) 14%, transparent), 0 2px
+    6px color-mix(in srgb, var(--foreground) 5%, transparent);
+  --fk-glow: color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+.forkgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 980px) {
+  .forkgrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .forkgrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fkcard {
+  position: relative;
+  background: var(--card);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--fk-line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--fk-shadow), var(--fk-hi);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.22s ease;
+}
+.fkcard:hover {
+  box-shadow:
+    var(--fk-shadow-lg),
+    0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent),
+    var(--fk-hi);
+  transform: translateY(-3px);
+}
+
+/* Status badge over the WorkflowThumb (top-left — the 8.1 sibling-overlay rule keeps it off the
+   thumbnail's top-right Save zone). */
+.thumbWrap {
+  position: relative;
+}
+.statusbadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--card) 92%, #fff);
+  backdrop-filter: blur(6px);
+}
+.statusDraft {
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+}
+.statusPub {
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
+}
+.statusbadge svg {
+  display: block;
+}
+
+.title {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 9px;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+
+/* Lineage chip — "Forked from @x". */
+.lineage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-foreground);
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  align-self: flex-start;
+  margin-bottom: 11px;
+  text-decoration: none;
+}
+.lineage:hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+.lineage svg {
+  color: var(--primary);
+}
+.lineage b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+/* Timestamp row. */
+.fkmeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 13px;
+}
+.fkago {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+  font-weight: 500;
+}
+.fkago svg {
+  color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+}
+
+/* Card actions (status-branched). */
+.fkact {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 13px;
+  border-top: 1px solid var(--fk-line-soft);
+}
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 15px;
+  border-radius: 12px;
+  flex: 1;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+.actPrimary {
+  background: linear-gradient(135deg, #7c6bff, #6d5ef0);
+  color: #fff;
+  box-shadow:
+    0 8px 20px var(--fk-glow),
+    var(--fk-hi);
+}
+.actPrimary:hover {
+  filter: brightness(1.04);
+  box-shadow:
+    0 12px 26px var(--fk-glow),
+    var(--fk-hi);
+}
+.actGhost {
+  background: color-mix(in srgb, var(--card) 80%, var(--background));
+  color: var(--foreground);
+  border: 1px solid var(--fk-line);
+  box-shadow: var(--fk-hi);
+}
+.actGhost:hover {
+  background: var(--card);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--accent-foreground);
+}
+
+/* Empty state (dashed glass — mirrors explore's `.empty`). */
+.empty {
+  border: 1px dashed var(--fk-line);
+  border-radius: var(--radius-card);
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--card) 50%, transparent);
+}
+.empty p {
+  margin-bottom: 14px;
+  font-size: 14px;
+}

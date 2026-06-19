@@ -14,9 +14,18 @@ import styles from "@/components/workflows/explore.module.css";
 // every feed; the media queries collapse it to 2/1 cols exactly like the real grid).
 const CARDS = ["a", "b", "c", "d", "e", "f"];
 
-export function CardGridSkeleton() {
+/**
+ * `gridClassName` overrides the grid container — /search passes its own 2-col `.results`
+ * (vs explore's 3-col `.feedgrid`); the cards themselves are WorkflowCards on both, so the
+ * inner `.wfcard` geometry is shared.
+ */
+export function CardGridSkeleton({
+  gridClassName,
+}: {
+  gridClassName?: string;
+} = {}) {
   return (
-    <div className={styles.feedgrid} aria-hidden="true">
+    <div className={gridClassName ?? styles.feedgrid} aria-hidden="true">
       {CARDS.map((k) => (
         <div key={k} className={styles.wfcard}>
           <div className={styles.wthumb}>

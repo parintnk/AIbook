@@ -291,18 +291,15 @@
 /* ── results grid ──────────────────────────────────────────────────────────── */
 .results {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
-@media (max-width: 980px) {
-  .results {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .results {
     grid-template-columns: 1fr;
   }
+}
+@media (max-width: 640px) {
   .queryline h1 {
     font-size: 22px;
   }

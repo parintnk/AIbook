@@ -21,7 +21,7 @@ export default function Loading() {
         <Skeleton className="h-8 w-24 rounded-full" />
         <Skeleton className="h-8 w-20 rounded-full" />
       </div>
-      <CardGridSkeleton />
+      <CardGridSkeleton gridClassName={styles.results} />
     </div>
   );
 }
