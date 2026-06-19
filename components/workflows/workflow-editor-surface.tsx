@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { DoctorPanel } from "@/components/ai/doctor-panel";
-import { SkeletonIntake } from "@/components/ai/skeleton-intake";
 import { AI_FEATURE_CAPS } from "@/lib/ai";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
@@ -17,7 +16,7 @@ const WorkflowCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="mt-6 flex h-[72vh] min-h-[560px] items-center justify-center rounded-card text-muted-foreground text-sm ring-1 ring-foreground/10">
+      <div className="flex h-[72vh] min-h-[560px] items-center justify-center rounded-card text-muted-foreground text-sm ring-1 ring-foreground/10">
         Loading canvas…
       </div>
     ),
@@ -49,24 +48,19 @@ export function WorkflowEditorSurface({
 }) {
   return (
     <section className="mt-6">
-      <div>
-        <SkeletonIntake
-          workflowId={workflowId}
-          professionName={professionName}
-          usedToday={skeletonUsedToday}
-        />
-      </div>
-
-      <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_340px]">
+      <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
         <div className="min-w-0">
           <WorkflowCanvas
             workflowId={workflowId}
             nodes={nodes}
             edges={edges}
             outputsByNodeId={outputsByNodeId}
+            professionName={professionName}
+            skeletonUsedToday={skeletonUsedToday}
           />
           <p className="mt-3 text-muted-foreground text-xs md:hidden">
-            Tip: the visual canvas editor is best on a larger screen.
+            Tip: the visual canvas editor is best on a larger screen. The tool
+            rail (left) adds steps, seeds an AI skeleton, and fits the view.
           </p>
         </div>
         {/* Workflow Doctor (Story 11.3) — advisory pre-publish review. The mockup's

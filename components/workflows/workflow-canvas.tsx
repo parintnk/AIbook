@@ -19,10 +19,20 @@ import {
   type NodeChange,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react";
+import {
+  LayoutGrid,
+  Maximize2,
+  MessageSquarePlus,
+  Plus,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -37,14 +47,7 @@ import {
   deleteNodeAction,
   updateNodePositionsAction,
 } from "@/app/(app)/workflows/actions";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { SkeletonIntake } from "@/components/ai/skeleton-intake";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
@@ -172,24 +175,71 @@ function nodeToValues(node: WorkflowNode): WorkflowNodeValues {
   };
 }
 
+// ── Left tool rail button (mockup `.toolbtn`) ────────────────────────────────
+function RailButton({
+  icon,
+  label,
+  onClick,
+  accent,
+  active,
+  disabled,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick?: () => void;
+  accent?: boolean;
+  active?: boolean;
+  disabled?: boolean;
+}) {
+  const tone = accent
+    ? "border-transparent bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] text-white shadow-[0_8px_20px_rgba(109,94,240,0.35)] hover:brightness-110"
+    : active
+      ? "border-primary/40 bg-primary/15 text-primary"
+      : "border-border bg-foreground/[0.03] text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      aria-pressed={active}
+      className={`group/rail relative flex size-[42px] items-center justify-center rounded-[13px] border transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:bg-foreground/[0.03] disabled:hover:text-muted-foreground ${tone}`}
+    >
+      {icon}
+      {/* hover label chip (mockup `.lbl`) — to the right of the rail */}
+      <span className="pointer-events-none absolute left-[calc(100%+11px)] z-50 whitespace-nowrap rounded-lg border border-border bg-popover px-2.5 py-1.5 font-medium text-foreground text-xs opacity-0 shadow-lg backdrop-blur-xl transition group-hover/rail:opacity-100">
+        {label}
+      </span>
+    </button>
+  );
+}
+
 function CanvasInner({
   workflowId,
   nodes: propNodes,
   edges: propEdges,
   outputsByNodeId,
+  professionName,
+  skeletonUsedToday,
 }: {
   workflowId: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   outputsByNodeId: Record<string, NodeOutputView>;
+  professionName: string | null;
+  skeletonUsedToday: number;
 }) {
   const router = useRouter();
+  const { fitView } = useReactFlow();
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const setNodes = useCanvasStore((s) => s.setNodes);
   const setEdges = useCanvasStore((s) => s.setEdges);
   const reset = useCanvasStore((s) => s.reset);
   const [editing, setEditing] = useState<Editing>(null);
+  // AI Skeleton intake inset (mockup bottom-left popover). Open by default on an
+  // empty draft (the helper that seeds a first chain); toggled from the rail after.
+  const [showSkeleton, setShowSkeleton] = useState(propNodes.length === 0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Seed (+ re-seed) the store from server data. The key changes only on a
@@ -370,133 +420,184 @@ function CanvasInner({
   );
 
   const editingMode = editing;
+  const inspectorTitle =
+    editing?.mode === "edit"
+      ? `Edit step ${editing.node.idx + 1}`
+      : editing?.mode === "splice"
+        ? "Insert a step"
+        : "Add a step";
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: double-click the empty canvas pane is a mouse-only add shortcut (AC1); the keyboard path is the "+ Add step" button
-    <div
-      className="relative h-[72vh] min-h-[560px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent"
-      onDoubleClick={(e) => {
-        if ((e.target as HTMLElement).classList.contains("react-flow__pane"))
-          setEditing({ mode: "new" });
-      }}
-    >
-      {/* Accent glow pooling in the canvas (mockup `.rfglow`). */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-[1]"
-        style={{
-          background:
-            "radial-gradient(600px 360px at 30% 30%, rgba(109,94,240,0.08), transparent 70%)",
-        }}
-      />
-      {/* Canvas bar (mockup `.canvas-bar`, editor copy) — pointer-events-none so pan
-          passes through; shows the live step count + the publish-blocked count. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-foreground/[0.05] border-b bg-background/65 px-[17px] py-[13px] backdrop-blur-xl">
-        <div className="flex items-center gap-2.5 font-semibold text-[13px] text-foreground">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" />
-          </svg>
-          Editing canvas
-          <span className="rounded-full bg-accent px-2.5 py-1 font-semibold text-[11px] text-accent-foreground">
-            {nodes.length} steps
-          </span>
-          {blockedNodes.size > 0 ? (
-            <span className="rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 font-semibold text-[11px] text-warning">
-              {blockedNodes.size} needs output
-            </span>
-          ) : null}
-        </div>
-        <div className="hidden items-center gap-2 text-[12px] text-muted-foreground lg:flex">
-          Drag to connect · double-click to edit
-        </div>
-      </div>
-      <div className="absolute top-[62px] left-3 z-10">
-        <Button
-          type="button"
-          size="sm"
+    <div className="relative flex h-[72vh] min-h-[560px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent">
+      {/* LEFT TOOL RAIL (mockup `.toolrail`, 64px glass column) */}
+      <aside className="z-20 flex w-16 shrink-0 flex-col items-center gap-2.5 border-foreground/[0.06] border-r bg-background/45 py-4 backdrop-blur-xl">
+        <RailButton
+          accent
+          label="Add step"
+          icon={<Plus width={20} height={20} aria-hidden="true" />}
           onClick={() => setEditing({ mode: "new" })}
-        >
-          + Add step
-        </Button>
-      </div>
-      <SpliceContext.Provider
-        value={(edge) => setEditing({ mode: "splice", edge })}
-      >
-        <BlockedNodesContext.Provider value={blockedNodes}>
-          <OutputsProvider outputsByNodeId={outputsByNodeId}>
-            <NodeActionsProvider actions={nodeActions}>
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeDragStop={onNodeDragStop}
-                onBeforeDelete={onBeforeDelete}
-                onNodesDelete={onNodesDelete}
-                onEdgesDelete={onEdgesDelete}
-                zoomOnDoubleClick={false}
-                fitView
-                proOptions={{ hideAttribution: true }}
-              >
-                <Background
-                  variant={BackgroundVariant.Dots}
-                  gap={24}
-                  size={1.1}
-                  color="rgba(128,128,150,0.18)"
-                />
-                <Controls />
-                <MiniMap
-                  pannable
-                  zoomable
-                  bgColor="transparent"
-                  maskColor="rgba(120,120,140,0.14)"
-                  nodeColor="rgba(109,94,240,0.6)"
-                  nodeStrokeWidth={0}
-                  className="!rounded-[14px]"
-                />
-              </ReactFlow>
-            </NodeActionsProvider>
-          </OutputsProvider>
-        </BlockedNodesContext.Provider>
-      </SpliceContext.Provider>
+        />
+        <div className="my-1 h-px w-7 bg-foreground/10" />
+        <RailButton
+          label="AI Skeleton"
+          active={showSkeleton}
+          icon={<Sparkles width={19} height={19} aria-hidden="true" />}
+          onClick={() => setShowSkeleton((v) => !v)}
+        />
+        <RailButton
+          disabled
+          label="Templates · soon"
+          icon={<LayoutGrid width={18} height={18} aria-hidden="true" />}
+        />
+        <RailButton
+          disabled
+          label="Comments · soon"
+          icon={<MessageSquarePlus width={18} height={18} aria-hidden="true" />}
+        />
+        <div className="flex-1" />
+        <RailButton
+          accent
+          label="Fit to view"
+          icon={<Maximize2 width={18} height={18} aria-hidden="true" />}
+          onClick={() => fitView({ padding: 0.2, duration: 300 })}
+        />
+      </aside>
 
-      <Sheet
-        open={editing !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditing(null);
+      {/* CENTER — the React Flow canvas surface */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: double-click the empty canvas pane is a mouse-only add shortcut (AC1); the keyboard path is the rail "Add step" button */}
+      <div
+        className="relative min-w-0 flex-1"
+        onDoubleClick={(e) => {
+          if ((e.target as HTMLElement).classList.contains("react-flow__pane"))
+            setEditing({ mode: "new" });
         }}
       >
-        <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>
-              {editing?.mode === "edit" ? "Edit step" : "Add step"}
-            </SheetTitle>
-            <SheetDescription>
-              {editing?.mode === "edit"
-                ? "Update this recipe card."
-                : editing?.mode === "splice"
-                  ? "Insert a step on this connector."
-                  : "Add a tool + prompt step to your workflow."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-6">
-            {editing ? (
+        {/* Accent glow pooling in the canvas (mockup `.rfglow`). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1]"
+          style={{
+            background:
+              "radial-gradient(600px 360px at 30% 30%, rgba(109,94,240,0.08), transparent 70%)",
+          }}
+        />
+        {/* Canvas bar (mockup `.canvas-bar`) — pointer-events-none so pan passes
+            through; shows the live step count + the publish-blocked count. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-foreground/[0.05] border-b bg-background/65 px-[17px] py-[13px] backdrop-blur-xl">
+          <div className="flex items-center gap-2.5 font-semibold text-[13px] text-foreground">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            Editing canvas
+            <span className="rounded-full bg-accent px-2.5 py-1 font-semibold text-[11px] text-accent-foreground">
+              {nodes.length} steps
+            </span>
+            {blockedNodes.size > 0 ? (
+              <span className="rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 font-semibold text-[11px] text-warning">
+                {blockedNodes.size} needs output
+              </span>
+            ) : null}
+          </div>
+          <div className="hidden items-center gap-2 text-[12px] text-muted-foreground lg:flex">
+            Drag to connect · double-click to edit
+          </div>
+        </div>
+
+        <SpliceContext.Provider
+          value={(edge) => setEditing({ mode: "splice", edge })}
+        >
+          <BlockedNodesContext.Provider value={blockedNodes}>
+            <OutputsProvider outputsByNodeId={outputsByNodeId}>
+              <NodeActionsProvider actions={nodeActions}>
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={nodeTypes}
+                  edgeTypes={edgeTypes}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onNodeDragStop={onNodeDragStop}
+                  onBeforeDelete={onBeforeDelete}
+                  onNodesDelete={onNodesDelete}
+                  onEdgesDelete={onEdgesDelete}
+                  zoomOnDoubleClick={false}
+                  fitView
+                  proOptions={{ hideAttribution: true }}
+                >
+                  <Background
+                    variant={BackgroundVariant.Dots}
+                    gap={24}
+                    size={1.1}
+                    color="rgba(128,128,150,0.18)"
+                  />
+                  <Controls />
+                  <MiniMap
+                    pannable
+                    zoomable
+                    bgColor="transparent"
+                    maskColor="rgba(120,120,140,0.14)"
+                    nodeColor="rgba(109,94,240,0.6)"
+                    nodeStrokeWidth={0}
+                    className="!rounded-[14px]"
+                  />
+                </ReactFlow>
+              </NodeActionsProvider>
+            </OutputsProvider>
+          </BlockedNodesContext.Provider>
+        </SpliceContext.Provider>
+
+        {/* AI Skeleton intake inset (mockup `.skeleton-intake`, bottom-left). */}
+        {showSkeleton ? (
+          <div className="absolute bottom-4 left-4 z-20 w-[300px] max-w-[calc(100%-2rem)]">
+            <SkeletonIntake
+              workflowId={workflowId}
+              professionName={professionName}
+              usedToday={skeletonUsedToday}
+            />
+          </div>
+        ) : null}
+
+        {/* INLINE INSPECTOR (mockup `.inspector`) — replaces the right drawer; the
+            existing NodeForm renders inside a floating glass panel on the canvas. */}
+        {editing ? (
+          <div className="absolute inset-y-3 right-3 z-30 flex w-[372px] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-[20px] border border-primary/40 bg-popover/95 shadow-[0_24px_70px_rgba(0,0,0,0.25)] ring-1 ring-primary/15 backdrop-blur-2xl">
+            <div className="flex items-center justify-between border-border/60 border-b px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="size-2 rounded-full bg-primary shadow-[0_0_10px_rgba(109,94,240,0.6)]"
+                />
+                <span className="font-heading font-bold text-[14px] tracking-tight">
+                  {inspectorTitle}
+                </span>
+                <span className="rounded-full bg-primary/12 px-2 py-0.5 font-bold text-[10px] text-primary uppercase tracking-[0.1em]">
+                  Editing
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                aria-label="Close inspector"
+                className="flex size-7 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition hover:bg-foreground/[0.05] hover:text-foreground"
+              >
+                <X width={15} height={15} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-5">
               <NodeForm
                 key={editing.mode === "edit" ? editing.node.id : editing.mode}
                 workflowId={workflowId}
@@ -518,10 +619,10 @@ function CanvasInner({
                   else void onCreated(newNodeId, mode);
                 }}
               />
-            ) : null}
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -529,12 +630,16 @@ function CanvasInner({
 /**
  * The React Flow authoring canvas (Story 2.3). Wrapped in ReactFlowProvider so
  * fitView + the instance store work. Reuses the shared RecipeCard as the node.
+ * The mockup's editor surface is fused here: a left tool rail, the canvas, an
+ * inline node inspector, and the AI Skeleton intake inset.
  */
 export function WorkflowCanvas(props: {
   workflowId: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   outputsByNodeId: Record<string, NodeOutputView>;
+  professionName: string | null;
+  skeletonUsedToday: number;
 }) {
   return (
     <ReactFlowProvider>
