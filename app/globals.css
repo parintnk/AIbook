@@ -66,7 +66,7 @@
   /* Glass surfaces */
   --card: rgba(255, 255, 255, 0.62);
   --card-foreground: #0f172a;
-  --popover: rgba(255, 255, 255, 0.85);
+  --popover: rgba(255, 255, 255, 0.98);
   --popover-foreground: #0f172a;
   --glass-highlight: rgba(255, 255, 255, 0.7);
   --glass-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
@@ -117,7 +117,7 @@
   /* Deliberate deviation from the glass token: popovers/menus float over
      arbitrary content and don't receive the glass backdrop-blur, so they use a
      near-opaque elevated navy for legibility (vs the 5% card glass). */
-  --popover: rgba(20, 27, 45, 0.92);
+  --popover: rgba(20, 27, 45, 0.98);
   --popover-foreground: #e6eaf3;
   --glass-highlight: rgba(255, 255, 255, 0.06);
   --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
