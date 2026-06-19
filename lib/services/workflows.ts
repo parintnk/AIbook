@@ -96,14 +96,20 @@ export type ForkResult =
   | { ok: true; forkId: string }
   | { ok: false; error: "not_authenticated" | "invalid_source" | "db_error" };
 
-const DRAFT_SELECT =
-  "*, profession:professions!workflows_profession_id_fkey(slug, name)";
+/**
+ * Every `workflows` column EXCEPT the heavy `search_vector` tsvector. No UI consumer
+ * reads `search_vector` (only the search service does, via its own query), yet `*` drags
+ * it on every row — wasteful on draft/fork lists + the viewer. Listing the columns
+ * explicitly drops it. (The narrow `CARD_SELECT` already excludes it for feed cards.)
+ */
+const WORKFLOW_COLS =
+  "author_id, created_at, failed_count, fork_count, id, last_verified_at, parent_id, profession_id, published_at, status, summary, title, tried_count, tweaked_count, updated_at, worked_count, worked_score";
 
-const PUBLISHED_SELECT =
-  "*, profession:professions!workflows_profession_id_fkey(slug, name), author:profiles!workflows_author_id_fkey(handle, display_name, avatar_url)";
+const DRAFT_SELECT = `${WORKFLOW_COLS}, profession:professions!workflows_profession_id_fkey(slug, name)`;
 
-const FORK_LIST_SELECT =
-  "*, profession:professions!workflows_profession_id_fkey(slug, name)";
+const PUBLISHED_SELECT = `${WORKFLOW_COLS}, profession:professions!workflows_profession_id_fkey(slug, name), author:profiles!workflows_author_id_fkey(handle, display_name, avatar_url)`;
+
+const FORK_LIST_SELECT = `${WORKFLOW_COLS}, profession:professions!workflows_profession_id_fkey(slug, name)`;
 
 /** The caller's own draft workflows, newest-updated first. RLS scopes to author. */
 export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {

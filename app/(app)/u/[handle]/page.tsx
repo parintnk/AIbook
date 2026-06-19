@@ -32,10 +32,13 @@ const STATS = [
 
 export default async function PublicProfilePage({ params }: Params) {
   const { handle } = await params;
-  const profile = await getProfileByHandle(handle);
+  // The public profile + the viewer's own profile are independent — fetch in parallel.
+  const [profile, me] = await Promise.all([
+    getProfileByHandle(handle),
+    getMyProfile(),
+  ]);
   if (!profile) notFound();
 
-  const me = await getMyProfile();
   const isOwner = me?.id === profile.id;
   // Verified badge (derived — a verified_pro in any profession) + my follow-state, in parallel.
   const [verified, following] = await Promise.all([

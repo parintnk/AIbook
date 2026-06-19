@@ -87,6 +87,20 @@ export async function getMyProfile(): Promise<ProfileWithStack | null> {
   return (data as ProfileWithStack | null) ?? null;
 }
 
+/** Just the caller's handle — for the /me redirect. Avoids the full profile +
+ *  ai_stack_items join that getMyProfile pulls (the redirect only needs the handle). */
+export const getMyHandle = cache(async (): Promise<string | null> => {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("profiles")
+    .select("handle")
+    .eq("id", user.id)
+    .maybeSingle();
+  return (data as { handle: string } | null)?.handle ?? null;
+});
+
 /** True when `handle` is free (optionally excluding the caller's own row). */
 export async function isHandleAvailable(
   handle: string,

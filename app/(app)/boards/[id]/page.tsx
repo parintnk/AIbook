@@ -38,14 +38,20 @@ export default async function BoardViewPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const res = await getBoard(id);
+  // The board header + its items are independent reads (both key off `id`) — fetch
+  // them in parallel with the viewer lookup instead of three serial round-trips.
+  const [
+    {
+      data: { user },
+    },
+    res,
+    { items: rawItems, total },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getBoard(id),
+    listBoardItems(id),
+  ]);
   if (!res.ok) notFound();
-
-  const { items: rawItems, total } = await listBoardItems(id);
   const signedIn = Boolean(user);
   // Thread the viewer's saved-state so an already-saved card shows a filled bookmark — the 8.1
   // saved-state lesson, applied to this NEW card surface (anon → empty set → all unsaved).
