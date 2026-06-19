@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,13 +27,16 @@ export function NewWorkflowDialog({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
+  // Set when a successful create navigates into the editor, so closing the dialog
+  // (which may fire as the route changes) doesn't also bounce to /workflows.
+  const navigating = useRef(false);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) router.push("/workflows");
+        if (!next && !navigating.current) router.push("/workflows");
       }}
     >
       <DialogContent className="sm:max-w-lg">
@@ -44,7 +47,14 @@ export function NewWorkflowDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="p-4 pt-1">
-          <WorkflowForm professions={professions} allTags={allTags} />
+          <WorkflowForm
+            professions={professions}
+            allTags={allTags}
+            onCreated={(id) => {
+              navigating.current = true;
+              router.push(`/workflows/${id}/edit`);
+            }}
+          />
         </div>
       </DialogContent>
     </Dialog>

@@ -200,7 +200,13 @@ export function WorkflowDetailsDialog({
           ) : null}
 
           <div className="flex justify-end gap-2 pt-1">
-            <Button type="submit" disabled={isPending}>
+            {/* onClick (not a native submit): base-ui Dialog's portal doesn't fire
+                form submits — drive via onClick like the proven ReportDialog. */}
+            <Button
+              type="button"
+              onClick={handleSubmit(onSubmit)}
+              disabled={isPending}
+            >
               {isPending ? "Saving…" : "Save details"}
             </Button>
           </div>

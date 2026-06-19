@@ -119,9 +119,11 @@ export async function createDraftAction(
   if (!result.ok) return { error: message(result.error) };
 
   revalidatePath("/workflows");
-  // Drop straight into the editor for the new draft (the "fill the details modal,
-  // then build the recipe on the canvas" flow), not back to the drafts list.
-  redirect(`/workflows/${result.id}/edit`);
+  // Return the id; the client navigates into the new draft's editor. (A server
+  // redirect() isn't used here because the create form lives in a base-ui Dialog,
+  // whose portal doesn't fire native form submits — the proven dialog pattern is a
+  // button onClick + client-side navigation.)
+  return { success: true, id: result.id };
 }
 
 /**

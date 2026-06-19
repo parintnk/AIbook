@@ -77,6 +77,8 @@ export const nodeIdsSchema = z.array(z.uuid()).max(1000);
 export type WorkflowFormState = {
   error?: string;
   success?: boolean;
+  /** New draft id from createDraftAction (the client navigates into its editor). */
+  id?: string;
   nodeId?: string;
   // Publish gate (Story 2.5): the nodes still lacking a sample output, so a
   // stale-client rejection can re-paint the amber blocked treatment.

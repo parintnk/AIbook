@@ -1,6 +1,7 @@
 "use client";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -38,10 +39,14 @@ export type ProfessionOption = { id: string; name: string };
 export function WorkflowForm({
   professions,
   allTags,
+  onCreated,
 }: {
   professions: ProfessionOption[];
   allTags: Tag[];
+  /** Called with the new draft id on success; defaults to navigating into its editor. */
+  onCreated?: (id: string) => void;
 }) {
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -72,10 +77,14 @@ export function WorkflowForm({
     setServerError(null);
     startTransition(async () => {
       const result = await createDraftAction(values);
-      // On success the action redirects; only errors come back here.
       if (result?.error) {
         setServerError(result.error);
         toast.error(result.error);
+      } else if (result?.success && result.id) {
+        // Navigate client-side into the new draft's editor (the action no longer
+        // redirects — see createDraftAction; dialogs need a client-driven nav).
+        if (onCreated) onCreated(result.id);
+        else router.push(`/workflows/${result.id}/edit`);
       }
     });
   }
@@ -184,9 +193,12 @@ export function WorkflowForm({
       ) : null}
 
       <div className="flex items-center gap-3">
+        {/* onClick (not a native submit): base-ui Dialog's portal doesn't fire form
+            submits — the proven dialog pattern (ReportDialog) drives via onClick. */}
         <Button
-          type="submit"
+          type="button"
           size="lg"
+          onClick={handleSubmit(onSubmit)}
           className="h-11 bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] shadow-[0_8px_20px_rgba(109,94,240,0.28)] hover:brightness-[1.04]"
           disabled={isPending}
         >
