@@ -374,7 +374,7 @@ function CanvasInner({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: double-click the empty canvas pane is a mouse-only add shortcut (AC1); the keyboard path is the "+ Add step" button
     <div
-      className="relative h-[70vh] w-full overflow-hidden rounded-card ring-1 ring-foreground/10"
+      className="relative h-[72vh] min-h-[560px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent"
       onDoubleClick={(e) => {
         if ((e.target as HTMLElement).classList.contains("react-flow__pane"))
           setEditing({ mode: "new" });
@@ -415,9 +415,18 @@ function CanvasInner({
                   variant={BackgroundVariant.Dots}
                   gap={24}
                   size={1.1}
+                  color="rgba(128,128,150,0.18)"
                 />
                 <Controls />
-                <MiniMap pannable zoomable />
+                <MiniMap
+                  pannable
+                  zoomable
+                  bgColor="transparent"
+                  maskColor="rgba(120,120,140,0.14)"
+                  nodeColor="rgba(109,94,240,0.6)"
+                  nodeStrokeWidth={0}
+                  className="!rounded-[14px]"
+                />
               </ReactFlow>
             </NodeActionsProvider>
           </OutputsProvider>
