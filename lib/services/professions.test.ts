@@ -30,6 +30,25 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+// listProfessions now uses the cookie-free anon client + unstable_cache. Mock the anon
+// client to resolve the same `queryMock`, and make unstable_cache a passthrough so the
+// wrapped fn runs directly in the test.
+vi.mock("@/lib/supabase/anon", () => ({
+  createAnonClient: () => {
+    const b = {
+      select: () => b,
+      eq: () => b,
+      in: () => b,
+      order: () => b,
+      limit: () => b,
+      // biome-ignore lint/suspicious/noThenProperty: intentionally thenable so an awaited query chain resolves.
+      then: (resolve: (v: unknown) => unknown) => resolve(queryMock()),
+    };
+    return { from: () => b };
+  },
+}));
+vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
+
 import {
   DEFAULT_HOUSE_RULES,
   getMyMembership,

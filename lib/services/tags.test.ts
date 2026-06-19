@@ -20,6 +20,23 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+// listTags now uses the cookie-free anon client + unstable_cache. Mock the anon client to
+// resolve the same `queryMock`, and passthrough unstable_cache so the wrapped fn runs.
+vi.mock("@/lib/supabase/anon", () => ({
+  createAnonClient: () => {
+    const b = {
+      select: () => b,
+      eq: () => b,
+      in: () => b,
+      order: () => b,
+      // biome-ignore lint/suspicious/noThenProperty: intentionally thenable so an awaited query chain resolves.
+      then: (resolve: (v: unknown) => unknown) => resolve(queryMock()),
+    };
+    return { from: () => b };
+  },
+}));
+vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
+
 import { createClient } from "@/lib/supabase/server";
 import { listProfessionTags, listTags, workflowIdsForTag } from "./tags";
 

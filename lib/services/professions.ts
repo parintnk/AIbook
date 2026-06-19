@@ -1,6 +1,8 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { houseRulesSchema } from "@/lib/profession-rules";
+import { createAnonClient } from "@/lib/supabase/anon";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/user";
@@ -30,15 +32,26 @@ export type ProfessionMod = {
   avatarUrl: string | null;
 };
 
-/** All professions, ordered by name — for the profile picker + landing lists. */
-export const listProfessions = cache(async (): Promise<Profession[]> => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("professions")
-    .select("*")
-    .order("name", { ascending: true });
-  return data ?? [];
-});
+/**
+ * All professions, ordered by name — for the profile picker + landing lists. Public seed
+ * data (RLS `using(true)`), hit on nearly every browse request, so it's cached ACROSS
+ * requests via `unstable_cache` (revalidate hourly) instead of re-querying every time.
+ * Uses the cookie-free anon client (unstable_cache forbids request data like cookies).
+ * A new profession lands via seed/migration → redeploy clears the cache; no runtime
+ * mutation path exists, so no `revalidateTag` wiring is needed today.
+ */
+export const listProfessions = unstable_cache(
+  async (): Promise<Profession[]> => {
+    const supabase = createAnonClient();
+    const { data } = await supabase
+      .from("professions")
+      .select("*")
+      .order("name", { ascending: true });
+    return data ?? [];
+  },
+  ["professions-list"],
+  { revalidate: 3600, tags: ["professions"] },
+);
 
 /** A single profession by its slug, or null. `cache()`-wrapped so a page + its
  * `generateMetadata` (Story 6.2) share one query. */

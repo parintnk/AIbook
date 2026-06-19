@@ -1,6 +1,7 @@
 import "server-only";
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Tag } from "@/lib/explore";
+import { createAnonClient } from "@/lib/supabase/anon";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -11,15 +12,25 @@ import { createClient } from "@/lib/supabase/server";
  * profession landing page's tag-filter chips.
  */
 
-/** All curated tags, label-sorted — the editor tag picker's option list. */
-export const listTags = cache(async (): Promise<Tag[]> => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("tags")
-    .select("id, slug, label")
-    .order("label", { ascending: true });
-  return (data as Tag[] | null) ?? [];
-});
+/**
+ * All curated tags, label-sorted — the editor tag picker's option list. Public seed data
+ * (RLS `using(true)`), so it's cached ACROSS requests via `unstable_cache` (revalidate
+ * hourly) rather than re-queried each request. Uses the cookie-free anon client
+ * (unstable_cache forbids cookies); tags change only via seed/migration → redeploy
+ * refreshes, so no `revalidateTag` wiring is needed today.
+ */
+export const listTags = unstable_cache(
+  async (): Promise<Tag[]> => {
+    const supabase = createAnonClient();
+    const { data } = await supabase
+      .from("tags")
+      .select("id, slug, label")
+      .order("label", { ascending: true });
+    return (data as Tag[] | null) ?? [];
+  },
+  ["tags-list"],
+  { revalidate: 3600, tags: ["tags"] },
+);
 
 /**
  * The distinct tags present on a profession's PUBLISHED workflows — the landing
