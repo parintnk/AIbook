@@ -380,7 +380,50 @@ function CanvasInner({
           setEditing({ mode: "new" });
       }}
     >
-      <div className="absolute top-3 left-3 z-10">
+      {/* Accent glow pooling in the canvas (mockup `.rfglow`). */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            "radial-gradient(600px 360px at 30% 30%, rgba(109,94,240,0.08), transparent 70%)",
+        }}
+      />
+      {/* Canvas bar (mockup `.canvas-bar`, editor copy) — pointer-events-none so pan
+          passes through; shows the live step count + the publish-blocked count. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-foreground/[0.05] border-b bg-background/65 px-[17px] py-[13px] backdrop-blur-xl">
+        <div className="flex items-center gap-2.5 font-semibold text-[13px] text-foreground">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          </svg>
+          Editing canvas
+          <span className="rounded-full bg-accent px-2.5 py-1 font-semibold text-[11px] text-accent-foreground">
+            {nodes.length} steps
+          </span>
+          {blockedNodes.size > 0 ? (
+            <span className="rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 font-semibold text-[11px] text-warning">
+              {blockedNodes.size} needs output
+            </span>
+          ) : null}
+        </div>
+        <div className="hidden items-center gap-2 text-[12px] text-muted-foreground lg:flex">
+          Drag to connect · double-click to edit
+        </div>
+      </div>
+      <div className="absolute top-[62px] left-3 z-10">
         <Button
           type="button"
           size="sm"
