@@ -20,8 +20,8 @@ export function AppNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-border border-b bg-background/90 backdrop-blur-xl backdrop-saturate-150">
-      <nav className="flex items-center gap-[18px] px-6 py-[13px]">
+    <header className="sticky top-0 z-40 h-16 border-border border-b bg-background/90 backdrop-blur-xl backdrop-saturate-150">
+      <nav className="flex h-full items-center gap-[18px] px-6">
         <BrandLogo />
 
         <ul className="hidden items-center gap-1 lg:flex">

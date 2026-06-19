@@ -4,9 +4,13 @@ import { Check, Pencil, ShieldCheck, Workflow } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { renameDraftAction } from "@/app/(app)/workflows/actions";
+import type { Tag } from "@/lib/explore";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
+import type { WorkflowDetailsValues } from "@/lib/validation/workflow";
 import { PublishBar } from "./publish-bar";
+import { WorkflowDetailsDialog } from "./workflow-details-dialog";
+import type { ProfessionOption } from "./workflow-form";
 
 /**
  * The editor editbar (mockup `.editbar`) — the top bar of the fused editor surface:
@@ -21,12 +25,18 @@ export function WorkflowEditbar({
   professionName,
   nodes,
   outputsByNodeId,
+  professions,
+  allTags,
+  detailsDefaults,
 }: {
   workflowId: string;
   initialTitle: string;
   professionName: string | null;
   nodes: WorkflowNode[];
   outputsByNodeId: Record<string, NodeOutputView>;
+  professions: ProfessionOption[];
+  allTags: Tag[];
+  detailsDefaults: WorkflowDetailsValues;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState<"saved" | "dirty" | "saving">("saved");
@@ -59,7 +69,7 @@ export function WorkflowEditbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-border border-b bg-background/60 px-4 py-3 backdrop-blur-xl">
+    <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3 border-border border-b bg-background/60 px-4 py-3 backdrop-blur-xl">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-gradient-to-br from-[#7c6bff] to-[#6d5ef0] text-white shadow-[0_6px_18px_rgba(109,94,240,0.35)]">
         <Workflow width={18} height={18} aria-hidden="true" />
       </span>
@@ -127,6 +137,12 @@ export function WorkflowEditbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        <WorkflowDetailsDialog
+          workflowId={workflowId}
+          professions={professions}
+          allTags={allTags}
+          defaultValues={detailsDefaults}
+        />
         <a
           href="#doctor"
           className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 font-medium text-sm transition-colors hover:bg-accent"

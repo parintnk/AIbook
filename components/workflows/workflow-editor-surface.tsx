@@ -3,10 +3,13 @@
 import dynamic from "next/dynamic";
 import { DoctorPanel } from "@/components/ai/doctor-panel";
 import { AI_FEATURE_CAPS } from "@/lib/ai";
+import type { Tag } from "@/lib/explore";
 import type { NodeOutputView } from "@/lib/services/node-outputs";
 import type { WorkflowEdge } from "@/lib/services/workflow-edges";
 import type { WorkflowNode } from "@/lib/services/workflow-nodes";
+import type { WorkflowDetailsValues } from "@/lib/validation/workflow";
 import { WorkflowEditbar } from "./workflow-editbar";
+import type { ProfessionOption } from "./workflow-form";
 
 // The React Flow canvas is client-only + heavy → lazy-load with ssr:false. This
 // is legal ONLY inside a Client Component (Next 16 forbids ssr:false in an RSC),
@@ -17,7 +20,7 @@ const WorkflowCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[72vh] min-h-[560px] items-center justify-center text-muted-foreground text-sm">
+      <div className="flex h-full min-h-[480px] items-center justify-center text-muted-foreground text-sm">
         Loading canvas…
       </div>
     ),
@@ -25,10 +28,11 @@ const WorkflowCanvas = dynamic(
 );
 
 /**
- * Story 2.3 — the draft editor surface, fused into ONE bordered container to match
- * `workflow-editor-{light,dark}.html`: the editbar sits on top (border-b); the body
- * is the `1fr · doctor` grid (the tool rail lives INSIDE the canvas). Canvas-only —
- * the linear list view was removed; metadata tucks into a disclosure below.
+ * Story 2.3 — the draft editor surface, ONE bordered container matching
+ * `workflow-editor-{light,dark}.html`: editbar (border-b) + a `1fr · doctor` body
+ * (the tool rail lives INSIDE the canvas). On xl it fills the viewport below the nav
+ * (full-bleed, no page scroll — the page wrapper sets the height); below xl it's a
+ * rounded card. Metadata lives behind the editbar's "Details" dialog, not on the canvas.
  */
 export function WorkflowEditorSurface({
   workflowId,
@@ -37,6 +41,9 @@ export function WorkflowEditorSurface({
   edges,
   outputsByNodeId,
   professionName,
+  professions,
+  allTags,
+  detailsDefaults,
   skeletonUsedToday,
   doctorUsedToday,
 }: {
@@ -46,21 +53,27 @@ export function WorkflowEditorSurface({
   edges: WorkflowEdge[];
   outputsByNodeId: Record<string, NodeOutputView>;
   professionName: string | null;
+  professions: ProfessionOption[];
+  allTags: Tag[];
+  detailsDefaults: WorkflowDetailsValues;
   skeletonUsedToday: number;
   doctorUsedToday: number;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_30px_color-mix(in_srgb,var(--foreground)_8%,transparent)]">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_30px_color-mix(in_srgb,var(--foreground)_8%,transparent)] xl:h-full xl:rounded-none xl:border-0 xl:shadow-none">
       <WorkflowEditbar
         workflowId={workflowId}
         initialTitle={title}
         professionName={professionName}
         nodes={nodes}
         outputsByNodeId={outputsByNodeId}
+        professions={professions}
+        allTags={allTags}
+        detailsDefaults={detailsDefaults}
       />
 
-      <div className="grid xl:grid-cols-[1fr_320px]">
-        <div className="min-w-0">
+      <div className="grid min-h-0 flex-1 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 xl:h-full">
           <WorkflowCanvas
             workflowId={workflowId}
             nodes={nodes}
@@ -75,7 +88,7 @@ export function WorkflowEditorSurface({
             target; scroll-mt clears the sticky app nav. Scrolls internally on xl. */}
         <aside
           id="doctor"
-          className="scroll-mt-24 border-border max-xl:border-t xl:h-[72vh] xl:overflow-y-auto xl:border-l"
+          className="scroll-mt-24 border-border max-xl:border-t xl:h-full xl:overflow-y-auto xl:border-l"
         >
           <DoctorPanel
             workflowId={workflowId}

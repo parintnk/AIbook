@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import { WorkflowDetailsForm } from "@/components/workflows/workflow-details-form";
 import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-surface";
 import { getAiUsageToday } from "@/lib/services/ai/rate-limit";
 import { listOutputViewsForWorkflow } from "@/lib/services/node-outputs";
@@ -47,10 +46,10 @@ export default async function EditWorkflowPage({
     getAiUsageToday("doctor"),
   ]);
 
+  // Full-screen editor on xl: fill the viewport below the 4rem nav, no page scroll
+  // (the surface owns its internal layout). Below xl it's a padded, scrollable card.
   return (
-    <div>
-      {/* The fused editor surface (workflow-editor mockup): editbar + tool rail +
-          canvas + Doctor in one container. Metadata lives in the disclosure below. */}
+    <div className="px-4 py-4 xl:h-[calc(100svh-4rem)] xl:overflow-hidden xl:p-0">
       <WorkflowEditorSurface
         workflowId={draft.id}
         title={draft.title}
@@ -58,18 +57,15 @@ export default async function EditWorkflowPage({
         edges={edges}
         outputsByNodeId={outputs}
         professionName={draft.profession?.name ?? null}
-        skeletonUsedToday={skeletonUsed}
-        doctorUsedToday={doctorUsed}
-      />
-      <WorkflowDetailsForm
-        workflowId={draft.id}
         professions={professions.map((p) => ({ id: p.id, name: p.name }))}
         allTags={allTags}
-        defaultValues={{
+        detailsDefaults={{
           summary: draft.summary ?? "",
           profession_id: draft.profession_id,
           tags: draft.tagIds,
         }}
+        skeletonUsedToday={skeletonUsed}
+        doctorUsedToday={doctorUsed}
       />
     </div>
   );
