@@ -86,8 +86,12 @@ export function WorkflowCanvasViewer({
           </div>
         </div>
         <ReactFlow
-          nodes={rfNodes}
-          edges={rfEdges}
+          // Uncontrolled (read-only viewer): React Flow owns the node/edge store so
+          // the MiniMap (which reads `store.nodes`) actually paints the node rects.
+          // Controlled `nodes` without `onNodesChange` left `store.nodes` unsynced →
+          // an empty minimap. Nodes/outputs are static post-SSR, so default-* is safe.
+          defaultNodes={rfNodes}
+          defaultEdges={rfEdges}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           nodesDraggable={false}
