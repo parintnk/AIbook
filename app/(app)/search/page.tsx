@@ -164,6 +164,10 @@ export default async function SearchPage({
           sort={sort}
         />
         <SearchResults
+          // Remount on any result-set change (query/profession/tag/sort) so the client list re-seeds
+          // from the fresh initialItems — without this, a filter chip's soft-nav leaves the previous
+          // results' useState in place until a full refresh (the 6.1 ExploreFeed key precedent).
+          key={`${sort}:${activeProfession ?? "all"}:${activeTag ?? "all"}:${query}`}
           query={query}
           professionId={professionId}
           tagIds={tagIds}
