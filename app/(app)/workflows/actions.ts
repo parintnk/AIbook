@@ -138,7 +138,11 @@ export async function updateDraftAction(
 
   revalidatePath("/workflows");
   revalidatePath(`/workflows/${id}/edit`);
-  redirect("/workflows");
+  // No redirect — the editor stays put (mockup: keep editing the canvas after a
+  // metadata save). The client toasts "Saved" + router.refresh()es to re-sync the
+  // breadcrumb/skeleton profession. (createDraftAction still redirects: a fresh
+  // draft has no canvas yet, so /workflows is the right landing.)
+  return { success: true };
 }
 
 export async function deleteDraftAction(

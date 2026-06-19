@@ -48,15 +48,8 @@ export function WorkflowEditorSurface({
   doctorUsedToday: number;
 }) {
   return (
-    <section className="mt-10">
+    <section className="mt-6">
       <div>
-        <h2 className="font-heading font-bold text-lg tracking-tight">Steps</h2>
-        <p className="mt-1 text-muted-foreground text-sm">
-          The recipe — connect tools into a flow.
-        </p>
-      </div>
-
-      <div className="mt-5">
         <SkeletonIntake
           workflowId={workflowId}
           professionName={professionName}
@@ -77,8 +70,13 @@ export function WorkflowEditorSurface({
           </p>
         </div>
         {/* Workflow Doctor (Story 11.3) — advisory pre-publish review. The mockup's
-            fixed right sidebar: sticks beside the canvas on xl, stacks below otherwise. */}
-        <aside className="xl:sticky xl:top-20 xl:self-start">
+            fixed right sidebar: sticks beside the canvas on xl, stacks below otherwise.
+            `id="doctor"` is the editbar "Review with Doctor" scroll target (scroll-mt
+            clears the sticky app nav). */}
+        <aside
+          id="doctor"
+          className="scroll-mt-24 xl:sticky xl:top-20 xl:self-start"
+        >
           <DoctorPanel
             workflowId={workflowId}
             usedToday={doctorUsedToday}

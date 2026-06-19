@@ -1,3 +1,4 @@
+import { ShieldCheck } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { PublishBar } from "@/components/workflows/publish-bar";
 import { WorkflowEditorSurface } from "@/components/workflows/workflow-editor-surface";
@@ -50,34 +51,38 @@ export default async function EditWorkflowPage({
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-xl font-bold tracking-tight">
-            Edit draft
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Update the basics, then build the recipe step by step.
-          </p>
-        </div>
-        <PublishBar
-          workflowId={draft.id}
-          nodes={nodes}
-          outputsByNodeId={outputs}
-        />
-      </div>
-      <div className="mt-8">
-        <WorkflowForm
-          professions={professions.map((p) => ({ id: p.id, name: p.name }))}
-          allTags={allTags}
-          draftId={draft.id}
-          defaultValues={{
-            title: draft.title,
-            summary: draft.summary ?? "",
-            profession_id: draft.profession_id,
-            tags: draft.tagIds,
-          }}
-        />
-      </div>
+      {/* Editor shell (workflow-editor mockup): the editbar carries the inline title,
+          autosave indicator, and the publish cluster; metadata tucks into a disclosure;
+          the canvas + Doctor own the page below. */}
+      <WorkflowForm
+        variant="editor"
+        professions={professions.map((p) => ({ id: p.id, name: p.name }))}
+        allTags={allTags}
+        draftId={draft.id}
+        professionName={draft.profession?.name ?? null}
+        defaultValues={{
+          title: draft.title,
+          summary: draft.summary ?? "",
+          profession_id: draft.profession_id,
+          tags: draft.tagIds,
+        }}
+        actionsSlot={
+          <>
+            <a
+              href="#doctor"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 font-medium text-sm transition-colors hover:bg-accent"
+            >
+              <ShieldCheck width={15} height={15} aria-hidden="true" />
+              <span className="hidden sm:inline">Review with Doctor</span>
+            </a>
+            <PublishBar
+              workflowId={draft.id}
+              nodes={nodes}
+              outputsByNodeId={outputs}
+            />
+          </>
+        }
+      />
       <WorkflowEditorSurface
         workflowId={draft.id}
         nodes={nodes}
