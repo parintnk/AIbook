@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sanitizeNext } from "@/lib/auth/redirect";
+import { persistPrimaryProfession } from "@/lib/onboarding-persist";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -28,6 +29,9 @@ export async function GET(request: Request): Promise<NextResponse> {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Story 12.2: carry the pre-auth onboarding pick (`?profession=` in `next`) onto the new
+      // profile. Best-effort + first-set-wins — never blocks the redirect.
+      await persistPrimaryProfession(supabase, next);
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { GoalStep } from "@/components/onboarding/goal-step";
 import { OnboardingHeader } from "@/components/onboarding/onboarding-header";
+import { OnboardingResume } from "@/components/onboarding/onboarding-resume";
 import { PreviewStep } from "@/components/onboarding/preview-step";
 import { ProfessionStep } from "@/components/onboarding/profession-step";
 import { goalBySlug } from "@/lib/onboarding";
@@ -65,6 +66,10 @@ export default async function WelcomePage({
 
   return (
     <>
+      <OnboardingResume
+        profession={profession?.slug ?? null}
+        goal={goal?.slug ?? null}
+      />
       <OnboardingHeader step={step} professionSlug={profession?.slug ?? null} />
       {panel}
     </>
