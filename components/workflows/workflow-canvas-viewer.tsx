@@ -61,7 +61,7 @@ export function WorkflowCanvasViewer({
 
   return (
     <ReactFlowProvider>
-      <div className="relative h-[570px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent">
+      <div className="relative h-[72vh] min-h-[560px] w-full overflow-hidden rounded-card bg-[#f7f9fd] ring-1 ring-foreground/10 dark:bg-transparent">
         {/* Accent glow pooling in the canvas (mockup `.rfglow`). */}
         <div
           aria-hidden="true"
