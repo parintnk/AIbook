@@ -45,7 +45,6 @@ export function WorkflowCanvasViewer({
         type: "recipe",
         position: { x: n.pos_x, y: n.pos_y },
         data: { node: n, output: outputsByNodeId[n.id] ?? null },
-        draggable: false,
       })),
     [nodes, outputsByNodeId],
   );
@@ -94,12 +93,12 @@ export function WorkflowCanvasViewer({
           defaultEdges={rfEdges}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
-          nodesDraggable={false}
+          // Viewers CAN drag cards to rearrange the canvas for their own reading —
+          // it's purely local (uncontrolled store, no onNodesChange/persist), so a
+          // refresh restores the author's saved layout. No connecting/deleting.
           nodesConnectable={false}
-          // elementsSelectable stays ON: with BOTH it and draggable off, React Flow
-          // drops pointer-events on nodes and the pane eats the click — the card
-          // needs the click for its viewer expand (AC2). The card shows no selection
-          // chrome in viewer mode, so RF selection is visually inert.
+          // elementsSelectable stays ON so the card still gets its click (the card
+          // owns click-to-expand, AC2); a drag moves, a plain click expands.
           elementsSelectable
           edgesFocusable={false}
           deleteKeyCode={null}
