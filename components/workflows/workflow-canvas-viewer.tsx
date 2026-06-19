@@ -107,10 +107,18 @@ export function WorkflowCanvasViewer({
             variant={BackgroundVariant.Dots}
             gap={24}
             size={1.1}
-            color="rgba(15,23,42,0.06)"
+            color="rgba(128,128,150,0.18)"
           />
           <Controls showInteractive={false} />
-          <MiniMap pannable zoomable />
+          <MiniMap
+            pannable
+            zoomable
+            bgColor="transparent"
+            maskColor="rgba(120,120,140,0.14)"
+            nodeColor="rgba(109,94,240,0.6)"
+            nodeStrokeWidth={0}
+            className="!rounded-[14px]"
+          />
         </ReactFlow>
       </div>
     </ReactFlowProvider>

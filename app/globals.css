@@ -215,3 +215,35 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* React Flow canvas chrome (viewer + editor) — theme-aware glass so the minimap and
+   zoom controls read as the app surface in BOTH light and dark, instead of the library's
+   default white boxes. The `.react-flow ` prefix raises specificity above the library
+   defaults regardless of stylesheet import order. */
+.react-flow .react-flow__minimap {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  overflow: hidden;
+}
+.react-flow .react-flow__controls {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.react-flow .react-flow__controls-button {
+  background-color: var(--card);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.react-flow .react-flow__controls-button:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+.react-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
