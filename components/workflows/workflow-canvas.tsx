@@ -80,6 +80,9 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
 
 // ── Connector edge with an inline "+" splice button (AC1) ────────────────────
 const SpliceContext = createContext<((edge: Edge) => void) | null>(null);
+// Remove a connector (disconnect two steps). The capability already existed via select-edge +
+// Delete key, but had no visible affordance — this context drives the inline "×" button.
+const RemoveEdgeContext = createContext<((edge: Edge) => void) | null>(null);
 
 // The set of blocked (missing sample output) node ids (Story 2.5). A connector
 // leading INTO a blocked step is drawn amber + dashed to match the mockup.
@@ -98,6 +101,7 @@ function ConnectorEdge({
   markerEnd,
 }: EdgeProps) {
   const onSplice = useContext(SpliceContext);
+  const onRemove = useContext(RemoveEdgeContext);
   const blockedNodes = useContext(BlockedNodesContext);
   const targetBlocked = blockedNodes.has(target);
   const [path, labelX, labelY] = getBezierPath({
@@ -121,30 +125,53 @@ function ConnectorEdge({
         }
       />
       <EdgeLabelRenderer>
-        <button
-          type="button"
-          // nopan/nodrag so the button works over the canvas surface.
-          className="nodrag nopan absolute flex size-6 items-center justify-center rounded-full border border-accent-foreground/30 bg-background text-accent-foreground shadow-sm transition hover:scale-110 hover:bg-accent"
+        <div
+          // nopan/nodrag so the buttons work over the canvas surface.
+          className="nodrag nopan absolute flex items-center gap-1.5"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: "all",
           }}
-          aria-label="Insert a step on this connector"
-          onClick={() => onSplice?.({ id, source, target } as Edge)}
         >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            aria-hidden="true"
+          <button
+            type="button"
+            className="flex size-6 items-center justify-center rounded-full border border-accent-foreground/30 bg-background text-accent-foreground shadow-sm transition hover:scale-110 hover:bg-accent"
+            aria-label="Insert a step on this connector"
+            onClick={() => onSplice?.({ id, source, target } as Edge)}
           >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="flex size-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition hover:scale-110 hover:border-destructive/40 hover:text-destructive"
+            aria-label="Disconnect these steps"
+            onClick={() => onRemove?.({ id, source, target } as Edge)}
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
       </EdgeLabelRenderer>
     </>
   );
@@ -358,6 +385,19 @@ function CanvasInner({
     },
     [workflowId, router],
   );
+  // The inline "×" on a connector — optimistic remove, then persist (mirrors onEdgesDelete,
+  // which the Delete key still triggers). No confirm: an edge carries no content.
+  const removeEdge = useCallback(
+    (edge: Edge) => {
+      setEdges((es) => es.filter((e) => e.id !== edge.id));
+      void (async () => {
+        const r = await deleteEdgeAction(workflowId, edge.id);
+        if (r?.error) toast.error(r.error);
+        router.refresh();
+      })();
+    },
+    [workflowId, router, setEdges],
+  );
 
   // The blocked node ids (missing a sample output), for the amber edge treatment.
   const blockedNodes = useMemo(
@@ -512,52 +552,55 @@ function CanvasInner({
             ) : null}
           </div>
           <div className="hidden items-center gap-2 text-[12px] text-muted-foreground lg:flex">
-            Drag to connect · double-click to edit
+            Drag to connect · + to insert · × to disconnect · double-click to
+            edit
           </div>
         </div>
 
         <SpliceContext.Provider
           value={(edge) => setEditing({ mode: "splice", edge })}
         >
-          <BlockedNodesContext.Provider value={blockedNodes}>
-            <OutputsProvider outputsByNodeId={outputsByNodeId}>
-              <NodeActionsProvider actions={nodeActions}>
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  nodeTypes={nodeTypes}
-                  edgeTypes={edgeTypes}
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={onConnect}
-                  onNodeDragStop={onNodeDragStop}
-                  onBeforeDelete={onBeforeDelete}
-                  onNodesDelete={onNodesDelete}
-                  onEdgesDelete={onEdgesDelete}
-                  zoomOnDoubleClick={false}
-                  fitView
-                  proOptions={{ hideAttribution: true }}
-                >
-                  <Background
-                    variant={BackgroundVariant.Dots}
-                    gap={24}
-                    size={1.1}
-                    color="rgba(128,128,150,0.18)"
-                  />
-                  <Controls />
-                  <MiniMap
-                    pannable
-                    zoomable
-                    bgColor="transparent"
-                    maskColor="rgba(120,120,140,0.14)"
-                    nodeColor="rgba(109,94,240,0.6)"
-                    nodeStrokeWidth={0}
-                    className="!rounded-[14px]"
-                  />
-                </ReactFlow>
-              </NodeActionsProvider>
-            </OutputsProvider>
-          </BlockedNodesContext.Provider>
+          <RemoveEdgeContext.Provider value={removeEdge}>
+            <BlockedNodesContext.Provider value={blockedNodes}>
+              <OutputsProvider outputsByNodeId={outputsByNodeId}>
+                <NodeActionsProvider actions={nodeActions}>
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onNodeDragStop={onNodeDragStop}
+                    onBeforeDelete={onBeforeDelete}
+                    onNodesDelete={onNodesDelete}
+                    onEdgesDelete={onEdgesDelete}
+                    zoomOnDoubleClick={false}
+                    fitView
+                    proOptions={{ hideAttribution: true }}
+                  >
+                    <Background
+                      variant={BackgroundVariant.Dots}
+                      gap={24}
+                      size={1.1}
+                      color="rgba(128,128,150,0.18)"
+                    />
+                    <Controls />
+                    <MiniMap
+                      pannable
+                      zoomable
+                      bgColor="transparent"
+                      maskColor="rgba(120,120,140,0.14)"
+                      nodeColor="rgba(109,94,240,0.6)"
+                      nodeStrokeWidth={0}
+                      className="!rounded-[14px]"
+                    />
+                  </ReactFlow>
+                </NodeActionsProvider>
+              </OutputsProvider>
+            </BlockedNodesContext.Provider>
+          </RemoveEdgeContext.Provider>
         </SpliceContext.Provider>
 
         {/* AI Skeleton intake inset (mockup `.skeleton-intake`, bottom-left). */}
