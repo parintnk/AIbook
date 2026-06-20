@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { urlOrEmpty } from "./url";
 
+// UUID *shape* only — NOT z.uuid(). The curated professions/tags are seeded with deterministic
+// placeholder ids (e.g. `00000000-0000-0000-0000-0000000e0003`) that are valid Postgres `uuid`s but
+// NOT RFC-4122 (the version/variant nibbles are 0), which zod v4's strict z.uuid() now rejects → a
+// false "Invalid UUID" on Create draft. The DB FK is the real guard that an id references a real row;
+// this only rejects non-uuid-shaped garbage. Real user ids (gen_random_uuid) pass either way.
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidLike = z.string().regex(UUID_SHAPE, "Invalid id");
+
 /**
  * Workflow draft metadata (Story 2.1). The DB FK is the real guard that
  * profession_id references a real profession; this checks shape + lengths.
@@ -8,11 +16,12 @@ import { urlOrEmpty } from "./url";
 export const workflowDraftSchema = z.object({
   title: z.string().trim().min(1, "Required").max(120, "Max 120 characters"),
   summary: z.string().trim().max(280, "Max 280 characters"),
-  profession_id: z.uuid("Pick a profession"),
+  // Empty "" (nothing picked) also fails the shape → the friendly message.
+  profession_id: z.string().regex(UUID_SHAPE, "Pick a profession"),
   // Curated tag ids (Story 6.2 / FR3). Up to 6 per workflow; the DB FK is the real
   // guard that each id is a real tag. The form always supplies this (default []),
   // so it's required here — keeping the schema's input/output types aligned for RHF.
-  tags: z.array(z.uuid()).max(6),
+  tags: z.array(uuidLike).max(6),
 });
 
 export type WorkflowDraftValues = z.infer<typeof workflowDraftSchema>;

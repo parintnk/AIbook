@@ -39,6 +39,17 @@ describe("workflowDraftSchema", () => {
     ).toBe(false);
   });
 
+  it("accepts seed placeholder ids that strict z.uuid() rejects (regression)", () => {
+    // The curated professions/tags are seeded with version-0 uuids — valid Postgres
+    // uuids but not RFC-4122; these must pass (the DB FK is the real guard).
+    const res = workflowDraftSchema.safeParse({
+      ...valid,
+      profession_id: "00000000-0000-0000-0000-0000000e0001",
+      tags: ["00000000-0000-0000-0000-0000000e0003"],
+    });
+    expect(res.success).toBe(true);
+  });
+
   it("rejects a blank title (after trim)", () => {
     expect(
       workflowDraftSchema.safeParse({ ...valid, title: "   " }).success,
