@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { type NotificationPrefs, resolvePrefs } from "@/lib/notification-prefs";
 import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/user";
@@ -187,6 +188,41 @@ export async function deleteMyAccount(): Promise<ServiceResult> {
       return { ok: false, error: "not_authenticated" };
     return { ok: false, error: "db_error" };
   }
+  return { ok: true };
+}
+
+/** The caller's notification preferences (Settings → Notifications), defaults merged in (missing
+ *  key = on). Anon → all-on defaults. */
+export async function getNotificationPrefs(): Promise<NotificationPrefs> {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return resolvePrefs(null);
+  const { data } = await supabase
+    .from("profiles")
+    .select("notification_prefs")
+    .eq("id", user.id)
+    .maybeSingle();
+  return resolvePrefs(
+    (data?.notification_prefs as Record<string, unknown> | null) ?? null,
+  );
+}
+
+/** Persist the caller's notification preferences (the full 7-key map; the `create_notification`
+ *  RPC reads it to skip muted types). RLS scopes the write to the owner. */
+export async function updateNotificationPrefs(
+  prefs: NotificationPrefs,
+): Promise<ServiceResult> {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ notification_prefs: prefs })
+    .eq("id", user.id)
+    .select("id")
+    .maybeSingle();
+  if (error) return { ok: false, error: "db_error" };
+  if (!data) return { ok: false, error: "not_found" };
   return { ok: true };
 }
 

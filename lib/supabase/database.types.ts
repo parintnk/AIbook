@@ -433,6 +433,7 @@ export type Database = {
           hire_me_url: string | null;
           hire_me_visible: boolean;
           id: string;
+          notification_prefs: Json;
           primary_profession_id: string | null;
           updated_at: string;
         };
@@ -447,6 +448,7 @@ export type Database = {
           hire_me_url?: string | null;
           hire_me_visible?: boolean;
           id: string;
+          notification_prefs?: Json;
           primary_profession_id?: string | null;
           updated_at?: string;
         };
@@ -461,6 +463,7 @@ export type Database = {
           hire_me_url?: string | null;
           hire_me_visible?: boolean;
           id?: string;
+          notification_prefs?: Json;
           primary_profession_id?: string | null;
           updated_at?: string;
         };

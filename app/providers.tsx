@@ -53,12 +53,20 @@ function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const enabled = Boolean(POSTHOG_KEY) && consent === "accepted";
   useEffect(() => {
-    if (!enabled || posthog.__loaded) return;
-    posthog.init(POSTHOG_KEY as string, {
-      api_host: POSTHOG_HOST,
-      // Modern preset: history-based pageview capture for App Router soft navs.
-      defaults: "2025-05-24",
-    });
+    if (!POSTHOG_KEY) return;
+    if (enabled) {
+      if (!posthog.__loaded) {
+        posthog.init(POSTHOG_KEY, {
+          api_host: POSTHOG_HOST,
+          // Modern preset: history-based pageview capture for App Router soft navs.
+          defaults: "2025-05-24",
+        });
+      }
+      posthog.opt_in_capturing();
+    } else if (posthog.__loaded) {
+      // Opt out immediately when the user revokes consent in Settings (no reload).
+      posthog.opt_out_capturing();
+    }
   }, [enabled]);
 
   const body = enabled ? (
