@@ -175,6 +175,22 @@ export async function replaceAiStack(
 }
 
 /**
+ * Permanently delete the caller's own account (owner flow) — the `delete_my_account` SECURITY
+ * DEFINER RPC deletes the `auth.users` row, which cascades the whole profile graph (workflows,
+ * comments, follows, …). The caller's session is dead afterward; the client signs out + redirects.
+ */
+export async function deleteMyAccount(): Promise<ServiceResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_my_account");
+  if (error) {
+    if (error.code === "42501")
+      return { ok: false, error: "not_authenticated" };
+    return { ok: false, error: "db_error" };
+  }
+  return { ok: true };
+}
+
+/**
  * True when the user is a `verified_pro` in ANY profession — drives the verified badge on the profile
  * hero (Story 9.1). DERIVED (a `profession_members` read), NOT a profiles column. Public-read.
  */

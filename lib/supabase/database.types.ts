@@ -1108,6 +1108,7 @@ export type Database = {
           quota: number;
         }[];
       };
+      delete_my_account: { Args: Record<string, never>; Returns: undefined };
       fork_workflow: { Args: { p_source_id: string }; Returns: string };
       generate_unique_handle: { Args: { seed: string }; Returns: string };
       is_profession_moderator: {
