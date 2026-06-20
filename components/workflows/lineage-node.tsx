@@ -2,6 +2,7 @@
 
 import { Handle, type Node, type NodeProps, Position } from "@xyflow/react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { workedPct } from "@/lib/explore";
 import type { LayoutAvatar, LineageNode } from "@/lib/lineage";
 import { cn } from "@/lib/utils";
 import styles from "./lineage.module.css";
@@ -56,8 +57,7 @@ const HANDLE = "!size-2 !border-0 !bg-transparent !min-w-0 !min-h-0";
  * crown + glow; current = "You are here" tag + brighter glow; off-focus context nodes dim. */
 export function LineageNodeCard({ data }: NodeProps<LineageFlowNode>) {
   const { node, isRoot, isCurrent, dimmed, direction } = data;
-  const worked =
-    node.triedCount > 0 ? Math.round(node.workedScore * 100) : null;
+  const worked = workedPct(node.workedScore, node.triedCount);
   const targetPos = direction === "LR" ? Position.Left : Position.Top;
   const sourcePos = direction === "LR" ? Position.Right : Position.Bottom;
 
