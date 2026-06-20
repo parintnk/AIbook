@@ -28,9 +28,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const profile = await getProfileByHandle(handle);
   if (!profile) return { title: "Profile not found — idea" };
   const name = profile.display_name ?? `@${profile.handle}`;
+  const title = `${name} (@${profile.handle}) — idea`;
+  const description = profile.bio ?? undefined;
   return {
-    title: `${name} (@${profile.handle}) — idea`,
-    description: profile.bio ?? undefined,
+    title,
+    description,
+    openGraph: { type: "profile", title, description },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

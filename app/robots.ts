@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const SITE =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://a-ibook-ivory.vercel.app";
+import { SITE_URL as SITE } from "@/lib/site";
 
 /**
  * Crawl rules — allow the public cookbook (explore / search / workflows / profiles /

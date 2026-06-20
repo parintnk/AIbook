@@ -53,6 +53,23 @@ export default async function SignUpPage({
           <span className="h-px flex-1 bg-border" />
         </div>
         <AuthForm mode="sign-up" next={next} initialError={initialError} />
+        <p className="text-center text-muted-foreground text-xs">
+          By signing up you agree to our{" "}
+          <Link
+            href="/terms"
+            className="text-foreground underline underline-offset-4"
+          >
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/privacy"
+            className="text-foreground underline underline-offset-4"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link

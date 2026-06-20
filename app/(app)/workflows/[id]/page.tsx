@@ -30,9 +30,13 @@ export async function generateMetadata({ params }: Params) {
   if (!wf) {
     return { title: "Workflow not available — idea", robots: { index: false } };
   }
+  const title = `${wf.title} — idea`;
+  const description = wf.summary ?? undefined;
   return {
-    title: `${wf.title} — idea`,
-    description: wf.summary ?? undefined,
+    title,
+    description,
+    openGraph: { type: "article", title, description },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

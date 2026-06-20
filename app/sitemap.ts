@@ -1,8 +1,6 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL as SITE } from "@/lib/site";
 import { createAnonClient } from "@/lib/supabase/anon";
-
-const SITE =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://a-ibook-ivory.vercel.app";
 
 /**
  * Dynamic sitemap — published workflows, their authors' profiles, and the community
@@ -34,6 +32,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/explore", priority: 0.9 },
     { path: "/search", priority: 0.7 },
     { path: "/communities", priority: 0.8 },
+    { path: "/privacy", priority: 0.3 },
+    { path: "/terms", priority: 0.3 },
   ].map(({ path, priority }) => ({
     url: `${SITE}${path}`,
     changeFrequency: "daily",
