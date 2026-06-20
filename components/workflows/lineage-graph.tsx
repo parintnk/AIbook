@@ -10,6 +10,8 @@ import {
   type Node,
   ReactFlow,
   ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
   useReactFlow,
 } from "@xyflow/react";
 import { useEffect, useMemo } from "react";
@@ -122,6 +124,17 @@ function Flow({
     return { rfNodes, rfEdges };
   }, [forest, currentId, focusPath, direction, sort, maxDepth, expanded]);
 
+  // Controlled WITH onNodesChange (not bare `nodes`): without a change handler React Flow
+  // can't write measured node dimensions back to the store, so the MiniMap draws zero-size
+  // (invisible) rects. useNodesState wires it; re-seed the state when the layout recomputes.
+  const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-seed on layout recompute (rfNodes/rfEdges identity) only.
+  useEffect(() => {
+    setNodes(rfNodes);
+    setEdges(rfEdges);
+  }, [rfNodes, rfEdges]);
+
   // Re-fit when the layout shape changes (direction / depth / sort / expand).
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-fit on layout-shape change only.
   useEffect(() => {
@@ -146,8 +159,10 @@ function Flow({
 
   return (
     <ReactFlow
-      nodes={rfNodes}
-      edges={rfEdges}
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
       nodesDraggable={false}
       nodesConnectable={false}
@@ -166,15 +181,23 @@ function Flow({
         }
       }}
     >
-      <Background variant={BackgroundVariant.Dots} gap={24} size={1.1} />
+      <Background
+        variant={BackgroundVariant.Dots}
+        gap={24}
+        size={1.1}
+        color="rgba(128,128,150,0.2)"
+      />
       <Controls showInteractive={false} position="bottom-right" />
       <MiniMap
         pannable
         zoomable
+        bgColor="transparent"
+        nodeStrokeWidth={0}
         nodeColor={(n) =>
           n.type === "forkBadge" ? "rgba(109,94,240,.4)" : "#6d5ef0"
         }
-        maskColor="rgba(109,94,240,.08)"
+        maskColor="rgba(109,94,240,.1)"
+        className="!rounded-[14px]"
       />
     </ReactFlow>
   );

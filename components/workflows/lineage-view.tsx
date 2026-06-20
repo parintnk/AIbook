@@ -98,7 +98,7 @@ export function LineageView({
     <div
       className={cn(
         styles.root,
-        "mt-6 overflow-hidden rounded-frame border border-border/60 shadow-sm",
+        "flex h-full flex-col overflow-hidden rounded-frame border border-border/60 shadow-sm xl:rounded-none xl:border-0 xl:shadow-none",
       )}
     >
       <div className={styles.linHead}>
@@ -268,7 +268,7 @@ export function LineageView({
           />
         </div>
       ) : (
-        <div className="max-h-[72vh] overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
           <LineageTreeList forest={forest} currentId={currentId} />
         </div>
       )}

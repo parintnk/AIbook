@@ -43,10 +43,10 @@ export default async function LineagePage({ params }: Params) {
   } = await supabase.auth.getUser();
 
   return (
-    <div>
+    <div className="flex flex-col px-4 py-4 xl:h-[calc(100svh-4rem)] xl:overflow-hidden xl:px-6 xl:py-4">
       <Link
         href={`/workflows/${id}`}
-        className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+        className="mb-3 inline-flex shrink-0 items-center gap-1.5 self-start text-muted-foreground text-sm hover:text-foreground"
       >
         <svg
           width="16"
@@ -64,13 +64,15 @@ export default async function LineagePage({ params }: Params) {
         Back to workflow
       </Link>
 
-      <LineageView
-        nodes={nodes}
-        rootId={originId}
-        currentId={id}
-        ancestryIds={ancestry.map((n) => n.id)}
-        signedIn={user != null}
-      />
+      <div className="min-h-0 flex-1">
+        <LineageView
+          nodes={nodes}
+          rootId={originId}
+          currentId={id}
+          ancestryIds={ancestry.map((n) => n.id)}
+          signedIn={user != null}
+        />
+      </div>
     </div>
   );
 }
