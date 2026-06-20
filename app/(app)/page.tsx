@@ -1,16 +1,11 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 
 /**
- * Root `/`. Anonymous visitors go to the pre-auth choose-your-path onboarding
- * (Story 12.1 / FR1 — "land cold → onboarding"); authenticated visitors go to the
- * Explore feed (the home). The old "Coming soon" splash was a dead-end. Reading auth
- * makes this route dynamic — fine for a single gate + redirect.
+ * Root `/` → the public Explore feed, the home for EVERYONE (anon can browse the
+ * cookbook freely). `/welcome` is the choose-your-path onboarding for new sign-ups —
+ * reached intentionally (a "Get started" / sign-up CTA, or right after registering),
+ * NOT forced on every anonymous visitor. No auth read → a plain static redirect.
  */
-export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  redirect(user ? "/explore" : "/welcome");
+export default function Home() {
+  redirect("/explore");
 }
