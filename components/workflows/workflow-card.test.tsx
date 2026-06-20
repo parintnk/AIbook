@@ -12,7 +12,8 @@ const base: WorkflowCardData = {
   professionName: "Web Developer",
   professionSlug: "web-developer",
   forkCount: 312,
-  workedScore: 0.95,
+  // worked_score is a weighted COUNT (worked + 0.5*tweaked); 38/40 tried → 95%.
+  workedScore: 38,
   triedCount: 40,
   publishedAt: null,
   thumb: { kind: "text", url: null },

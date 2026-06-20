@@ -11,13 +11,13 @@ import {
 describe("workedPct", () => {
   it("returns null when there are no tried votes", () => {
     expect(workedPct(0, 0)).toBeNull();
-    expect(workedPct(0.92, 0)).toBeNull();
+    expect(workedPct(5, 0)).toBeNull();
   });
 
-  it("rounds a 0–1 ratio to a whole percentage (mirrors the lineage panel)", () => {
-    expect(workedPct(0.92, 12)).toBe(92);
-    expect(workedPct(0.875, 8)).toBe(88); // rounds half up
-    expect(workedPct(1, 5)).toBe(100);
+  it("computes worked_score (a weighted COUNT) over tried as a whole percentage", () => {
+    expect(workedPct(11, 12)).toBe(92); // 11/12 = 91.67 → 92
+    expect(workedPct(7, 8)).toBe(88); // 87.5 → rounds half up
+    expect(workedPct(5, 5)).toBe(100);
   });
 });
 

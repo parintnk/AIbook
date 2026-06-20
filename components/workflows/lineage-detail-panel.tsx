@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { forkWorkflowAction } from "@/app/(app)/workflows/actions";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { workedPct } from "@/lib/explore";
 import { descendantCount, type LineageTreeNode } from "@/lib/lineage";
 import { cn } from "@/lib/utils";
 import styles from "./lineage.module.css";
@@ -55,8 +56,7 @@ export function LineageDetailPanel({
   const parent = path.length >= 2 ? path[path.length - 2] : null;
   const children = selected.children;
   const descendants = descendantCount(selected);
-  const worked =
-    selected.triedCount > 0 ? Math.round(selected.workedScore * 100) : null;
+  const worked = workedPct(selected.workedScore, selected.triedCount);
   const isDraft = selected.status === "draft";
   const openHref = isDraft
     ? `/workflows/${selected.id}/edit`

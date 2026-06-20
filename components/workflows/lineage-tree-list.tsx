@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { workedPct } from "@/lib/explore";
 import type { LineageTreeNode } from "@/lib/lineage";
 import { cn } from "@/lib/utils";
 
@@ -38,8 +39,7 @@ function TreeRow({
   const isCurrent = node.id === currentId;
   const isDraft = node.status === "draft";
   const href = isDraft ? `/workflows/${node.id}/edit` : `/workflows/${node.id}`;
-  const worked =
-    node.triedCount > 0 ? Math.round(node.workedScore * 100) : null;
+  const worked = workedPct(node.workedScore, node.triedCount);
   const shown = node.children.slice(0, COLLAPSE_K);
   const overflow = node.children.slice(COLLAPSE_K);
 

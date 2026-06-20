@@ -49,17 +49,19 @@ export const PAGE_SIZE = 12;
 
 /**
  * Worked-rate as a whole percentage, or null when there are no tried votes yet.
- * MIRRORS `lineage-detail-panel.tsx` so the chip reads identically across the app.
- * NOTE: `worked_score` is currently a weighted COUNT (`worked + 0.5*tweaked`) from the
- * Epic-4 recompute, while this multiplies by 100 as if it were a 0–1 ratio — a latent
- * Epic-4 mismatch (masked by the seed hand-setting ratios). 6.1 deliberately keeps the
- * existing formula for consistency; the real fix is logged in deferred-work (Epic 4).
+ * `worked_score` is the weighted SUCCESS COUNT (`worked + 0.5*tweaked`) and `tried_count`
+ * is the total tries (`worked+tweaked+failed`) — both from the Epic-4 recompute trigger
+ * (`20260617000001_outcome_votes.sql`). The rate is `worked_score / tried_count`, ×100 for
+ * a percentage. (Earlier this multiplied the count by 100 directly — correct only because
+ * seed data hand-set `worked_score` as a 0–1 ratio; real votes store a count, so the
+ * division is required. Keep `worked_score` a COUNT, not a rate, so the `top` sort's
+ * secondary key stays count-based and one lone "worked" vote can't rocket a row to #1.)
  */
 export function workedPct(
   workedScore: number,
   triedCount: number,
 ): number | null {
-  return triedCount > 0 ? Math.round(workedScore * 100) : null;
+  return triedCount > 0 ? Math.round((workedScore / triedCount) * 100) : null;
 }
 
 /** The 6 thumbnail wash keys (the mockup's `t-*` palette), in order. */
