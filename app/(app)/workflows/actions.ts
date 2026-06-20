@@ -9,9 +9,11 @@ import { generateSkeleton } from "@/lib/services/ai/skeleton";
 import {
   type CommentPage,
   type CommentSort,
+  type DeleteCommentResult,
   listCommentPage,
   type PostCommentResult,
   postComment,
+  softDeleteComment,
   type ToggleLikeResult,
   toggleCommentLike,
 } from "@/lib/services/comments";
@@ -513,6 +515,13 @@ export async function toggleCommentLikeAction(
   commentId: string,
 ): Promise<ToggleLikeResult> {
   return toggleCommentLike(commentId);
+}
+
+/** Soft-delete the caller's own comment (owner flows) — sets the tombstone, keeps replies. */
+export async function deleteCommentAction(
+  commentId: string,
+): Promise<DeleteCommentResult> {
+  return softDeleteComment(commentId);
 }
 
 /** Fetch the next page of top-level comments — the "Load more" affordance (read-only). */

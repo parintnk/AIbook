@@ -21,16 +21,20 @@ import { ReportMenu } from "./report-menu";
 export function CommentItem({
   comment,
   workflowAuthorId,
+  currentUserId,
   canInteract,
   onToggleLike,
   onReply,
+  onDelete,
   isReply = false,
 }: {
   comment: CommentView;
   workflowAuthorId: string;
+  currentUserId: string | null;
   canInteract: boolean;
   onToggleLike: (commentId: string) => void;
   onReply: (parentId: string, body: string) => void;
+  onDelete: (commentId: string) => void;
   isReply?: boolean;
 }) {
   const [replyOpen, setReplyOpen] = useState(false);
@@ -38,6 +42,7 @@ export function CommentItem({
   const handle = author?.handle ?? "unknown";
   const isAuthor = comment.author_id === workflowAuthorId;
   const deleted = comment.deleted_at != null;
+  const isMine = currentUserId != null && comment.author_id === currentUserId;
   // An un-reconciled optimistic comment still carries a temp id (not a real UUID) —
   // disable Reply/Like on it so we never send `temp-N` as a parent / like target.
   const isOptimistic = comment.id.startsWith("temp-");
@@ -110,12 +115,25 @@ export function CommentItem({
                 </span>
               ) : null}
             </button>
+            {isMine && !isOptimistic ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("Delete this comment?"))
+                    onDelete(comment.id);
+                }}
+                className="ml-auto inline-flex items-center gap-1.5 font-medium text-muted-foreground transition hover:text-destructive"
+              >
+                <TrashIcon className="size-3.5" />
+                Delete
+              </button>
+            ) : null}
             {canInteract ? (
               <ReportMenu
                 targetType="comment"
                 targetId={comment.id}
                 disabled={isOptimistic}
-                className="ml-auto"
+                className={isMine && !isOptimistic ? "" : "ml-auto"}
               />
             ) : null}
           </div>
@@ -140,9 +158,11 @@ export function CommentItem({
                 key={r.id}
                 comment={r}
                 workflowAuthorId={workflowAuthorId}
+                currentUserId={currentUserId}
                 canInteract={canInteract}
                 onToggleLike={onToggleLike}
                 onReply={onReply}
+                onDelete={onDelete}
                 isReply
               />
             ))}
@@ -180,6 +200,23 @@ function ReplyIcon({ className }: { className?: string }) {
     >
       <path d="M9 17 4 12l5-5" />
       <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </svg>
   );
 }

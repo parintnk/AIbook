@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
+  deleteCommentAction,
   loadMoreCommentsAction,
   postCommentAction,
   toggleCommentLikeAction,
@@ -168,6 +169,23 @@ export function CommentThread({
     });
   }
 
+  function deleteComment(commentId: string) {
+    if (!canComment) return;
+    const setDeleted = (at: string | null) => (c: CommentView) => ({
+      ...c,
+      deleted_at: at,
+    });
+    const nowIso = new Date().toISOString();
+    setComments((prev) => updateInTree(prev, commentId, setDeleted(nowIso)));
+    startTransition(async () => {
+      const res = await deleteCommentAction(commentId);
+      if (!res.ok) {
+        setComments((prev) => updateInTree(prev, commentId, setDeleted(null)));
+        toast.error("Couldn't delete your comment. Try again.");
+      }
+    });
+  }
+
   function loadMore() {
     if (isPending) return; // in-flight guard: a 2nd click must not re-fetch the same offset
     startTransition(async () => {
@@ -244,9 +262,11 @@ export function CommentThread({
               key={c.id}
               comment={c}
               workflowAuthorId={workflowAuthorId}
+              currentUserId={currentUser?.id ?? null}
               canInteract={canComment}
               onToggleLike={toggleLike}
               onReply={postReply}
+              onDelete={deleteComment}
             />
           ))
         )}

@@ -43,6 +43,10 @@ export type ToggleLikeResult =
   | { ok: true; liked: boolean }
   | { ok: false; error: "not_authenticated" | "db_error" };
 
+export type DeleteCommentResult =
+  | { ok: true }
+  | { ok: false; error: "not_authenticated" | "db_error" };
+
 export const COMMENTS_PAGE_SIZE = 10;
 
 const AUTHOR_SELECT =
@@ -219,4 +223,26 @@ export async function toggleCommentLike(
     );
   if (error) return { ok: false, error: "db_error" };
   return { ok: true, liked: true };
+}
+
+/**
+ * Soft-delete the caller's OWN comment (owner flows) — sets `deleted_at` so the viewer shows the
+ * "[comment removed]" tombstone and any replies survive (a hard DELETE would cascade them). RLS
+ * (`comments_softdelete_own` + the deleted_at-only column grant) is the real boundary; the explicit
+ * `author_id` filter just scopes the row. Idempotent: re-deleting an already-removed comment is fine.
+ */
+export async function softDeleteComment(
+  commentId: string,
+): Promise<DeleteCommentResult> {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .eq("author_id", user.id);
+  if (error) return { ok: false, error: "db_error" };
+  return { ok: true };
 }
