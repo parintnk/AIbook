@@ -126,6 +126,21 @@ export const listMyDrafts = cache(async (): Promise<DraftListItem[]> => {
   return (data as DraftListItem[] | null) ?? [];
 });
 
+/** The caller's own PUBLISHED workflows, newest-published first — the /workflows manager's
+ *  Published section (owner unpublish/delete controls). RLS scopes to author. */
+export const listMyPublished = cache(async (): Promise<DraftListItem[]> => {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return [];
+  const { data } = await supabase
+    .from("workflows")
+    .select(DRAFT_SELECT)
+    .eq("author_id", user.id)
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+  return (data as DraftListItem[] | null) ?? [];
+});
+
 /**
  * The caller's FORKS (workflows I authored that have a `parent_id`), newest-updated first — both
  * draft AND published (the row branches Edit/View on status). Each embeds the parent's title +
@@ -887,6 +902,53 @@ export async function deleteDraft(id: string): Promise<WorkflowResult> {
     .eq("id", id)
     .eq("author_id", user.id)
     .eq("status", "draft")
+    .select("id")
+    .maybeSingle();
+  if (error) return { ok: false, error: "db_error" };
+  if (!data) return { ok: false, error: "not_found" };
+  return { ok: true, id: data.id };
+}
+
+/**
+ * Unpublish a published workflow (owner flow) — flips it back to a private draft via the
+ * `unpublish_workflow` SECURITY DEFINER RPC (status/published_at are column-locked, so the
+ * RPC is the only authenticated path). The RPC re-asserts owner + published; a 42501 maps
+ * to not_found (codebase convention). Forks keep their parent_id; republishing restores it.
+ */
+export async function unpublishWorkflow(id: string): Promise<WorkflowResult> {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { error } = await supabase.rpc("unpublish_workflow", {
+    p_workflow_id: id,
+  });
+  if (error) {
+    if (error.code === "42501") return { ok: false, error: "not_found" };
+    return { ok: false, error: "db_error" };
+  }
+  return { ok: true, id };
+}
+
+/**
+ * Delete a published workflow (owner flow). `workflows_delete_own` RLS allows owner delete of
+ * ANY status; the explicit `status='published'` filter scopes this to the published manager
+ * (drafts have their own `deleteDraft`). Children's `parent_id` is `on delete set null`, so a
+ * fork survives as a detached root rather than cascading away.
+ */
+export async function deletePublishedWorkflow(
+  id: string,
+): Promise<WorkflowResult> {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const { data, error } = await supabase
+    .from("workflows")
+    .delete()
+    .eq("id", id)
+    .eq("author_id", user.id)
+    .eq("status", "published")
     .select("id")
     .maybeSingle();
   if (error) return { ok: false, error: "db_error" };

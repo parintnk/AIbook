@@ -43,10 +43,12 @@ import {
 import {
   createDraft,
   deleteDraft,
+  deletePublishedWorkflow,
   forkWorkflow,
   getMyDraft,
   publishWorkflow,
   renameDraft,
+  unpublishWorkflow,
   updateDraftDetails,
 } from "@/lib/services/workflows";
 import { createClient } from "@/lib/supabase/server";
@@ -177,6 +179,33 @@ export async function deleteDraftAction(
   const result = await deleteDraft(id);
   if (!result.ok) return { error: message(result.error) };
   revalidatePath("/workflows");
+  return { success: true };
+}
+
+/** Unpublish a published workflow (owner flow) → back to a private draft. Revalidates the
+ *  manager, the public detail page, and the author's profile feed (it drops a published row). */
+export async function unpublishWorkflowAction(
+  id: string,
+  authorHandle?: string,
+): Promise<WorkflowFormState> {
+  const result = await unpublishWorkflow(id);
+  if (!result.ok) return { error: message(result.error) };
+  revalidatePath("/workflows");
+  revalidatePath(`/workflows/${id}`);
+  if (authorHandle) revalidatePath(`/u/${authorHandle}`);
+  return { success: true };
+}
+
+/** Delete a published workflow (owner flow). Same revalidation surface as unpublish. */
+export async function deletePublishedWorkflowAction(
+  id: string,
+  authorHandle?: string,
+): Promise<WorkflowFormState> {
+  const result = await deletePublishedWorkflow(id);
+  if (!result.ok) return { error: message(result.error) };
+  revalidatePath("/workflows");
+  revalidatePath(`/workflows/${id}`);
+  if (authorHandle) revalidatePath(`/u/${authorHandle}`);
   return { success: true };
 }
 

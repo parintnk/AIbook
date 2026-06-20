@@ -1130,6 +1130,7 @@ export type Database = {
         }[];
       };
       publish_workflow: { Args: { p_workflow_id: string }; Returns: Json };
+      unpublish_workflow: { Args: { p_workflow_id: string }; Returns: undefined };
       reorder_workflow_nodes: {
         Args: { p_node_ids: string[]; p_workflow_id: string };
         Returns: undefined;
