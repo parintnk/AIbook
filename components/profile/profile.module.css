@@ -501,3 +501,164 @@
     var(--primary)
   );
 }
+
+/* contribution heatmap (the bento hero) */
+.heat {
+  padding: 18px 20px;
+}
+.heatTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.heatTotal {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+.heatTotal b {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.heatLegend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.heatLs {
+  display: flex;
+  gap: 3px;
+}
+.heatLs i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: block;
+}
+.heatScroll {
+  overflow: hidden;
+}
+.heatMonths {
+  display: flex;
+  gap: 0;
+  margin: 0 0 5px 22px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.heatMonths span {
+  flex: 1;
+  min-width: 0;
+}
+.heatBody {
+  display: flex;
+  gap: 4px;
+}
+.heatDays {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 18px;
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.heatDays i {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-style: normal;
+}
+.heatGrid {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.hcol {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.hcol i {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  display: block;
+}
+.hempty {
+  background: transparent;
+}
+.l0 {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+.l1 {
+  background: color-mix(in srgb, var(--primary) 28%, var(--card));
+}
+.l2 {
+  background: color-mix(in srgb, var(--primary) 50%, var(--card));
+}
+.l3 {
+  background: color-mix(in srgb, var(--primary) 75%, var(--card));
+}
+.l4 {
+  background: var(--primary);
+}
+
+/* badges */
+.badgesTile {
+  display: flex;
+  flex-direction: column;
+}
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-content: flex-start;
+}
+.badgePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 9px 14px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgb(15 23 42 / 6%));
+}
+.bic {
+  width: 23px;
+  height: 23px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.bViolet .bic {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--card));
+}
+.bAmber .bic {
+  color: #d97706;
+  background: color-mix(in srgb, #d97706 14%, var(--card));
+}
+.bEmerald .bic {
+  color: #059669;
+  background: color-mix(in srgb, #059669 14%, var(--card));
+}
+.bGold .bic {
+  color: #b45309;
+  background: color-mix(in srgb, #f59e0b 16%, var(--card));
+}

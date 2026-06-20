@@ -593,6 +593,8 @@ export type AuthorPublishedStats = {
   forksReceived: number;
   /** Aggregate worked-% across all the author's published workflows, or null if nothing tried. */
   workedPct: number | null;
+  /** Total tried votes across the author's published workflows (gates the worked-rate badge). */
+  triedCount: number;
 };
 
 /**
@@ -627,6 +629,7 @@ export async function getAuthorPublishedStats(
     published: rows.length,
     forksReceived,
     workedPct: workedPct(workedScore, triedCount),
+    triedCount,
   };
 }
 

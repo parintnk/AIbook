@@ -3,8 +3,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import styles from "@/components/profile/profile.module.css";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { ProfileBadges } from "@/components/profile/profile-badges";
+import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ProfilePublishedFeed } from "@/components/profile/profile-published-feed";
 import { ProfileSocial } from "@/components/profile/profile-social";
+import { deriveBadges } from "@/lib/profile-badges";
+import { getProfileActivity } from "@/lib/services/activity";
 import { getSavedWorkflowIds } from "@/lib/services/boards";
 import { getFollowState } from "@/lib/services/follows";
 import {
@@ -40,13 +44,18 @@ export default async function PublicProfilePage({ params }: Params) {
   if (!profile) notFound();
 
   const isOwner = me?.id === profile.id;
-  // Verified badge + follow-state + real contribution stats + first page of published, in parallel.
-  const [verified, following, stats, published] = await Promise.all([
+  // Verified badge + follow-state + stats + activity calendar + first page of published, in parallel.
+  const [verified, following, stats, activity, published] = await Promise.all([
     isVerifiedCreator(profile.id),
     me && !isOwner ? getFollowState(profile.id) : Promise.resolve(false),
     getAuthorPublishedStats(profile.id),
+    getProfileActivity(profile.id),
     listPublishedByAuthor({ authorId: profile.id }),
   ]);
+  const masterTools = profile.ai_stack_items
+    .filter((i) => i.skill_level >= 5)
+    .map((i) => i.tool_name);
+  const badges = deriveBadges({ verified, stats, masterTools });
   // Bookmark state for the SSR cards (empty for anon) — appended pages enrich in the action.
   const savedIds = await getSavedWorkflowIds(published.items.map((i) => i.id));
   const publishedItems = published.items.map((i) => ({
@@ -140,38 +149,48 @@ export default async function PublicProfilePage({ params }: Params) {
         })}
       </section>
 
-      {/* My AI Stack — self-rated skill bars (level/5). */}
-      {profile.ai_stack_items.length > 0 ? (
-        <section className={`${styles.tile} mt-4`}>
-          <div className={styles.tileH}>
-            <span className={styles.tileGlyph}>
-              <Layers width={18} height={18} aria-hidden="true" />
-            </span>
-            <h2 className={styles.tileTitle}>My AI Stack</h2>
-            <span className={styles.tileNote}>Self-rated</span>
-          </div>
-          <p className={styles.stackSub}>
-            The exact tools {profile.display_name ?? `@${profile.handle}`}{" "}
-            reaches for, with honest skill levels.
-          </p>
-          <div className={styles.stackList}>
-            {profile.ai_stack_items.map((item) => (
-              <div key={item.id} className={styles.stackRow}>
-                <div className={styles.stackTop}>
-                  <span className={styles.toolLogo}>
-                    {item.tool_name.charAt(0).toUpperCase()}
-                  </span>
-                  <span className={styles.toolName}>{item.tool_name}</span>
-                  <span className={styles.skPct}>{item.skill_level}/5</span>
+      {/* Contribution heatmap — real activity (publishes + comments + votes). */}
+      <section className="mt-4">
+        <ProfileHeatmap calendar={activity} />
+      </section>
+
+      {/* My AI Stack (skill bars) + auto-awarded Badges, side by side. */}
+      <section className="mt-4 grid gap-4 lg:grid-cols-2">
+        {profile.ai_stack_items.length > 0 ? (
+          <div className={styles.tile}>
+            <div className={styles.tileH}>
+              <span className={styles.tileGlyph}>
+                <Layers width={18} height={18} aria-hidden="true" />
+              </span>
+              <h2 className={styles.tileTitle}>My AI Stack</h2>
+              <span className={styles.tileNote}>Self-rated</span>
+            </div>
+            <p className={styles.stackSub}>
+              The exact tools {profile.display_name ?? `@${profile.handle}`}{" "}
+              reaches for, with honest skill levels.
+            </p>
+            <div className={styles.stackList}>
+              {profile.ai_stack_items.map((item) => (
+                <div key={item.id} className={styles.stackRow}>
+                  <div className={styles.stackTop}>
+                    <span className={styles.toolLogo}>
+                      {item.tool_name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className={styles.toolName}>{item.tool_name}</span>
+                    <span className={styles.skPct}>{item.skill_level}/5</span>
+                  </div>
+                  <div className={styles.skBar}>
+                    <span
+                      style={{ width: `${(item.skill_level / 5) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className={styles.skBar}>
-                  <span style={{ width: `${(item.skill_level / 5) * 100}%` }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </section>
-      ) : null}
+        ) : null}
+        <ProfileBadges badges={badges} />
+      </section>
 
       {/* Contributions — the author's published workflows (most forked first). */}
       <section className="mt-8">
