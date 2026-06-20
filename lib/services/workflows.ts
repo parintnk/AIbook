@@ -5,6 +5,7 @@ import {
   type ThumbKind,
   type WorkflowCardData,
   type WorkflowSort,
+  workedPct,
 } from "@/lib/explore";
 import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
@@ -585,6 +586,82 @@ export async function listNewThisWeek(limit = 10): Promise<WorkflowCardData[]> {
     offset: 0,
   });
   return items;
+}
+
+export type AuthorPublishedStats = {
+  published: number;
+  forksReceived: number;
+  /** Aggregate worked-% across all the author's published workflows, or null if nothing tried. */
+  workedPct: number | null;
+};
+
+/**
+ * Real contribution stats for a public profile (Story 9.x dashboard) — derived from the author's
+ * PUBLISHED rows only (public; RLS `status='published'` is the boundary). Counters live on the row
+ * (the recompute trigger keeps them current), so one lightweight select + a JS reduce gives the
+ * whole dashboard — no per-workflow round-trips. ponytail: fetches every published row to aggregate;
+ * at the v1 scale (tens per author) that's fine — page it if a creator ever has thousands.
+ */
+export async function getAuthorPublishedStats(
+  authorId: string,
+): Promise<AuthorPublishedStats> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("workflows")
+    .select("fork_count, worked_score, tried_count")
+    .eq("author_id", authorId)
+    .eq("status", "published");
+  const rows = (data ?? []) as Pick<
+    PublishedCardRow,
+    "fork_count" | "worked_score" | "tried_count"
+  >[];
+  let forksReceived = 0;
+  let workedScore = 0;
+  let triedCount = 0;
+  for (const r of rows) {
+    forksReceived += r.fork_count;
+    workedScore += r.worked_score;
+    triedCount += r.tried_count;
+  }
+  return {
+    published: rows.length,
+    forksReceived,
+    workedPct: workedPct(workedScore, triedCount),
+  };
+}
+
+/**
+ * A page of an author's PUBLISHED workflows for their profile feed (Story 9.x), most-forked first
+ * (the mockup's "Most forked" default; `id` tiebreak for deterministic offset pagination). Public —
+ * same CARD_SELECT + thumb resolution + `toCardData` shape as the Explore feed, so the profile grid
+ * reuses `WorkflowCard` verbatim.
+ */
+export async function listPublishedByAuthor(opts: {
+  authorId: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: WorkflowCardData[]; total: number }> {
+  const { authorId, limit = PAGE_SIZE, offset = 0 } = opts;
+  const supabase = await createClient();
+  const { data, count } = await supabase
+    .from("workflows")
+    .select(CARD_SELECT, { count: "exact" })
+    .eq("author_id", authorId)
+    .eq("status", "published")
+    .order("fork_count", { ascending: false })
+    .order("id", { ascending: false })
+    .range(offset, offset + limit - 1);
+  const rows = (data ?? []) as PublishedCardRow[];
+  const total = count ?? 0;
+  if (rows.length === 0) return { items: [], total };
+  const thumbs = await resolveThumbs(
+    supabase,
+    rows.map((r) => r.id),
+  );
+  const items = rows.map((r) =>
+    toCardData(r, thumbs.get(r.id) ?? { kind: null, url: null }),
+  );
+  return { items, total };
 }
 
 /**

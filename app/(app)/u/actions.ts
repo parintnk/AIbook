@@ -1,13 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { WorkflowCardData } from "@/lib/explore";
 import type { ProfileCardData } from "@/lib/follows";
+import { getSavedWorkflowIds } from "@/lib/services/boards";
 import {
   followUser,
   listFollowers,
   listFollowing,
   unfollowUser,
 } from "@/lib/services/follows";
+import { listPublishedByAuthor } from "@/lib/services/workflows";
 
 /**
  * Follow Server Actions (Story 9.1 / FR21). Auth + the no-self-follow invariant are enforced in the
@@ -64,4 +67,17 @@ export async function loadMoreFollowingAction(
   offset: number,
 ): Promise<LoadProfilesResult> {
   return listFollowing(profileId, offset);
+}
+
+/** Append the next page of an author's published workflows (the profile "Contributions" feed). */
+export async function loadMoreAuthorPublishedAction(
+  authorId: string,
+  offset: number,
+): Promise<{ items: WorkflowCardData[]; total: number }> {
+  const res = await listPublishedByAuthor({ authorId, offset });
+  const savedIds = await getSavedWorkflowIds(res.items.map((i) => i.id));
+  return {
+    items: res.items.map((i) => ({ ...i, saved: savedIds.has(i.id) })),
+    total: res.total,
+  };
 }

@@ -339,3 +339,165 @@
   color: var(--muted-foreground);
   padding: 28px 12px;
 }
+
+/*
+ * Story 9.x dashboard — the profile-{light,dark}.html bento (stat tiles + My AI Stack skill bars),
+ * ported through the app tokens like the hero above. Only the tiles backed by REAL data are kept:
+ * the heatmap / badges / verified-fresh / re-fork donuts in the mockup are fed by metrics we don't
+ * track yet, so they're deliberately omitted rather than faked on a live profile.
+ */
+.tile {
+  position: relative;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgb(15 23 42 / 6%));
+}
+
+/* stat row — Published / Forks received / Worked rate / Followers */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  justify-content: center;
+}
+.statIc {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);
+}
+.statNum {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  line-height: 1.05;
+}
+.statLbl {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+/* tile header (My AI Stack) */
+.tileH {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.tileGlyph {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-foreground);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 28%, transparent);
+  flex: 0 0 auto;
+}
+.tileTitle {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+.tileNote {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-left: auto;
+}
+.stackSub {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 14px;
+}
+
+/* AI stack skill bars */
+.stackList {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.stackRow {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.stackTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toolLogo {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  font-size: 12px;
+  flex: 0 0 auto;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 70%, white),
+    var(--primary)
+  );
+  box-shadow: var(--shadow-sm, 0 2px 8px rgb(15 23 42 / 6%));
+}
+.toolName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  flex: 1;
+  min-width: 0;
+}
+.skPct {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  flex: 0 0 auto;
+}
+.skBar {
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  overflow: hidden;
+}
+.skBar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 86%, white),
+    var(--primary)
+  );
+}
