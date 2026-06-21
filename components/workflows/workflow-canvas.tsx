@@ -15,6 +15,7 @@ import {
   EdgeLabelRenderer,
   type EdgeProps,
   getBezierPath,
+  MarkerType,
   MiniMap,
   type NodeChange,
   ReactFlow,
@@ -70,12 +71,21 @@ function toCanvasNodes(nodes: WorkflowNode[]): CanvasNode[] {
     data: { node: n },
   }));
 }
+// Direction (= step order) is shown by an arrowhead on each connector — no step numbers.
+const EDGE_MARKER = {
+  type: MarkerType.ArrowClosed,
+  width: 20,
+  height: 20,
+  color: "#94a3b8",
+} as const;
+
 function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
   return edges.map((e) => ({
     id: e.id,
     source: e.source_node_id,
     target: e.target_node_id,
     type: "connector",
+    markerEnd: EDGE_MARKER,
   }));
 }
 
@@ -326,7 +336,12 @@ function CanvasInner({
     (connection: Connection) => {
       const { source, target } = connection;
       if (!source || !target) return;
-      setEdges((es) => addEdge({ ...connection, type: "connector" }, es));
+      setEdges((es) =>
+        addEdge(
+          { ...connection, type: "connector", markerEnd: EDGE_MARKER },
+          es,
+        ),
+      );
       void (async () => {
         await flushPositions();
         const r = await createEdgeAction(workflowId, source, target);
@@ -493,7 +508,9 @@ function CanvasInner({
   const editingMode = editing;
   const inspectorTitle =
     editing?.mode === "edit"
-      ? `Edit step ${editing.node.idx + 1}`
+      ? editing.node.step_title
+        ? `Edit · ${editing.node.step_title}`
+        : "Edit step"
       : editing?.mode === "splice"
         ? "Insert a step"
         : "Add a step";

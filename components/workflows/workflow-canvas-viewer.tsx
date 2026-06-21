@@ -6,6 +6,7 @@ import {
   BackgroundVariant,
   Controls,
   type Edge,
+  MarkerType,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
@@ -18,9 +19,15 @@ import type { WorkflowNode } from "@/lib/services/workflow-nodes";
 import { RecipeViewerNode, type ViewerFlowNode } from "./recipe-viewer-node";
 
 const nodeTypes = { recipe: RecipeViewerNode };
-// Accent bezier edges — matches the mockup (#6D5EF0, 2.2px, 85% opacity).
+// Accent bezier edges with an arrowhead — direction shows step order (no numbers on the cards).
 const defaultEdgeOptions = {
   style: { stroke: "var(--primary)", strokeWidth: 2.2, opacity: 0.85 },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    width: 18,
+    height: 18,
+    color: "var(--primary)",
+  },
 } as const;
 
 /**

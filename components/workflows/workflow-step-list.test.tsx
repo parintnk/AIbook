@@ -80,14 +80,12 @@ describe("WorkflowStepList", () => {
     expect(container.querySelector("ol")).toBeInTheDocument();
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(2);
-    // Order: step 1 = ChatGPT, step 2 = Midjourney.
+    // Order: step 1 = ChatGPT, step 2 = Midjourney. The cards no longer carry a number
+    // badge (order is the connector arrows); the list's own "Step N of M" label numbers them.
     expect(within(items[0]).getByText("ChatGPT")).toBeInTheDocument();
-    expect(within(items[0]).getByText("1")).toBeInTheDocument();
+    expect(within(items[0]).getByText(/step 1 of 2/i)).toBeInTheDocument();
     expect(within(items[1]).getByText("Midjourney")).toBeInTheDocument();
-    expect(within(items[1]).getByText("2")).toBeInTheDocument();
-    // AC1: each step is announced with its step number to assistive tech (the card
-    // supplies the tool + state).
-    expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
+    expect(within(items[1]).getByText(/step 2 of 2/i)).toBeInTheDocument();
   });
 
   it("announces the edge source→target relationship (AC1)", () => {
@@ -156,9 +154,8 @@ describe("WorkflowStepList", () => {
         outputsByNodeId={{}}
       />,
     );
-    const items = screen.getAllByRole("listitem");
-    expect(within(items[1]).getByText("3")).toBeInTheDocument(); // card idx+1
-    expect(screen.getByText(/leads to step 3/i)).toBeInTheDocument(); // connector → same number
+    // The list still numbers by idx+1 in its own descriptors (the card has no number badge now).
+    expect(screen.getByText(/leads to step 3/i)).toBeInTheDocument(); // connector → idx+1
     expect(screen.getByText(/step 3 of 2/i)).toBeInTheDocument(); // sr-only → same number
   });
 

@@ -138,20 +138,24 @@ export function RecipeCard({
         aria-expanded={detailsOpen}
         className="flex w-full flex-col p-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        {/* Header: step number + title (left), est. time (right) */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 text-sm font-semibold tracking-tight">
-            <span className="text-primary">{node.idx + 1}</span>
+        {/* Header: step title (left), est. time (right). No step number — order is shown by the
+            arrows on the connectors, not a fixed index (a graph step has no single position). */}
+        {node.step_title || node.est_time ? (
+          <div className="flex items-start justify-between gap-2">
             {node.step_title ? (
-              <span className="text-foreground"> · {node.step_title}</span>
+              <div className="min-w-0 font-semibold text-foreground text-sm tracking-tight">
+                {node.step_title}
+              </div>
+            ) : (
+              <span />
+            )}
+            {node.est_time ? (
+              <span className="shrink-0 rounded-md border border-border/60 bg-foreground/[0.04] px-2 py-0.5 font-mono text-[10.5px] font-medium text-muted-foreground">
+                {node.est_time}
+              </span>
             ) : null}
           </div>
-          {node.est_time ? (
-            <span className="shrink-0 rounded-md border border-border/60 bg-foreground/[0.04] px-2 py-0.5 font-mono text-[10.5px] font-medium text-muted-foreground">
-              {node.est_time}
-            </span>
-          ) : null}
-        </div>
+        ) : null}
 
         {/* Tool chip (mono, accent-tinted, vendor-neutral gradient glyph) */}
         <span className="mt-2.5 inline-flex items-center gap-1.5 self-start rounded-md border border-accent-foreground/20 bg-accent px-2.5 py-1 font-mono text-[11px] font-semibold text-accent-foreground">

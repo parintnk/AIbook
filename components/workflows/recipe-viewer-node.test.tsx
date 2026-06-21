@@ -39,7 +39,6 @@ describe("RecipeViewerNode", () => {
       </ReactFlowProvider>,
     );
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument(); // idx 0 → step 1
     // Collapsed by default — details hidden until clicked (viewer mode).
     expect(screen.queryByText(wf.purpose)).not.toBeInTheDocument();
     expect(

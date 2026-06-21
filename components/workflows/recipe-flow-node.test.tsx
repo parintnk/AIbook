@@ -41,7 +41,6 @@ describe("RecipeFlowNode", () => {
     );
     // The shared recipe card renders as the node body.
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument(); // idx 0 → step 1
     // Source + target connection handles.
     expect(
       container.querySelectorAll(".react-flow__handle").length,

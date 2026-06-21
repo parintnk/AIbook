@@ -24,9 +24,9 @@ const node: WorkflowNode = {
 };
 
 describe("RecipeCard", () => {
-  it("renders the step number, tool chip, and a prompt preview, collapsed by default", () => {
+  it("renders the step title, tool chip, and a prompt preview, collapsed by default", () => {
     render(<RecipeCard node={node} mode="viewer" />);
-    expect(screen.getByText("1")).toBeInTheDocument(); // idx 0 → step 1
+    // No step-number badge — order is shown by the connector arrows, not a fixed index.
     expect(screen.getByText("ChatGPT")).toBeInTheDocument();
     expect(screen.getByText(/Define brand direction/)).toBeInTheDocument();
     expect(screen.getByText(node.prompt)).toBeInTheDocument(); // collapsed preview
