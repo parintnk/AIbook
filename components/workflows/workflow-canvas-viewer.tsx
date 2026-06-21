@@ -24,8 +24,8 @@ const defaultEdgeOptions = {
   style: { stroke: "var(--primary)", strokeWidth: 2.2, opacity: 0.85 },
   markerEnd: {
     type: MarkerType.ArrowClosed,
-    width: 18,
-    height: 18,
+    width: 26,
+    height: 26,
     color: "var(--primary)",
   },
 } as const;

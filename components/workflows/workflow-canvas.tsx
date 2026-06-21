@@ -71,13 +71,19 @@ function toCanvasNodes(nodes: WorkflowNode[]): CanvasNode[] {
     data: { node: n },
   }));
 }
-// Direction (= step order) is shown by an arrowhead on each connector — no step numbers.
-const EDGE_MARKER = {
-  type: MarkerType.ArrowClosed,
-  width: 20,
-  height: 20,
-  color: "#94a3b8",
-} as const;
+// Direction (= step order) is shown by a bold arrowhead on each connector — no step numbers.
+// Amber/gold when the target step is still missing its sample output (blocked), accent otherwise;
+// the arrow matches its line colour so it reads as one prominent connector.
+const EDGE_ACCENT = "#6d5ef0";
+const EDGE_BLOCKED = "#d97706";
+function edgeMarker(blocked: boolean) {
+  return {
+    type: MarkerType.ArrowClosed,
+    width: 26,
+    height: 26,
+    color: blocked ? EDGE_BLOCKED : EDGE_ACCENT,
+  } as const;
+}
 
 function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
   return edges.map((e) => ({
@@ -85,7 +91,7 @@ function toFlowEdges(edges: WorkflowEdge[]): Edge[] {
     source: e.source_node_id,
     target: e.target_node_id,
     type: "connector",
-    markerEnd: EDGE_MARKER,
+    markerEnd: edgeMarker(false),
   }));
 }
 
@@ -131,8 +137,8 @@ function ConnectorEdge({
         markerEnd={markerEnd}
         style={
           targetBlocked
-            ? { stroke: "var(--warning)", strokeDasharray: "6 5" }
-            : undefined
+            ? { stroke: EDGE_BLOCKED, strokeWidth: 2, strokeDasharray: "6 5" }
+            : { stroke: EDGE_ACCENT, strokeWidth: 2 }
         }
       />
       <EdgeLabelRenderer>
@@ -338,7 +344,7 @@ function CanvasInner({
       if (!source || !target) return;
       setEdges((es) =>
         addEdge(
-          { ...connection, type: "connector", markerEnd: EDGE_MARKER },
+          { ...connection, type: "connector", markerEnd: edgeMarker(false) },
           es,
         ),
       );
@@ -421,6 +427,18 @@ function CanvasInner({
     () =>
       new Set(propNodes.filter((n) => !outputsByNodeId[n.id]).map((n) => n.id)),
     [propNodes, outputsByNodeId],
+  );
+
+  // Display projection: give each edge an arrowhead coloured to match its line (amber when the
+  // target step is blocked, accent otherwise). Derived from the store edges so onEdgesChange /
+  // selection still operate on the base state.
+  const styledEdges = useMemo(
+    () =>
+      edges.map((e) => ({
+        ...e,
+        markerEnd: edgeMarker(blockedNodes.has(e.target)),
+      })),
+    [edges, blockedNodes],
   );
 
   // The id of the current chain tail (highest idx) — new "Add step" nodes chain off it.
@@ -614,7 +632,7 @@ function CanvasInner({
                 <NodeActionsProvider actions={nodeActions}>
                   <ReactFlow
                     nodes={nodes}
-                    edges={edges}
+                    edges={styledEdges}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     onNodesChange={onNodesChange}
