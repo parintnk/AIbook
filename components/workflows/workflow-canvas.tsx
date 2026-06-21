@@ -45,6 +45,7 @@ import {
   createEdgeAction,
   deleteEdgeAction,
   deleteNodeAction,
+  reindexNodesByTopologyAction,
   updateNodePositionsAction,
 } from "@/app/(app)/workflows/actions";
 import { SkeletonIntake } from "@/components/ai/skeleton-intake";
@@ -320,7 +321,7 @@ function CanvasInner({
     };
   }, [flushPositions]);
 
-  // Connect two nodes (AC2). Optimistic, then persist; refresh reconciles ids.
+  // Connect two nodes (AC2). Optimistic, then persist + re-number steps to follow the new chain.
   const onConnect = useCallback(
     (connection: Connection) => {
       const { source, target } = connection;
@@ -330,6 +331,7 @@ function CanvasInner({
         await flushPositions();
         const r = await createEdgeAction(workflowId, source, target);
         if (r?.error) toast.error(r.error);
+        else await reindexNodesByTopologyAction(workflowId);
         router.refresh();
       })();
     },
@@ -419,6 +421,9 @@ function CanvasInner({
     await flushPositions();
     if (newNodeId && mode) {
       let err: string | undefined;
+      // Place the new node sensibly (the append RPC defaults pos to 0,0 → otherwise every new
+      // step piles on the origin and its wires cross the other cards).
+      const pos = placeNewNode(newNodeId, mode);
       if (mode.mode === "new" && tailNodeId) {
         err = (await createEdgeAction(workflowId, tailNodeId, newNodeId)).error;
       } else if (mode.mode === "splice") {
@@ -434,10 +439,36 @@ function CanvasInner({
           mode.edge.target,
         );
         err = d.error ?? a.error ?? b.error;
+        // Re-number steps so the spliced node takes its place in the chain (not the last idx).
+        if (!err) await reindexNodesByTopologyAction(workflowId);
       }
+      if (pos)
+        await updateNodePositionsAction(workflowId, [
+          { id: newNodeId, pos_x: pos.x, pos_y: pos.y },
+        ]);
       if (err) toast.error(`Step added, but linking it failed: ${err}`);
     }
     router.refresh();
+  }
+
+  // Where a freshly-created node should sit: a splice lands at the midpoint of the edge it splits
+  // (nudged down so it's off the wire); a plain "new" step lands to the right of the chain tail.
+  function placeNewNode(
+    _newNodeId: string,
+    mode: Editing,
+  ): { x: number; y: number } | null {
+    const byId = new Map(propNodes.map((n) => [n.id, n]));
+    if (mode?.mode === "splice") {
+      const s = byId.get(mode.edge.source);
+      const t = byId.get(mode.edge.target);
+      if (s && t)
+        return { x: (s.pos_x + t.pos_x) / 2, y: (s.pos_y + t.pos_y) / 2 + 90 };
+    }
+    if (mode?.mode === "new" && tailNodeId) {
+      const tail = byId.get(tailNodeId);
+      if (tail) return { x: tail.pos_x + 320, y: tail.pos_y };
+    }
+    return null;
   }
 
   const nodeActions = useMemo(

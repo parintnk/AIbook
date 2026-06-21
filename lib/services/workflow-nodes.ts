@@ -252,3 +252,66 @@ export async function reorderNodes(
     };
   return { ok: true, id: workflowId };
 }
+
+/** Walk the edge chain into a linear node order: start at the node(s) with no incoming edge
+ *  (idx tiebreak), follow source→target, then append anything left (cycles/disconnected) by idx.
+ *  Exported for unit testing. */
+export function topologicalOrder(
+  nodes: { id: string; idx: number }[],
+  edges: { source_node_id: string; target_node_id: string }[],
+): string[] {
+  const byIdx = [...nodes].sort((a, b) => a.idx - b.idx);
+  const incoming = new Set(edges.map((e) => e.target_node_id));
+  const nextTargets = new Map<string, string[]>();
+  for (const e of edges) {
+    const list = nextTargets.get(e.source_node_id) ?? [];
+    list.push(e.target_node_id);
+    nextTargets.set(e.source_node_id, list);
+  }
+  const visited = new Set<string>();
+  const order: string[] = [];
+  const walk = (id: string) => {
+    let cur: string | undefined = id;
+    while (cur && !visited.has(cur)) {
+      visited.add(cur);
+      order.push(cur);
+      cur = (nextTargets.get(cur) ?? []).find((t) => !visited.has(t));
+    }
+  };
+  for (const n of byIdx) if (!incoming.has(n.id)) walk(n.id);
+  for (const n of byIdx) if (!visited.has(n.id)) walk(n.id); // leftovers (no clear root / cycle)
+  return order;
+}
+
+/**
+ * Re-number a draft's steps (`idx`) to match the edge chain (Story 2.3 follow-up). After a splice
+ * or a re-wire the topological order changes but `idx` (the step number + linear-list order) didn't,
+ * so a node spliced between 1 and 2 still showed as the last step. This recomputes idx from the
+ * current edges and persists via reorderNodes. Owner/draft scoped by RLS; a no-op order is harmless.
+ */
+export async function reindexNodesByTopology(
+  workflowId: string,
+): Promise<WorkflowNodeResult> {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  const [{ data: nodeRows }, { data: edgeRows }] = await Promise.all([
+    supabase
+      .from("workflow_nodes")
+      .select("id, idx")
+      .eq("workflow_id", workflowId),
+    supabase
+      .from("workflow_edges")
+      .select("source_node_id, target_node_id")
+      .eq("workflow_id", workflowId),
+  ]);
+  const nodes = (nodeRows as { id: string; idx: number }[] | null) ?? [];
+  if (nodes.length < 2) return { ok: true, id: workflowId };
+  const order = topologicalOrder(
+    nodes,
+    (edgeRows as { source_node_id: string; target_node_id: string }[] | null) ??
+      [],
+  );
+  return reorderNodes(workflowId, order);
+}

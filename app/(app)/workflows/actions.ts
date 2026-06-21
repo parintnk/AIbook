@@ -36,6 +36,7 @@ import {
   deleteNode,
   listDraftNodes,
   type NodeInput,
+  reindexNodesByTopology,
   reorderNodes,
   updateNode,
   updateNodePositions,
@@ -452,6 +453,17 @@ export async function reorderNodesAction(
   const result = await reorderNodes(workflowId, parsed.data);
   if (!result.ok) return { error: message(result.error) };
 
+  revalidatePath(`/workflows/${workflowId}/edit`);
+  return { success: true };
+}
+
+/** Re-number steps (idx) to match the edge chain — called after a splice / re-wire so the step
+ *  order follows the connections (a node spliced between 1 and 2 becomes step 2, not the last). */
+export async function reindexNodesByTopologyAction(
+  workflowId: string,
+): Promise<WorkflowFormState> {
+  const result = await reindexNodesByTopology(workflowId);
+  if (!result.ok) return { error: message(result.error) };
   revalidatePath(`/workflows/${workflowId}/edit`);
   return { success: true };
 }
